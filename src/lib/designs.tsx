@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { Member } from "./types";
 import { getFullName, getBirthDate } from "./utils";
 
@@ -118,11 +119,17 @@ export const designs: Array<{
               color: "white",
               fontWeight: 800,
               lineHeight: 1,
-              marginBottom: 28,
+              marginBottom: member.position ? 20 : 28,
             }}
           >
             {getFullName(member)}
           </div>
+
+          {member.position && (
+            <div style={{ display: "flex", marginBottom: 28 }}>
+              <PositionBadge text={member.position} bg="#1b1d24" color="#d4af37" />
+            </div>
+          )}
 
           <div
             style={{
@@ -146,14 +153,22 @@ export const designs: Array<{
             {message}
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              fontSize: 30,
-              color: "#d4af37",
-            }}
-          >
-            {getBirthDate(member)}
+          <div style={{ display: "flex" }}>
+            <div
+              style={{
+                display: "flex",
+                padding: "12px 32px",
+                background: "#d4af37",
+                color: "#0f1117",
+                borderRadius: 8,
+                fontSize: 28,
+                fontWeight: 800,
+                letterSpacing: 2,
+                textTransform: "uppercase",
+              }}
+            >
+              {getBirthDate(member)}
+            </div>
           </div>
         </div>
 
@@ -306,11 +321,17 @@ export const designs: Array<{
               lineHeight: 1,
               fontWeight: 800,
               color: "white",
-              marginBottom: 30,
+              marginBottom: member.position ? 20 : 30,
             }}
           >
             {getFullName(member)}
           </div>
+
+          {member.position && (
+            <div style={{ display: "flex", marginBottom: 30 }}>
+              <PositionBadge text={member.position} bg="#164536" color="#d4af37" />
+            </div>
+          )}
 
           <div
             style={{
@@ -334,14 +355,21 @@ export const designs: Array<{
             {message}
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              fontSize: 30,
-              color: "#d4af37",
-            }}
-          >
-            {getBirthDate(member)}
+          <div style={{ display: "flex" }}>
+            <div
+              style={{
+                display: "flex",
+                padding: "12px 32px",
+                background: "#d4af37",
+                color: "#0f2d24",
+                borderRadius: 8,
+                fontSize: 28,
+                fontWeight: 800,
+                letterSpacing: 2,
+              }}
+            >
+              {getBirthDate(member)}
+            </div>
           </div>
         </div>
       </div>
@@ -356,8 +384,7 @@ export const designs: Array<{
           flexDirection: "column",
           width: 1080,
           height: 1080,
-          background: "#310a14", // Deep Crimson
-          overflow: "hidden",
+          background: "#310a14",
           fontFamily: "sans-serif",
           alignItems: "center",
           position: "relative",
@@ -391,38 +418,33 @@ export const designs: Array<{
             </div>
           )}
 
-          <div
-            style={{
-              display: "flex",
-              width: 400,
-              height: 400,
-              borderRadius: 200,
-              overflow: "hidden",
-              border: "8px solid #d4af37",
-              marginBottom: 40,
-            }}
-          >
-            {member.photo_url ? (
-              <img
-                src={member.photo_url}
-                alt="Member"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  display: "flex",
-                  width: "100%",
-                  height: "100%",
-                  background: "#4a1220",
-                }}
-              />
-            )}
-          </div>
+          {/* Satori Fix: Applied styles directly to the img tag */}
+          {member.photo_url ? (
+            <img
+              src={member.photo_url}
+              alt="Member"
+              style={{
+                width: 400,
+                height: 400,
+                borderRadius: 200,
+                border: "8px solid #d4af37",
+                objectFit: "cover",
+                marginBottom: 40,
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                width: 400,
+                height: 400,
+                borderRadius: 200,
+                border: "8px solid #d4af37",
+                background: "#4a1220",
+                marginBottom: 40,
+              }}
+            />
+          )}
 
           <div
             style={{
@@ -444,11 +466,17 @@ export const designs: Array<{
               lineHeight: 1,
               fontWeight: 800,
               color: "white",
-              marginBottom: 28,
+              marginBottom: member.position ? 20 : 28,
             }}
           >
             {getFullName(member)}
           </div>
+
+          {member.position && (
+            <div style={{ display: "flex", marginBottom: 28, justifyContent: "center" }}>
+              <PositionBadge text={member.position} bg="#4a1220" color="#e8b943" />
+            </div>
+          )}
 
           <div
             style={{
@@ -473,15 +501,21 @@ export const designs: Array<{
             {message}
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              fontSize: 30,
-              color: "#d4af37",
-              fontWeight: 700,
-            }}
-          >
-            {getBirthDate(member)}
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                padding: "12px 32px",
+                background: "#d4af37",
+                color: "#310a14",
+                borderRadius: 8,
+                fontSize: 28,
+                fontWeight: 800,
+                letterSpacing: 2,
+              }}
+            >
+              {getBirthDate(member)}
+            </div>
           </div>
         </div>
       </div>
@@ -496,9 +530,8 @@ export const designs: Array<{
           display: "flex",
           width: 1080,
           height: 1080,
-          background: "#0a192f", // Deep Navy Blue
+          background: "#0a192f",
           fontFamily: "sans-serif",
-          overflow: "hidden",
           position: "relative",
         }}
       >
@@ -514,38 +547,31 @@ export const designs: Array<{
             paddingLeft: 20,
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              width: 440,
-              height: 680,
-              borderRadius: 30,
-              overflow: "hidden",
-              border: "6px solid #38bdf8",
-              boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
-            }}
-          >
-            {member.photo_url ? (
-              <img
-                src={member.photo_url}
-                alt="Member"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  display: "flex",
-                  width: "100%",
-                  height: "100%",
-                  background: "#112240",
-                }}
-              />
-            )}
-          </div>
+          {/* Satori Fix: Applied styles directly to the img tag */}
+          {member.photo_url ? (
+            <img
+              src={member.photo_url}
+              alt="Member"
+              style={{
+                width: 440,
+                height: 680,
+                borderRadius: 30,
+                border: "6px solid #38bdf8",
+                objectFit: "cover",
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                width: 440,
+                height: 680,
+                borderRadius: 30,
+                border: "6px solid #38bdf8",
+                background: "#112240",
+              }}
+            />
+          )}
         </div>
 
         {/* Text Right */}
@@ -570,7 +596,7 @@ export const designs: Array<{
             style={{
               display: "flex",
               fontSize: 22,
-              color: "#38bdf8", // Vibrant Sky Blue accent
+              color: "#38bdf8",
               letterSpacing: 5,
               marginBottom: 22,
             }}
@@ -585,11 +611,17 @@ export const designs: Array<{
               lineHeight: 1,
               fontWeight: 800,
               color: "white",
-              marginBottom: 30,
+              marginBottom: member.position ? 20 : 30,
             }}
           >
             {getFullName(member)}
           </div>
+
+          {member.position && (
+            <div style={{ display: "flex", marginBottom: 30 }}>
+              <PositionBadge text={member.position} bg="#112240" color="#38bdf8" />
+            </div>
+          )}
 
           <div
             style={{
@@ -613,15 +645,21 @@ export const designs: Array<{
             {message}
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              fontSize: 30,
-              color: "#38bdf8",
-              fontWeight: 700,
-            }}
-          >
-            {getBirthDate(member)}
+          <div style={{ display: "flex" }}>
+            <div
+              style={{
+                display: "flex",
+                padding: "12px 32px",
+                background: "#38bdf8",
+                color: "#0a192f",
+                borderRadius: 8,
+                fontSize: 28,
+                fontWeight: 800,
+                letterSpacing: 2,
+              }}
+            >
+              {getBirthDate(member)}
+            </div>
           </div>
         </div>
       </div>
@@ -636,9 +674,8 @@ export const designs: Array<{
           display: "flex",
           width: 1080,
           height: 1080,
-          background: "#1a0b2e", // Deep Plum/Purple
+          background: "#1a0b2e",
           position: "relative",
-          overflow: "hidden",
           fontFamily: "sans-serif",
         }}
       >
@@ -679,7 +716,7 @@ export const designs: Array<{
               display: "flex",
               fontSize: 22,
               letterSpacing: 6,
-              color: "#fbbf24", // Warm Gold
+              color: "#fbbf24",
               marginBottom: 24,
             }}
           >
@@ -693,11 +730,17 @@ export const designs: Array<{
               fontWeight: 800,
               lineHeight: 1,
               color: "white",
-              marginBottom: 28,
+              marginBottom: member.position ? 20 : 28,
             }}
           >
             {getFullName(member)}
           </div>
+
+          {member.position && (
+            <div style={{ display: "flex", marginBottom: 28 }}>
+              <PositionBadge text={member.position} bg="#3b1b54" color="#fbbf24" />
+            </div>
+          )}
 
           <div
             style={{
@@ -721,15 +764,21 @@ export const designs: Array<{
             {message}
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              fontSize: 30,
-              color: "#fbbf24",
-              fontWeight: 700,
-            }}
-          >
-            {getBirthDate(member)}
+          <div style={{ display: "flex" }}>
+            <div
+              style={{
+                display: "flex",
+                padding: "12px 32px",
+                background: "#fbbf24",
+                color: "#1a0b2e",
+                borderRadius: 8,
+                fontSize: 28,
+                fontWeight: 800,
+                letterSpacing: 2,
+              }}
+            >
+              {getBirthDate(member)}
+            </div>
           </div>
         </div>
 
@@ -744,38 +793,31 @@ export const designs: Array<{
             zIndex: 10,
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              width: 420,
-              height: 640,
-              borderRadius: "210px 210px 20px 20px", // Archway shape
-              overflow: "hidden",
-              border: "6px solid #fbbf24",
-              boxShadow: "-10px 10px 30px rgba(0,0,0,0.5)",
-            }}
-          >
-            {member.photo_url ? (
-              <img
-                src={member.photo_url}
-                alt="Member"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  display: "flex",
-                  width: "100%",
-                  height: "100%",
-                  background: "#3b1b54",
-                }}
-              />
-            )}
-          </div>
+          {/* Satori Fix: Applied styles directly to the img tag */}
+          {member.photo_url ? (
+            <img
+              src={member.photo_url}
+              alt="Member"
+              style={{
+                width: 420,
+                height: 640,
+                borderRadius: "210px 210px 20px 20px",
+                border: "6px solid #fbbf24",
+                objectFit: "cover",
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                width: 420,
+                height: 640,
+                borderRadius: "210px 210px 20px 20px",
+                border: "6px solid #fbbf24",
+                background: "#3b1b54",
+              }}
+            />
+          )}
         </div>
       </div>
     ),
