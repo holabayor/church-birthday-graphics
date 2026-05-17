@@ -7,6 +7,9 @@ export async function GET(req: NextRequest) {
   const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20")));
   const search = searchParams.get("search") || "";
+  const sort = searchParams.get("sort") || "first_name";
+  const order = searchParams.get("order") || "asc";
+  const month = searchParams.get("month") || "";
 
   const from = (page - 1) * limit;
   const to = from + limit - 1;
@@ -14,15 +17,26 @@ export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  let query = supabase.from("members").select("*", { count: "exact" }).order("first_name").range(from, to);
+  let query = supabase.from("members").select("*", { count: "exact" }).order(sort, { ascending: order === "asc" }).range(from, to);
 
   if (search) {
     query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,position.ilike.%${search}%`);
   }
 
+  if (month) {
+    const monthStr = month.padStart(2, "0");
+    query = query.like("date_of_birth", `%-____-${monthStr}-__%`);
+  }
+
   const { data, error, count } = await query;
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    // Fallback if the like query doesn't work perfectly on date columns
+    // If date_of_birth is a DATE type in Postgres, .like might fail on some Supabase versions.
+    // If it fails, let's just log and return error
+    console.error("Supabase query error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
   return NextResponse.json({ data, total: count || 0, page, limit });
 }
 

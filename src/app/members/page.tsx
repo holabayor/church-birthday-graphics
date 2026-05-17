@@ -3,7 +3,17 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Member } from "@/lib/types";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, X, ChevronLeft, ChevronRight, Upload, User } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, X, ChevronLeft, ChevronRight, Upload, User, Users, Phone, Mail, CalendarDays } from "lucide-react";
+
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 
 export default function MembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
@@ -11,8 +21,12 @@ export default function MembersPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState("first_name");
+  const [order, setOrder] = useState("asc");
+  const [month, setMonth] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Member | null>(null);
+  const [viewing, setViewing] = useState<Member | null>(null);
   const [form, setForm] = useState({
     first_name: "",
     middle_name: "",
@@ -30,14 +44,15 @@ export default function MembersPage() {
 
   const fetchMembers = useCallback(async () => {
     setLoading(true);
-    const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+    const params = new URLSearchParams({ page: page.toString(), limit: limit.toString(), sort, order });
     if (search) params.set("search", search);
+    if (month && month !== "all") params.set("month", month);
     const res = await fetch(`/api/members?${params.toString()}`);
     const data = await res.json();
     setMembers(Array.isArray(data.data) ? data.data : []);
     setTotal(data.total || 0);
     setLoading(false);
-  }, [page, search]);
+  }, [page, search, sort, order, month]);
 
   useEffect(() => {
     fetchMembers();
@@ -151,262 +166,464 @@ export default function MembersPage() {
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900">Members</h1>
-          <p className="text-zinc-500 text-sm mt-1">{total} total members</p>
-        </div>
-        <button
-          onClick={openAdd}
-          className="flex items-center gap-2 bg-zinc-900 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-zinc-800 transition-colors"
-        >
-          <Plus size={16} />
-          Add Member
-        </button>
-      </div>
-
-      <div className="relative mb-4">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-        <input
-          type="text"
-          placeholder="Search members..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-300"
-        />
-      </div>
-
-      {loading ? (
-        <div className="bg-white rounded-xl border border-zinc-200 p-12 text-center text-zinc-400">Loading...</div>
-      ) : members.length === 0 ? (
-        <div className="bg-white rounded-xl border border-zinc-200 p-12 text-center text-zinc-400">
-          {total === 0 && !search ? "No members yet. Add your first member!" : "No members match your search."}
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden overflow-x-auto">
-          <table className="w-full text-sm min-w-[800px]">
-            <thead>
-              <tr className="border-b border-zinc-100 bg-zinc-50">
-                <th className="text-left py-3 px-4 font-medium text-zinc-500 w-10"></th>
-                <th className="text-left py-3 px-4 font-medium text-zinc-500">Name</th>
-                <th className="text-left py-3 px-4 font-medium text-zinc-500">Phone</th>
-                <th className="text-left py-3 px-4 font-medium text-zinc-500">Email</th>
-                <th className="text-left py-3 px-4 font-medium text-zinc-500">Date of Birth</th>
-                <th className="text-left py-3 px-4 font-medium text-zinc-500">Position</th>
-                <th className="text-right py-3 px-4 font-medium text-zinc-500">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {members.map(m => (
-                <tr key={m.id} className="border-b border-zinc-50 hover:bg-zinc-50/50">
-                  <td className="py-3 px-4">
-                    {m.photo_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={m.photo_url} alt="" className="w-8 h-8 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center">
-                        <User size={14} className="text-zinc-400" />
-                      </div>
-                    )}
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="font-medium text-zinc-900">
-                      {m.last_name}, {m.first_name} {m.middle_name}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-zinc-600">{m.phone_number || "—"}</td>
-                  <td className="py-3 px-4 text-zinc-600">{m.email || "—"}</td>
-                  <td className="py-3 px-4 text-zinc-600">
-                    {new Date(m.date_of_birth).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </td>
-                  <td className="py-3 px-4 text-zinc-600">{m.position || "—"}</td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => openEdit(m)}
-                        className="p-1.5 rounded-md hover:bg-zinc-100 text-zinc-500 hover:text-zinc-700 transition-colors"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(m.id)}
-                        className="p-1.5 rounded-md hover:bg-red-50 text-zinc-500 hover:text-red-600 transition-colors"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4">
-          <p className="text-sm text-zinc-500">
-            Showing {(page - 1) * limit + 1}–{Math.min(page * limit, total)} of {total}
+    <div className="flex-1 space-y-8 p-4 md:p-8 pt-6 w-full">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="space-y-1.5">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Member Directory</h1>
+          <p className="text-muted-foreground font-medium">
+            Manage your congregation and view member details.
           </p>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="flex items-center gap-1 px-3 py-1.5 border border-zinc-200 rounded-lg text-sm text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronLeft size={14} />
-              Previous
-            </button>
-            <span className="text-sm text-zinc-600 px-2">
-              {page} / {totalPages}
-            </span>
-            <button
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="flex items-center gap-1 px-3 py-1.5 border border-zinc-200 rounded-lg text-sm text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              Next
-              <ChevronRight size={14} />
-            </button>
-          </div>
         </div>
-      )}
+        <Button onClick={openAdd} className="shadow-sm w-full sm:w-auto" size="lg">
+          <Plus className="mr-2 h-4 w-4" />
+          Add Member
+        </Button>
+      </div>
+
+      <Card className="shadow-sm">
+        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
+          <div className="space-y-1">
+            <CardTitle>All Members</CardTitle>
+            <CardDescription>
+              {total} members total in your directory
+            </CardDescription>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+            <Select value={month} onValueChange={(val) => { setMonth(val); setPage(1); }}>
+              <SelectTrigger className="w-full sm:w-[140px] bg-background">
+                <SelectValue placeholder="Birth Month" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Months</SelectItem>
+                <SelectItem value="1">January</SelectItem>
+                <SelectItem value="2">February</SelectItem>
+                <SelectItem value="3">March</SelectItem>
+                <SelectItem value="4">April</SelectItem>
+                <SelectItem value="5">May</SelectItem>
+                <SelectItem value="6">June</SelectItem>
+                <SelectItem value="7">July</SelectItem>
+                <SelectItem value="8">August</SelectItem>
+                <SelectItem value="9">September</SelectItem>
+                <SelectItem value="10">October</SelectItem>
+                <SelectItem value="11">November</SelectItem>
+                <SelectItem value="12">December</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={`${sort}-${order}`} onValueChange={(val) => {
+              const [s, o] = val.split("-");
+              setSort(s);
+              setOrder(o);
+              setPage(1);
+            }}>
+              <SelectTrigger className="w-full sm:w-[180px] bg-background">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="first_name-asc">First Name (A-Z)</SelectItem>
+                <SelectItem value="first_name-desc">First Name (Z-A)</SelectItem>
+                <SelectItem value="last_name-asc">Last Name (A-Z)</SelectItem>
+                <SelectItem value="last_name-desc">Last Name (Z-A)</SelectItem>
+                <SelectItem value="date_of_birth-asc">Birth Date (Oldest)</SelectItem>
+                <SelectItem value="date_of_birth-desc">Birth Date (Youngest)</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search members..."
+                className="pl-9 bg-background w-full"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="p-6 space-y-4">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center space-x-4 border-b pb-4 last:border-0 last:pb-0">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-[250px]" />
+                    <Skeleton className="h-3 w-[200px]" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : members.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="h-20 w-20 bg-muted/50 rounded-full flex items-center justify-center mb-4">
+                <Users className="h-10 w-10 text-muted-foreground/50" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground">No members found</h3>
+              <p className="text-sm text-muted-foreground max-w-sm mt-1">
+                {search ? "No members match your search criteria." : "Get started by adding your first member to the directory."}
+              </p>
+              {!search && (
+                <Button onClick={openAdd} variant="outline" className="mt-6">
+                  Add First Member
+                </Button>
+              )}
+            </div>
+          ) : (
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow>
+                  <TableHead className="w-[300px]">Member</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Date of Birth</TableHead>
+                  <TableHead>Position</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {members.map(m => (
+                  <TableRow key={m.id} className="group hover:bg-muted/50 cursor-pointer" onClick={() => setViewing(m)}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10 border border-muted shadow-sm">
+                          <AvatarImage src={m.photo_url || ""} />
+                          <AvatarFallback className="bg-primary/5 text-primary">
+                            {m.first_name[0]}{m.last_name[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-foreground">
+                            {m.last_name}, {m.first_name} {m.middle_name}
+                          </span>
+                          <span className="text-xs text-muted-foreground hidden sm:block">
+                            ID: {m.id.substring(0, 8)}
+                          </span>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col space-y-1 text-sm text-muted-foreground">
+                        <span className="text-foreground">{m.phone_number || "—"}</span>
+                        <span className="text-xs">{m.email || ""}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {new Date(m.date_of_birth).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric"
+                      })}
+                    </TableCell>
+                    <TableCell>
+                      {m.position ? (
+                        <Badge variant="secondary" className="font-normal">
+                          {m.position}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => { e.stopPropagation(); openEdit(m); }}
+                          className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <Pencil className="h-4 w-4" />
+                          <span className="sr-only">Edit</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => { e.stopPropagation(); handleDelete(m.id); }}
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Delete</span>
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t bg-muted/20">
+            <p className="text-sm text-muted-foreground">
+              Showing <span className="font-medium text-foreground">{(page - 1) * limit + 1}</span> to <span className="font-medium text-foreground">{Math.min(page * limit, total)}</span> of <span className="font-medium text-foreground">{total}</span> members
+            </p>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Prev
+              </Button>
+              <div className="text-sm font-medium px-2">
+                {page} / {totalPages}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </Card>
 
       {/* Add/Edit Modal */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
-            <div className="flex items-center justify-between p-5 border-b border-zinc-200">
-              <h2 className="text-lg font-semibold text-zinc-900">{editing ? "Edit Member" : "Add Member"}</h2>
-              <button onClick={() => setShowForm(false)} className="p-1 rounded-md hover:bg-zinc-100">
-                <X size={18} />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="p-5 space-y-4">
-              {/* Photo Upload */}
-              <div className="flex items-center gap-4">
-                {photoPreview ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={photoPreview}
-                    alt=""
-                    className="w-16 h-16 rounded-full object-cover border border-zinc-200"
-                  />
-                ) : (
-                  <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center border-2 border-dashed border-zinc-200">
-                    <User size={24} className="text-zinc-300" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+            onClick={() => setShowForm(false)}
+          />
+          <Card className="w-full max-w-lg z-50 shadow-2xl animate-in fade-in zoom-in-95 duration-200 border-border">
+            <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
+              <div>
+                <CardTitle>{editing ? "Edit Member Details" : "Add New Member"}</CardTitle>
+                <CardDescription>
+                  {editing ? "Update the information for this directory member." : "Enter the details to add a new member to the directory."}
+                </CardDescription>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setShowForm(false)}
+                className="h-8 w-8 rounded-full -mt-2 -mr-2"
+              >
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </Button>
+            </CardHeader>
+            <CardContent className="p-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Photo Upload */}
+                <div className="flex items-center gap-5">
+                  <Avatar className="h-20 w-20 border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
+                    {photoPreview ? (
+                      <AvatarImage src={photoPreview} className="object-cover" />
+                    ) : (
+                      <AvatarFallback className="bg-transparent">
+                        <User className="h-8 w-8 text-muted-foreground/50" />
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  <div className="space-y-1.5">
+                    <input
+                      ref={photoInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoSelect}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => photoInputRef.current?.click()}
+                    >
+                      <Upload className="mr-2 h-4 w-4" />
+                      {photoPreview ? "Change Photo" : "Upload Photo"}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      PNG, JPG or WEBP up to 5MB.
+                    </p>
                   </div>
-                )}
-                <div>
-                  <input
-                    ref={photoInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoSelect}
-                    className="hidden"
-                  />
-                  <button
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      First Name *
+                    </label>
+                    <Input
+                      required
+                      value={form.first_name}
+                      onChange={e => setForm({ ...form, first_name: e.target.value })}
+                      placeholder="e.g. John"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      Last Name *
+                    </label>
+                    <Input
+                      required
+                      value={form.last_name}
+                      onChange={e => setForm({ ...form, last_name: e.target.value })}
+                      placeholder="e.g. Doe"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      Middle Name
+                    </label>
+                    <Input
+                      value={form.middle_name}
+                      onChange={e => setForm({ ...form, middle_name: e.target.value })}
+                      placeholder="Optional"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      Date of Birth *
+                    </label>
+                    <Input
+                      required
+                      type="date"
+                      value={form.date_of_birth}
+                      onChange={e => setForm({ ...form, date_of_birth: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      Phone Number
+                    </label>
+                    <Input
+                      type="tel"
+                      placeholder="+1 234 567 8900"
+                      value={form.phone_number}
+                      onChange={e => setForm({ ...form, phone_number: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      Email Address
+                    </label>
+                    <Input
+                      type="email"
+                      placeholder="member@example.com"
+                      value={form.email}
+                      onChange={e => setForm({ ...form, email: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      Position/Role
+                    </label>
+                    <Input
+                      placeholder="e.g. Choir Leader, Deacon, Member"
+                      value={form.position}
+                      onChange={e => setForm({ ...form, position: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-4 border-t mt-6">
+                  <Button
                     type="button"
-                    onClick={() => photoInputRef.current?.click()}
-                    className="flex items-center gap-1.5 px-3 py-1.5 border border-zinc-200 rounded-lg text-xs font-medium text-zinc-700 hover:bg-zinc-50 transition-colors"
+                    variant="outline"
+                    onClick={() => setShowForm(false)}
                   >
-                    <Upload size={12} />
-                    {photoPreview ? "Change Photo" : "Upload Photo"}
-                  </button>
-                  <p className="text-xs text-zinc-400 mt-1">Optional</p>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={saving}>
+                    {saving ? "Saving..." : editing ? "Save Changes" : "Add Member"}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Profile Slide-over */}
+      <Sheet open={!!viewing} onOpenChange={(open) => !open && setViewing(null)}>
+        <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader className="text-left pb-4 border-b border-border/50">
+            <SheetTitle>Member Profile</SheetTitle>
+            <SheetDescription>Detailed view of the member's information.</SheetDescription>
+          </SheetHeader>
+          {viewing && (
+            <div className="py-6 space-y-8">
+              <div className="flex flex-col items-center space-y-4">
+                <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
+                  <AvatarImage src={viewing.photo_url || ""} />
+                  <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                    {viewing.first_name[0]}{viewing.last_name[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="text-center space-y-1">
+                  <h3 className="text-2xl font-bold tracking-tight">
+                    {viewing.first_name} {viewing.middle_name ? viewing.middle_name + " " : ""}{viewing.last_name}
+                  </h3>
+                  {viewing.position && (
+                    <Badge variant="secondary" className="px-3 py-1 font-medium mt-1">
+                      {viewing.position}
+                    </Badge>
+                  )}
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-1">First Name *</label>
-                <input
-                  required
-                  value={form.first_name}
-                  onChange={e => setForm({ ...form, first_name: e.target.value })}
-                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
-                />
+              <div className="space-y-4">
+                <div className="grid gap-4 bg-muted/30 p-4 rounded-xl border border-border/50">
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Phone className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-muted-foreground text-xs font-medium">Phone Number</span>
+                      <span className="font-medium text-foreground">{viewing.phone_number || "Not provided"}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Mail className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-muted-foreground text-xs font-medium">Email Address</span>
+                      <span className="font-medium text-foreground">{viewing.email || "Not provided"}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <CalendarDays className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-muted-foreground text-xs font-medium">Date of Birth</span>
+                      <span className="font-medium text-foreground">
+                        {new Date(viewing.date_of_birth).toLocaleDateString("en-US", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-1">Middle Name</label>
-                <input
-                  value={form.middle_name}
-                  onChange={e => setForm({ ...form, middle_name: e.target.value })}
-                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-1">Last Name *</label>
-                <input
-                  required
-                  value={form.last_name}
-                  onChange={e => setForm({ ...form, last_name: e.target.value })}
-                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-1">Date of Birth *</label>
-                <input
-                  required
-                  type="date"
-                  value={form.date_of_birth}
-                  onChange={e => setForm({ ...form, date_of_birth: e.target.value })}
-                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-1">Phone Number</label>
-                <input
-                  type="tel"
-                  placeholder="e.g. +1 234 567 8900"
-                  value={form.phone_number}
-                  onChange={e => setForm({ ...form, phone_number: e.target.value })}
-                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  placeholder="e.g. member@example.com"
-                  value={form.email}
-                  onChange={e => setForm({ ...form, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-1">Position</label>
-                <input
-                  placeholder="e.g. Choir Leader, Deacon..."
-                  value={form.position}
-                  onChange={e => setForm({ ...form, position: e.target.value })}
-                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="flex-1 px-4 py-2.5 border border-zinc-200 rounded-lg text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors"
+              
+              <div className="pt-4 flex justify-center w-full">
+                <Button 
+                  onClick={() => { setViewing(null); openEdit(viewing); }} 
+                  className="w-full max-w-xs shadow-sm"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex-1 px-4 py-2.5 bg-zinc-900 text-white rounded-lg text-sm font-medium hover:bg-zinc-800 transition-colors disabled:opacity-50"
-                >
-                  {saving ? "Saving..." : editing ? "Update" : "Add Member"}
-                </button>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit Profile
+                </Button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

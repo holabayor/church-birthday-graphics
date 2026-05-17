@@ -2,8 +2,13 @@
 
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
-import { Save, Upload, Church, Image as ImageIcon } from "lucide-react";
+import { Save, Upload, Church, Image as ImageIcon, MessageSquareCode, Clock, Server } from "lucide-react";
 import { ChurchSettings } from "@/lib/types";
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Omit<ChurchSettings, "id">>({
@@ -41,12 +46,12 @@ export default function SettingsPage() {
       const data = await res.json();
       if (data.url) {
         setSettings({ ...settings, logo_url: data.url });
-        toast.success("Logo uploaded");
+        toast.success("Logo uploaded successfully");
       } else {
-        toast.error("Upload failed");
+        toast.error("Upload failed. Please try again.");
       }
     } catch {
-      toast.error("Upload failed");
+      toast.error("Upload failed. Please try again.");
     }
     setUploading(false);
   };
@@ -64,7 +69,7 @@ export default function SettingsPage() {
         }),
       });
       if (res.ok) {
-        toast.success("Church settings saved");
+        toast.success("Church settings saved successfully");
       } else {
         toast.error("Failed to save settings");
       }
@@ -76,35 +81,47 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-3xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-zinc-900">Settings</h1>
-        <p className="text-zinc-500 text-sm mt-1">Configure your church info and birthday graphic system</p>
+    <div className="flex-1 space-y-8 p-4 md:p-8 pt-6 max-w-4xl mx-auto w-full">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="space-y-1.5">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <Server className="h-8 w-8 text-primary" />
+            System Settings
+          </h1>
+          <p className="text-muted-foreground font-medium">
+            Configure your church identity and graphic automation system.
+          </p>
+        </div>
       </div>
 
       <div className="space-y-6">
-        <div className="bg-white rounded-xl border border-zinc-200 p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Church size={20} className="text-zinc-700" />
-            <h2 className="text-lg font-semibold text-zinc-900">Church Information</h2>
-          </div>
-          <p className="text-sm text-zinc-500 mb-5">This information will appear on all birthday graphics.</p>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Church Logo</label>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                {settings?.logo_url ? (
-                  <div className="w-20 h-20 rounded-lg border border-zinc-200 overflow-hidden bg-zinc-50 flex items-center justify-center">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={settings?.logo_url} alt="Church logo" className="w-full h-full object-contain" />
-                  </div>
-                ) : (
-                  <div className="w-20 h-20 rounded-lg border-2 border-dashed border-zinc-200 flex items-center justify-center bg-zinc-50">
-                    <ImageIcon size={24} className="text-zinc-300" />
-                  </div>
-                )}
-                <div>
+        
+        {/* Church Identity Settings */}
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-xl flex items-center gap-2">
+              <Church className="h-5 w-5 text-primary" />
+              Church Information
+            </CardTitle>
+            <CardDescription>
+              This information will appear on all generated birthday graphics.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-3">
+              <label className="text-sm font-medium leading-none">Church Logo</label>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+                <Avatar className="h-24 w-24 border-2 border-dashed border-muted-foreground/30 flex items-center justify-center bg-muted/30">
+                  {settings?.logo_url ? (
+                    <AvatarImage src={settings.logo_url} className="object-contain p-2" />
+                  ) : (
+                    <AvatarFallback className="bg-transparent">
+                      <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <div className="space-y-2">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -112,90 +129,102 @@ export default function SettingsPage() {
                     onChange={handleLogoUpload}
                     className="hidden"
                   />
-                  <button
+                  <Button
+                    variant="outline"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
-                    className="flex items-center gap-2 px-3 py-2 border border-zinc-200 rounded-lg text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors disabled:opacity-50"
                   >
-                    <Upload size={14} />
+                    <Upload className="mr-2 h-4 w-4" />
                     {uploading ? "Uploading..." : settings?.logo_url ? "Change Logo" : "Upload Logo"}
-                  </button>
-                  <p className="text-xs text-zinc-400 mt-1">PNG or JPG, recommended 200x200px</p>
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    PNG or JPG up to 2MB. Recommended dimensions: 200x200px.
+                  </p>
                 </div>
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Church Name *</label>
-              <input
-                value={settings?.church_name}
-                onChange={e => setSettings({ ...settings, church_name: e.target.value })}
-                placeholder="e.g. Redeemed Christian Church of God"
-                className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
-              />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2 sm:col-span-2">
+                <label className="text-sm font-medium leading-none">
+                  Church Name *
+                </label>
+                <Input
+                  value={settings?.church_name}
+                  onChange={e => setSettings({ ...settings, church_name: e.target.value })}
+                  placeholder="e.g. Redeemed Christian Church of God"
+                />
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <label className="text-sm font-medium leading-none">
+                  Church Address
+                </label>
+                <Input
+                  value={settings?.church_address}
+                  onChange={e => setSettings({ ...settings, church_address: e.target.value })}
+                  placeholder="e.g. 15 Church Street, Lagos, Nigeria"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">Church Address</label>
-              <input
-                value={settings?.church_address}
-                onChange={e => setSettings({ ...settings, church_address: e.target.value })}
-                placeholder="e.g. 15 Church Street, Lagos, Nigeria"
-                className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
-              />
+            <div className="pt-4 border-t">
+              <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
+                <Save className="mr-2 h-4 w-4" />
+                {saving ? "Saving Changes..." : "Save Church Info"}
+              </Button>
             </div>
+          </CardContent>
+        </Card>
 
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-2 bg-zinc-900 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-zinc-800 transition-colors disabled:opacity-50"
-            >
-              <Save size={14} />
-              {saving ? "Saving..." : "Save Church Info"}
-            </button>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-zinc-200 p-6">
-          <h2 className="text-lg font-semibold text-zinc-900 mb-4">WhatsApp Integration</h2>
-          <p className="text-sm text-zinc-500 mb-4">
-            To enable automatic WhatsApp sending, set up the following environment variables on your server:
-          </p>
-          <div className="space-y-3">
-            <div className="bg-zinc-50 rounded-lg p-4">
-              <code className="text-sm text-zinc-700">
-                WHATSAPP_TOKEN=your_whatsapp_cloud_api_token
-                <br />
-                WHATSAPP_PHONE_ID=your_phone_number_id
-                <br />
-                WHATSAPP_GROUP_ID=recipient_phone_or_group_id
-                <br />
-                CRON_SECRET=a_secret_for_cron_auth
-              </code>
+        {/* WhatsApp Integration Info */}
+        <Card className="shadow-sm bg-primary/5 border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <MessageSquareCode className="h-5 w-5 text-primary" />
+              WhatsApp Integration
+            </CardTitle>
+            <CardDescription className="text-primary/80">
+              To enable automatic WhatsApp sending, set up the following environment variables on your server infrastructure.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-background rounded-lg p-4 border font-mono text-sm text-muted-foreground">
+              <div className="flex flex-col gap-1.5">
+                <div><span className="text-primary font-medium">WHATSAPP_TOKEN</span>=your_whatsapp_cloud_api_token</div>
+                <div><span className="text-primary font-medium">WHATSAPP_PHONE_ID</span>=your_phone_number_id</div>
+                <div><span className="text-primary font-medium">WHATSAPP_GROUP_ID</span>=recipient_phone_or_group_id</div>
+                <div><span className="text-primary font-medium">CRON_SECRET</span>=a_secret_for_cron_auth</div>
+              </div>
             </div>
-            <p className="text-xs text-zinc-400">
-              Get these from the Meta Business / WhatsApp Cloud API dashboard at developers.facebook.com
+            <p className="text-xs text-muted-foreground mt-3">
+              Get these credentials from the Meta Business / WhatsApp Cloud API dashboard at <a href="https://developers.facebook.com" className="underline hover:text-primary" target="_blank" rel="noreferrer">developers.facebook.com</a>.
             </p>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        <div className="bg-white rounded-xl border border-zinc-200 p-6">
-          <h2 className="text-lg font-semibold text-zinc-900 mb-4">Cron Job Setup</h2>
-          <p className="text-sm text-zinc-500 mb-3">
-            Set up a daily cron job to automatically check for birthdays and send graphics:
-          </p>
-          <div className="bg-zinc-50 rounded-lg p-4">
-            <code className="text-sm text-zinc-700 break-all">
-              POST /api/birthdays/send
-              <br />
-              Authorization: Bearer YOUR_CRON_SECRET
-            </code>
-          </div>
-          <p className="text-xs text-zinc-400 mt-3">
-            If deploying on Vercel, add a vercel.json with cron configuration. Otherwise, use any cron service (e.g.,
-            cron-job.org).
-          </p>
-        </div>
+        {/* Cron Job Info */}
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Clock className="h-5 w-5 text-muted-foreground" />
+              Cron Job Automation
+            </CardTitle>
+            <CardDescription>
+              Set up a daily cron job to automatically check for birthdays and dispatch graphics.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-muted rounded-lg p-4 border font-mono text-sm text-muted-foreground space-y-1">
+              <div><span className="text-amber-600 dark:text-amber-400 font-bold">POST</span> /api/birthdays/send</div>
+              <div><span className="text-blue-600 dark:text-blue-400">Authorization</span>: Bearer YOUR_CRON_SECRET</div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-3">
+              If deploying on Vercel, add a <code className="bg-muted px-1 rounded">vercel.json</code> with cron configuration. Otherwise, use any standard cron service (e.g., cron-job.org).
+            </p>
+          </CardContent>
+        </Card>
+
       </div>
     </div>
   );
