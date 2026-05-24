@@ -3,8 +3,8 @@ export interface Member {
   first_name: string;
   middle_name: string | null;
   last_name: string;
-  phone_number: string | null;
-  email: string | null;
+  phone_number?: string | null;
+  email?: string | null;
   date_of_birth: string;
   position: string | null;
   photo_url: string | null;

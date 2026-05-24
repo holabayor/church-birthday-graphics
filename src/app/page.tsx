@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Dashboard() {
   const [todayBirthdays, setTodayBirthdays] = useState<Member[]>([]);
@@ -20,35 +21,55 @@ export default function Dashboard() {
   const [generating, setGenerating] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
+  const [activeMember, setActiveMember] = useState<Member | null>(null);
+  const [designIndex, setDesignIndex] = useState<number>(0);
+  const [message, setMessage] = useState<string>("");
+  const [messages, setMessages] = useState<string[]>([]);
+
   useEffect(() => {
     Promise.all([
       fetch("/api/birthdays/today").then(r => r.json()),
       fetch("/api/birthdays/week").then(r => r.json()),
       fetch("/api/members?limit=1").then(r => r.json()),
-    ]).then(([birthdays, week, members]) => {
+      fetch("/api/birthday-messages").then(r => r.json()).catch(() => ({ data: [] })),
+    ]).then(([birthdays, week, members, messagesData]) => {
       setTodayBirthdays(Array.isArray(birthdays) ? birthdays : []);
       setWeekBirthdays(Array.isArray(week) ? week : []);
       setTotalMembers(members.total || 0);
+      
+      const loadedMsgs = messagesData?.data?.map((m: any) => m.message) || [];
+      setMessages(loadedMsgs.length > 0 ? loadedMsgs : defaultMessages);
       setLoading(false);
     });
   }, []);
 
   const generatePreview = (member: Member) => {
     setGenerating(member.id);
-    const designIndex = Math.floor(Math.random() * designs.length);
-    const message = defaultMessages[Math.floor(Math.random() * defaultMessages.length)];
+    setActiveMember(member);
+    const activeMessages = messages.length > 0 ? messages : defaultMessages;
+    const randDesign = Math.floor(Math.random() * designs.length);
+    setDesignIndex(randDesign);
+    setMessage(activeMessages[0] || defaultMessages[0]);
+  };
+
+  useEffect(() => {
+    if (!activeMember) {
+      setPreviewUrl(null);
+      return;
+    }
+
     const params = new URLSearchParams({
       design: designIndex.toString(),
-      first_name: member.first_name,
-      middle_name: member.middle_name || "",
-      last_name: member.last_name,
-      position: member.position || "",
-      photo_url: member.photo_url || "",
-      date_of_birth: member.date_of_birth,
+      first_name: activeMember.first_name,
+      middle_name: activeMember.middle_name || "",
+      last_name: activeMember.last_name,
+      position: activeMember.position || "",
+      photo_url: activeMember.photo_url || "",
+      date_of_birth: activeMember.date_of_birth,
       message,
     });
     setPreviewUrl(`/api/generate?${params.toString()}`);
-  };
+  }, [activeMember, designIndex, message]);
 
   const triggerSend = async () => {
     try {
@@ -258,22 +279,69 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="p-0">
                 {previewUrl ? (
-                  <div className="relative group bg-muted/10 p-4">
-                    <div className="relative rounded-lg overflow-hidden border shadow-sm aspect-square md:aspect-auto flex justify-center items-center">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={previewUrl}
-                        alt="Birthday preview"
-                        className="w-full h-auto max-h-[500px] object-contain rounded-lg"
-                        onLoad={() => setGenerating(null)}
-                      />
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm rounded-lg">
-                        <Button asChild variant="secondary" className="shadow-lg">
-                          <a href={previewUrl} download="birthday-graphic.png">
-                            <Download className="mr-2 h-4 w-4" />
-                            Download High-Res
-                          </a>
-                        </Button>
+                  <div className="flex flex-col">
+                    <div className="relative group bg-muted/10 p-4 border-b border-border/50">
+                      <div className="relative rounded-lg overflow-hidden border shadow-sm aspect-square md:aspect-auto flex justify-center items-center">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={previewUrl}
+                          alt="Birthday preview"
+                          className="w-full h-auto max-h-[500px] object-contain rounded-lg"
+                          onLoad={() => setGenerating(null)}
+                        />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm rounded-lg">
+                          <Button asChild variant="secondary" className="shadow-lg">
+                            <a href={previewUrl} download={`${activeMember?.first_name || "birthday"}-graphic.png`}>
+                              <Download className="mr-2 h-4 w-4" />
+                              Download High-Res
+                            </a>
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Design Customizer Controls */}
+                    <div className="p-5 bg-muted/30 flex flex-col gap-4 border-t border-border/30">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          Select Design Template
+                        </label>
+                        <Select value={designIndex.toString()} onValueChange={(val) => {
+                          if (activeMember) setGenerating(activeMember.id);
+                          setDesignIndex(parseInt(val));
+                        }}>
+                          <SelectTrigger className="bg-background border-muted-foreground/20">
+                            <SelectValue placeholder="Select Template" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {designs.map((d, idx) => (
+                              <SelectItem key={idx} value={idx.toString()}>
+                                {d.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          Birthday Greeting Message
+                        </label>
+                        <Select value={message} onValueChange={(val) => {
+                          if (activeMember) setGenerating(activeMember.id);
+                          setMessage(val);
+                        }}>
+                          <SelectTrigger className="bg-background border-muted-foreground/20">
+                            <SelectValue placeholder="Select Message" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(messages.length > 0 ? messages : defaultMessages).map((msg, idx) => (
+                              <SelectItem key={idx} value={msg}>
+                                Message {idx + 1}: {msg.substring(0, 40)}...
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </div>

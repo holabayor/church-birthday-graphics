@@ -32,12 +32,27 @@ export async function POST(req: NextRequest) {
     return dob.getMonth() + 1 === month && dob.getDate() === day;
   });
 
+  // Load dynamic messages or use static defaultMessages fallback
+  let activeMessages = defaultMessages;
+  try {
+    const { data: dbMessages } = await supabase
+      .from("birthday_messages")
+      .select("message")
+      .order("created_at", { ascending: true });
+
+    if (dbMessages && dbMessages.length > 0) {
+      activeMessages = dbMessages.map(m => m.message);
+    }
+  } catch (err) {
+    console.error("Failed to load birthday messages from DB, using fallback:", err);
+  }
+
   const results = [];
 
   for (const member of birthdayMembers) {
     const designIndex = Math.floor(Math.random() * designs.length);
-    const messageIndex = Math.floor(Math.random() * defaultMessages.length);
-    const message = defaultMessages[messageIndex];
+    const messageIndex = Math.floor(Math.random() * activeMessages.length);
+    const message = activeMessages[messageIndex];
 
     // Log to DB and capture the inserted row's id
     const { data: logRow } = await supabase

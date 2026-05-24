@@ -38,9 +38,39 @@ export async function middleware(request: NextRequest) {
   // Refresh session — IMPORTANT: do not add any logic between createServerClient and getUser
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
+  const memberId = request.cookies.get("member_id")?.value;
+
+  if (!user && !memberId) {
     const loginUrl = new URL("/login", request.url);
     return NextResponse.redirect(loginUrl);
+  }
+
+  // Member user security constraints
+  if (!user && memberId) {
+    const allowedMemberPages = ["/profile"];
+    const allowedMemberApis = [
+      `/api/members/${memberId}`, 
+      "/api/auth", 
+      "/api/upload"
+    ];
+
+    const isAllowedPage = allowedMemberPages.some(p => pathname === p);
+    const isAllowedApi = allowedMemberApis.some(p => pathname === p || pathname.startsWith(p));
+    const isApiRoute = pathname.startsWith("/api");
+
+    if (isApiRoute) {
+      if (!isAllowedApi) {
+        return new NextResponse(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+    } else {
+      if (!isAllowedPage) {
+        const profileUrl = new URL("/profile", request.url);
+        return NextResponse.redirect(profileUrl);
+      }
+    }
   }
 
   return supabaseResponse;

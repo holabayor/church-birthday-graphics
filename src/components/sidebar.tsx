@@ -2,18 +2,36 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Users, Home, Palette, Settings, LogOut } from "lucide-react";
-
-const links = [
-  { href: "/", label: "Dashboard", icon: Home },
-  { href: "/members", label: "Members", icon: Users },
-  { href: "/designs", label: "Designs", icon: Palette },
-  { href: "/settings", label: "Settings", icon: Settings },
-];
+import { Users, Home, Palette, Settings, LogOut, User } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [role, setRole] = useState<"admin" | "member" | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function checkSession() {
+      try {
+        const res = await fetch("/api/auth");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            setRole("admin");
+          } else if (data.memberId) {
+            setRole("member");
+          }
+        }
+      } catch (e) {
+        console.error("Failed to check auth session:", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    checkSession();
+  }, [pathname]);
 
   // Hide sidebar on login page
   if (pathname === "/login") return null;
@@ -28,16 +46,39 @@ export function Sidebar() {
     router.refresh();
   };
 
+  if (loading) {
+    return (
+      <aside className="hidden md:flex w-64 bg-white border-r border-zinc-200 flex-col shrink-0 animate-pulse">
+        <div className="p-6 border-b border-zinc-200 h-[89px]"></div>
+        <div className="flex-1 p-3 space-y-4">
+          <div className="h-10 bg-zinc-100 rounded-lg"></div>
+          <div className="h-10 bg-zinc-100 rounded-lg"></div>
+        </div>
+      </aside>
+    );
+  }
+
+  const activeLinks = role === "member"
+    ? [{ href: "/profile", label: "My Profile", icon: User }]
+    : [
+        { href: "/", label: "Dashboard", icon: Home },
+        { href: "/members", label: "Members", icon: Users },
+        { href: "/designs", label: "Designs", icon: Palette },
+        { href: "/settings", label: "Settings", icon: Settings },
+      ];
+
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 bg-white border-r border-zinc-200 flex-col">
+      <aside className="hidden md:flex w-64 bg-white border-r border-zinc-200 flex-col shrink-0">
         <div className="p-6 border-b border-zinc-200">
           <h1 className="text-lg font-bold text-zinc-900">Birthday Graphics</h1>
-          <p className="text-xs text-zinc-500 mt-1">Church Media Tool</p>
+          <p className="text-xs text-zinc-500 mt-1">
+            {role === "member" ? "Congregation Portal" : "Church Media Tool"}
+          </p>
         </div>
         <nav className="flex-1 p-3 space-y-1">
-          {links.map(({ href, label, icon: Icon }) => {
+          {activeLinks.map(({ href, label, icon: Icon }) => {
             const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
             return (
               <Link
@@ -66,7 +107,7 @@ export function Sidebar() {
 
       {/* Mobile Bottom Nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-200 flex items-center justify-around p-2 z-50">
-        {links.map(({ href, label, icon: Icon }) => {
+        {activeLinks.map(({ href, label, icon: Icon }) => {
           const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (
             <Link
