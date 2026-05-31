@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
             messaging_product: "whatsapp",
             to: whatsappGroupId,
             type: "image",
-            image: { link: imageUrl, caption: `Happy Birthday ${member.first_name} ${member.last_name}! 🎉` },
+            image: { link: imageUrl, caption: `Happy Birthday ${member.first_name} ${member.last_name}!` },
           }),
         });
 

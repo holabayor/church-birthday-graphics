@@ -33,8 +33,8 @@ export function Sidebar() {
     checkSession();
   }, [pathname]);
 
-  // Hide sidebar on login page
-  if (pathname === "/login") return null;
+  // Hide sidebar on login pages
+  if (pathname === "/login" || pathname === "/admin/login") return null;
 
   const handleLogout = async () => {
     await fetch("/api/auth", {
@@ -42,7 +42,7 @@ export function Sidebar() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "logout" }),
     });
-    router.push("/login");
+    router.push(role === "admin" ? "/admin/login" : "/login");
     router.refresh();
   };
 
@@ -106,28 +106,28 @@ export function Sidebar() {
       </aside>
 
       {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-200 flex items-center justify-around p-2 z-50">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-200 grid auto-cols-fr grid-flow-col gap-1 px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] z-50">
         {activeLinks.map(({ href, label, icon: Icon }) => {
           const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (
             <Link
               key={href}
               href={href}
-              className={`flex flex-col items-center gap-1 p-2 rounded-lg text-xs font-medium transition-colors ${
-                active ? "text-zinc-900" : "text-zinc-500 hover:text-zinc-900"
-              }`}
-            >
-              <Icon size={20} />
-              <span>{label}</span>
-            </Link>
-          );
-        })}
+                className={`min-w-0 flex flex-col items-center gap-1 rounded-lg px-1 py-2 text-[11px] font-medium transition-colors ${
+                  active ? "text-zinc-900" : "text-zinc-500 hover:text-zinc-900"
+                }`}
+              >
+                <Icon size={20} className="shrink-0" />
+                <span className="max-w-full truncate">{label}</span>
+              </Link>
+            );
+          })}
         <button
           onClick={handleLogout}
-          className="flex flex-col items-center gap-1 p-2 rounded-lg text-xs font-medium text-zinc-500 hover:text-zinc-900 transition-colors"
+          className="min-w-0 flex flex-col items-center gap-1 rounded-lg px-1 py-2 text-[11px] font-medium text-zinc-500 hover:text-zinc-900 transition-colors"
         >
-          <LogOut size={20} />
-          <span>Logout</span>
+          <LogOut size={20} className="shrink-0" />
+          <span className="max-w-full truncate">Logout</span>
         </button>
       </nav>
     </>

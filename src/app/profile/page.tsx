@@ -286,11 +286,11 @@ export default function ProfilePage() {
               <div className="w-full mt-6 space-y-3 pt-6 border-t text-sm border-zinc-100">
                 <div className="flex items-center gap-3">
                   <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="text-zinc-600 truncate">{form.phone_number || "—"}</span>
+                  <span className="text-zinc-600 truncate">{form.phone_number || "-"}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="text-zinc-600 truncate">{form.email || "—"}</span>
+                  <span className="text-zinc-600 truncate">{form.email || "-"}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -301,7 +301,7 @@ export default function ProfilePage() {
                           day: "numeric",
                           year: "numeric",
                         })
-                      : "—"}
+                      : "-"}
                   </span>
                 </div>
               </div>

@@ -5,7 +5,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Always allow: static assets, login page, public API endpoints
-  const publicPaths = ["/login", "/api/auth", "/api/birthdays/send", "/api/generate"];
+  const publicPaths = ["/login", "/admin/login", "/api/auth", "/api/birthdays/send", "/api/generate"];
   if (
     publicPaths.some(p => pathname.startsWith(p)) ||
     pathname.startsWith("/_next") ||
@@ -41,7 +41,7 @@ export async function middleware(request: NextRequest) {
   const memberId = request.cookies.get("member_id")?.value;
 
   if (!user && !memberId) {
-    const loginUrl = new URL("/login", request.url);
+    const loginUrl = new URL(pathname === "/profile" ? "/login" : "/admin/login", request.url);
     return NextResponse.redirect(loginUrl);
   }
 

@@ -10,6 +10,8 @@ export async function GET(req: NextRequest) {
   const sort = searchParams.get("sort") || "first_name";
   const order = searchParams.get("order") || "asc";
   const month = searchParams.get("month") || "";
+  const monthNumber = month ? parseInt(month, 10) : NaN;
+  const hasMonthFilter = Number.isInteger(monthNumber) && monthNumber >= 1 && monthNumber <= 12;
 
   const from = (page - 1) * limit;
   const to = from + limit - 1;
@@ -17,23 +19,36 @@ export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  let query = supabase.from("members").select("*", { count: "exact" }).order(sort, { ascending: order === "asc" }).range(from, to);
+  let query = supabase.from("members").select("*", { count: "exact" }).order(sort, { ascending: order === "asc" });
 
   if (search) {
     query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,position.ilike.%${search}%`);
   }
 
-  if (month) {
-    const monthStr = month.padStart(2, "0");
-    query = query.like("date_of_birth", `%-____-${monthStr}-__%`);
+  if (hasMonthFilter) {
+    const { data, error } = await query.range(0, 9999);
+
+    if (error) {
+      console.error("Supabase query error:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    const filtered = (data || []).filter(member => {
+      const birthMonth = parseInt(String(member.date_of_birth).split("-")[1] || "", 10);
+      return birthMonth === monthNumber;
+    });
+
+    return NextResponse.json({
+      data: filtered.slice(from, to + 1),
+      total: filtered.length,
+      page,
+      limit,
+    });
   }
 
-  const { data, error, count } = await query;
+  const { data, error, count } = await query.range(from, to);
 
   if (error) {
-    // Fallback if the like query doesn't work perfectly on date columns
-    // If date_of_birth is a DATE type in Postgres, .like might fail on some Supabase versions.
-    // If it fails, let's just log and return error
     console.error("Supabase query error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

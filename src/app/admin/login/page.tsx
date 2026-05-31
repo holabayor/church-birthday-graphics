@@ -3,20 +3,22 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { KeyRound, Loader2, Phone, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, KeyRound, Loader2, Lock, Mail, Phone } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default function LoginPage() {
-  const [phoneNumber, setPhoneNumber] = useState("");
+export default function AdminLoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleMemberSubmit = async (e: React.FormEvent) => {
+  const handleAdminSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -25,15 +27,15 @@ export default function LoginPage() {
       const res = await fetch("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "member-login", phone_number: phoneNumber }),
+        body: JSON.stringify({ email, password }),
       });
 
       if (res.ok) {
-        router.push("/profile");
+        router.push("/");
         router.refresh();
       } else {
         const data = await res.json();
-        setError(data.error || "Invalid phone number");
+        setError(data.error || "Invalid email or password");
       }
     } catch {
       setError("Something went wrong. Please try again.");
@@ -55,31 +57,53 @@ export default function LoginPage() {
             <KeyRound className="h-7 w-7 text-primary" />
           </div>
           <div className="space-y-1">
-            <CardTitle className="text-2xl font-bold tracking-tight">Member Sign In</CardTitle>
-            <CardDescription className="text-base">Access your church birthday profile</CardDescription>
+            <CardTitle className="text-2xl font-bold tracking-tight">Admin Sign In</CardTitle>
+            <CardDescription className="text-base">Manage members, greetings, and birthday graphics</CardDescription>
           </div>
         </CardHeader>
 
         <CardContent>
-          <form onSubmit={handleMemberSubmit} className="space-y-5">
+          <form onSubmit={handleAdminSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
+              <Label htmlFor="email">Email Address</Label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  id="phone"
-                  type="tel"
-                  value={phoneNumber}
-                  onChange={e => setPhoneNumber(e.target.value)}
-                  placeholder="08031234567"
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="admin@example.com"
                   required
                   autoFocus
                   className="pl-9"
                 />
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Enter the phone number registered with the church.
-              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Password"
+                  required
+                  className="pl-9 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
+                  tabIndex={-1}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
 
             {error && (
@@ -92,21 +116,21 @@ export default function LoginPage() {
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Signing In...
+                  Authenticating...
                 </>
               ) : (
-                "Access My Profile"
+                "Sign In as Admin"
               )}
             </Button>
           </form>
         </CardContent>
 
         <CardFooter className="flex flex-col gap-3 justify-center pb-8 border-t border-muted/50 pt-4 bg-muted/10">
-          <p className="text-xs text-muted-foreground text-center">Secured member access</p>
+          <p className="text-xs text-muted-foreground text-center">Secured admin access</p>
           <Button asChild variant="ghost" size="sm" className="text-xs">
-            <Link href="/admin/login">
-              <ShieldCheck className="mr-2 h-3.5 w-3.5" />
-              Admin sign in
+            <Link href="/login">
+              <Phone className="mr-2 h-3.5 w-3.5" />
+              Member sign in
             </Link>
           </Button>
         </CardFooter>

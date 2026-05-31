@@ -272,7 +272,8 @@ export default function MembersPage() {
               )}
             </div>
           ) : (
-            <Table>
+            <div className="w-full overflow-x-auto">
+            <Table className="min-w-[820px]">
               <TableHeader className="bg-muted/50">
                 <TableRow>
                   <TableHead className="w-[300px]">Member</TableHead>
@@ -305,7 +306,7 @@ export default function MembersPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col space-y-1 text-sm text-muted-foreground">
-                        <span className="text-foreground">{m.phone_number || "—"}</span>
+                        <span className="text-foreground">{m.phone_number || "-"}</span>
                         <span className="text-xs">{m.email || ""}</span>
                       </div>
                     </TableCell>
@@ -322,7 +323,7 @@ export default function MembersPage() {
                           {m.position}
                         </Badge>
                       ) : (
-                        <span className="text-muted-foreground text-sm">—</span>
+                        <span className="text-muted-foreground text-sm">-</span>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
@@ -351,16 +352,17 @@ export default function MembersPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t bg-muted/20">
-            <p className="text-sm text-muted-foreground">
+          <div className="flex flex-col gap-3 px-4 py-4 border-t bg-muted/20 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <p className="text-sm text-muted-foreground text-center sm:text-left">
               Showing <span className="font-medium text-foreground">{(page - 1) * limit + 1}</span> to <span className="font-medium text-foreground">{Math.min(page * limit, total)}</span> of <span className="font-medium text-foreground">{total}</span> members
             </p>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -389,12 +391,12 @@ export default function MembersPage() {
 
       {/* Add/Edit Modal */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:items-center">
           <div 
             className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
             onClick={() => setShowForm(false)}
           />
-          <Card className="w-full max-w-lg z-50 shadow-2xl animate-in fade-in zoom-in-95 duration-200 border-border">
+          <Card className="my-4 w-full max-w-lg z-50 max-h-[calc(100dvh-2rem)] overflow-y-auto shadow-2xl animate-in fade-in zoom-in-95 duration-200 border-border">
             <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
               <div>
                 <CardTitle>{editing ? "Edit Member Details" : "Add New Member"}</CardTitle>

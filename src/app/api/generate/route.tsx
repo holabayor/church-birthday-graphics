@@ -10,7 +10,7 @@ import { Member } from "@/lib/types";
 import { SupabaseClient } from "@supabase/supabase-js";
 
 // ---------------------------------------------------------------------------
-// Font — loaded once from the local public directory (no network round-trip)
+// Font - loaded once from the local public directory (no network round-trip)
 // ---------------------------------------------------------------------------
 let fontCache: ArrayBuffer | null = null;
 
@@ -22,7 +22,7 @@ function loadFont(): ArrayBuffer {
 }
 
 // ---------------------------------------------------------------------------
-// Church logo — cached in memory with a 5-minute TTL
+// Church logo - cached in memory with a 5-minute TTL
 // ---------------------------------------------------------------------------
 let logoCache: { url: string | undefined; expiresAt: number } | null = null;
 const LOGO_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
