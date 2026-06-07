@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Users, Home, Palette, Settings, LogOut, User, CalendarCheck, MessageCircle } from "lucide-react";
+import { Users, Home, Palette, Settings, LogOut, User, CalendarCheck, MessageCircle, Building2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 type Permission =
@@ -11,6 +11,7 @@ type Permission =
   | "attendance.view"
   | "birthdays.manage"
   | "outreach.view"
+  | "units.view"
   | "settings.manage"
   | "admins.manage"
   | "units.manage";
@@ -20,6 +21,7 @@ export function Sidebar() {
   const router = useRouter();
   const [role, setRole] = useState<"admin" | "member" | null>(null);
   const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [memberUnitLeadership, setMemberUnitLeadership] = useState<Array<{ id: string; name: string; role: string }>>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,6 +35,7 @@ export function Sidebar() {
             setPermissions(data.user.permissions || []);
           } else if (data.memberId) {
             setRole("member");
+            setMemberUnitLeadership(data.memberUnitLeadership || []);
           }
         }
       } catch (e) {
@@ -46,7 +49,7 @@ export function Sidebar() {
   }, [pathname]);
 
   // Hide sidebar on login pages
-  if (pathname === "/login" || pathname === "/admin/login") return null;
+  if (pathname === "/login" || pathname === "/register" || pathname === "/admin" || pathname === "/admin/login") return null;
 
   const handleLogout = async () => {
     await fetch("/api/auth", {
@@ -54,7 +57,7 @@ export function Sidebar() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "logout" }),
     });
-    router.push(role === "admin" ? "/admin/login" : "/login");
+    router.push(role === "admin" ? "/admin" : "/login");
     router.refresh();
   };
 
@@ -73,11 +76,15 @@ export function Sidebar() {
   const can = (permission: Permission) => permissions.includes(permission);
 
   const activeLinks = role === "member"
-    ? [{ href: "/profile", label: "My Profile", icon: User }]
+    ? [
+        { href: "/profile", label: "My Profile", icon: User },
+        ...(memberUnitLeadership.length > 0 ? [{ href: "/units", label: "My Units", icon: Building2 }] : []),
+      ]
     : [
         ...(can("dashboard.view") ? [{ href: "/", label: "Dashboard", icon: Home }] : []),
         ...(can("members.view") ? [{ href: "/members", label: "Members", icon: Users }] : []),
         ...(can("attendance.view") ? [{ href: "/attendance", label: "Attendance", icon: CalendarCheck }] : []),
+        ...(can("units.view") || can("units.manage") ? [{ href: "/units", label: "Units", icon: Building2 }] : []),
         ...(can("outreach.view") ? [{ href: "/outreach", label: "Outreach", icon: MessageCircle }] : []),
         ...(can("birthdays.manage") ? [{ href: "/designs", label: "Designs", icon: Palette }] : []),
         ...(can("settings.manage") || can("admins.manage") || can("units.manage") ? [{ href: "/settings", label: "Settings", icon: Settings }] : []),

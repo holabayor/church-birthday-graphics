@@ -2,18 +2,19 @@ import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 const rolePermissions: Record<string, string[]> = {
-  super_admin: ["dashboard.view", "members.view", "attendance.view", "birthdays.manage", "outreach.view", "settings.manage", "admins.manage", "units.manage"],
-  pastor: ["dashboard.view", "members.view", "attendance.view", "birthdays.manage", "outreach.view", "units.manage"],
-  assistant_pastor: ["dashboard.view", "members.view", "attendance.view", "outreach.view", "units.manage"],
-  secretary: ["dashboard.view", "members.view", "attendance.view", "units.manage"],
+  super_admin: ["dashboard.view", "members.view", "attendance.view", "birthdays.manage", "outreach.view", "settings.manage", "admins.manage", "units.view", "units.manage"],
+  pastor: ["dashboard.view", "members.view", "attendance.view", "birthdays.manage", "outreach.view", "units.view", "units.manage"],
+  assistant_pastor: ["dashboard.view", "members.view", "attendance.view", "outreach.view", "units.view", "units.manage"],
+  secretary: ["dashboard.view", "members.view", "attendance.view", "units.view", "units.manage"],
   media: ["dashboard.view", "members.view", "birthdays.manage", "outreach.view"],
   follow_up: ["dashboard.view", "members.view", "attendance.view", "outreach.view"],
-  unit_leader: ["dashboard.view", "members.view", "attendance.view", "outreach.view"],
+  unit_leader: ["dashboard.view", "members.view", "attendance.view", "outreach.view", "units.view"],
 };
 
 const pagePermissions = [
   { path: "/members", permission: "members.view" },
   { path: "/attendance", permission: "attendance.view" },
+  { path: "/units", permission: "units.view", any: ["units.view", "units.manage"] },
   { path: "/outreach", permission: "outreach.view" },
   { path: "/designs", permission: "birthdays.manage" },
   { path: "/settings", permission: "settings.manage", any: ["settings.manage", "admins.manage", "units.manage"] },
@@ -101,7 +102,7 @@ export async function middleware(request: NextRequest) {
 
   // Member user security constraints
   if (!user && memberId) {
-    const allowedMemberPages = ["/profile"];
+    const allowedMemberPages = ["/profile", "/units"];
     const allowedMemberApis = [
       `/api/members/${memberId}`, 
       "/api/auth", 

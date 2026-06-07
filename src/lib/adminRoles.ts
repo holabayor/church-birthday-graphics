@@ -7,6 +7,7 @@ export type Permission =
   | "attendance.view"
   | "attendance.manage"
   | "followups.manage"
+  | "units.view"
   | "units.manage"
   | "birthdays.manage"
   | "outreach.view"
@@ -31,6 +32,7 @@ export const rolePermissions: Record<AdminRole, Permission[]> = {
     "attendance.view",
     "attendance.manage",
     "followups.manage",
+    "units.view",
     "units.manage",
     "birthdays.manage",
     "outreach.view",
@@ -43,6 +45,7 @@ export const rolePermissions: Record<AdminRole, Permission[]> = {
     "attendance.view",
     "attendance.manage",
     "followups.manage",
+    "units.view",
     "units.manage",
     "birthdays.manage",
     "outreach.view",
@@ -53,11 +56,12 @@ export const rolePermissions: Record<AdminRole, Permission[]> = {
     "attendance.view",
     "attendance.manage",
     "followups.manage",
+    "units.view",
     "units.manage",
     "outreach.view",
   ],
-  secretary: ["dashboard.view", "members.view", "members.manage", "attendance.view", "attendance.manage", "units.manage"],
+  secretary: ["dashboard.view", "members.view", "members.manage", "attendance.view", "attendance.manage", "units.view", "units.manage"],
   media: ["dashboard.view", "members.view", "birthdays.manage", "outreach.view"],
   follow_up: ["dashboard.view", "members.view", "attendance.view", "followups.manage", "outreach.view"],
-  unit_leader: ["dashboard.view", "members.view", "attendance.view", "outreach.view"],
+  unit_leader: ["dashboard.view", "members.view", "attendance.view", "outreach.view", "units.view"],
 };

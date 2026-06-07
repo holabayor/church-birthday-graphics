@@ -11,6 +11,21 @@ export async function GET(req: NextRequest) {
     const adminContext = user ? await getAdminContext(cookieStore) : null;
 
     const memberId = cookieStore.get("member_id")?.value;
+    let memberUnitLeadership: Array<{ id: string; name: string; role: string }> = [];
+
+    if (memberId) {
+      const { data: unitRows } = await supabase
+        .from("church_unit_members")
+        .select("role, church_units(id, name)")
+        .eq("member_id", memberId)
+        .in("role", ["head", "assistant"]);
+
+      memberUnitLeadership = (unitRows || []).reduce<Array<{ id: string; name: string; role: string }>>((leadership, row: any) => {
+          const unit = Array.isArray(row.church_units) ? row.church_units[0] : row.church_units;
+          if (unit) leadership.push({ id: unit.id, name: unit.name, role: row.role });
+          return leadership;
+        }, []);
+    }
 
     return NextResponse.json({
       user: user && adminContext ? {
@@ -20,6 +35,7 @@ export async function GET(req: NextRequest) {
         permissions: adminContext.permissions,
       } : null,
       memberId: memberId || null,
+      memberUnitLeadership,
     });
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch session" }, { status: 500 });
