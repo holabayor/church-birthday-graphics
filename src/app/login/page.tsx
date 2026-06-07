@@ -3,10 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { KeyRound, Loader2, Phone, ShieldCheck, UserPlus } from "lucide-react";
+import { KeyRound, Loader2, Phone, UserPlus } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -90,11 +90,11 @@ export default function LoginPage() {
             </div>
 
             {profileMissing && (
-              <Alert className="py-3">
+              <Alert className="py-4">
                 <UserPlus className="h-4 w-4" />
                 <AlertDescription className="space-y-3 text-sm">
                   <p>
-                    We could not find a profile for this phone number. Would you like to create your member profile now?
+                    We could not find a profile for this phone number. You can create one now and continue to your profile.
                   </p>
                   <Button asChild size="sm" className="w-full">
                     <Link href={`/register?phone=${encodeURIComponent(phoneNumber.trim())}`}>
@@ -111,28 +111,20 @@ export default function LoginPage() {
               </Alert>
             )}
 
-            <Button type="submit" disabled={loading} className="w-full py-6 text-base shadow-sm mt-4">
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Signing In...
-                </>
-              ) : (
-                "Access My Profile"
-              )}
-            </Button>
+            {!profileMissing && (
+              <Button type="submit" disabled={loading} className="w-full py-6 text-base shadow-sm mt-4">
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Signing In...
+                  </>
+                ) : (
+                  "Access My Profile"
+                )}
+              </Button>
+            )}
           </form>
         </CardContent>
-
-        <CardFooter className="flex flex-col gap-3 justify-center pb-8 border-t border-muted/50 pt-4 bg-muted/10">
-          <p className="text-xs text-muted-foreground text-center">Secured member access</p>
-          <Button asChild variant="ghost" size="sm" className="text-xs">
-            <Link href="/admin/login">
-              <ShieldCheck className="mr-2 h-3.5 w-3.5" />
-              Admin sign in
-            </Link>
-          </Button>
-        </CardFooter>
       </Card>
     </div>
   );

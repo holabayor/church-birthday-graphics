@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarDays, Loader2, Phone, UserPlus } from "lucide-react";
@@ -12,7 +12,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-export default function RegisterPage() {
+function RegisterLoading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
+      <Card className="w-full max-w-xl shadow-lg border-muted/60">
+        <CardHeader className="space-y-3 text-center pb-4 pt-8">
+          <div className="w-14 h-14 bg-primary/10 rounded-2xl mx-auto mb-2" />
+          <CardTitle className="text-2xl font-bold tracking-tight">Create Your Profile</CardTitle>
+          <CardDescription className="text-base">Loading your profile form...</CardDescription>
+        </CardHeader>
+      </Card>
+    </div>
+  );
+}
+
+function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [saving, setSaving] = useState(false);
@@ -186,5 +200,13 @@ export default function RegisterPage() {
         </CardFooter>
       </Card>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<RegisterLoading />}>
+      <RegisterForm />
+    </Suspense>
   );
 }

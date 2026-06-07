@@ -22,10 +22,12 @@ const pagePermissions = [
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Always allow: static assets, login page, public API endpoints
-  const publicPaths = ["/login", "/register", "/admin/login", "/api/auth", "/api/birthdays/send", "/api/generate"];
+  // Always allow: static assets, auth entry pages, public API endpoints
+  const publicPages = ["/login", "/register", "/admin", "/admin/login"];
+  const publicApiPaths = ["/api/auth", "/api/birthdays/send", "/api/generate"];
   if (
-    publicPaths.some(p => pathname.startsWith(p)) ||
+    publicPages.includes(pathname) ||
+    publicApiPaths.some(p => pathname.startsWith(p)) ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon")
   ) {
