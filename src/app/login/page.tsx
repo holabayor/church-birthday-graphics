@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { KeyRound, Loader2, Phone, ShieldCheck } from "lucide-react";
+import { KeyRound, Loader2, Phone, ShieldCheck, UserPlus } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,12 +13,14 @@ import { Label } from "@/components/ui/label";
 export default function LoginPage() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [error, setError] = useState("");
+  const [profileMissing, setProfileMissing] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleMemberSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setProfileMissing(false);
     setLoading(true);
 
     try {
@@ -33,7 +35,12 @@ export default function LoginPage() {
         router.refresh();
       } else {
         const data = await res.json();
-        setError(data.error || "Invalid phone number");
+        if (res.status === 404 || data.code === "member_not_found") {
+          setProfileMissing(true);
+          setError("");
+        } else {
+          setError(data.error || "Invalid phone number");
+        }
       }
     } catch {
       setError("Something went wrong. Please try again.");
@@ -56,7 +63,7 @@ export default function LoginPage() {
           </div>
           <div className="space-y-1">
             <CardTitle className="text-2xl font-bold tracking-tight">Member Sign In</CardTitle>
-            <CardDescription className="text-base">Access your church birthday profile</CardDescription>
+            <CardDescription className="text-base">Access your church profile</CardDescription>
           </div>
         </CardHeader>
 
@@ -81,6 +88,22 @@ export default function LoginPage() {
                 Enter the phone number registered with the church.
               </p>
             </div>
+
+            {profileMissing && (
+              <Alert className="py-3">
+                <UserPlus className="h-4 w-4" />
+                <AlertDescription className="space-y-3 text-sm">
+                  <p>
+                    We could not find a profile for this phone number. Would you like to create your member profile now?
+                  </p>
+                  <Button asChild size="sm" className="w-full">
+                    <Link href={`/register?phone=${encodeURIComponent(phoneNumber.trim())}`}>
+                      Create My Profile
+                    </Link>
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
 
             {error && (
               <Alert variant="destructive" className="py-3">

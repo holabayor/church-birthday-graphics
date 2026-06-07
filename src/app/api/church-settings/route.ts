@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/server";
 import { cookies } from "next/headers";
+import { requirePermission } from "@/lib/adminPermissions";
 
 export async function GET() {
   const cookieStore = await cookies();
@@ -17,6 +18,9 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
+  const { allowed } = await requirePermission("settings.manage");
+  if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   const body = await req.json();
   const { church_name, church_address, logo_url } = body;
 

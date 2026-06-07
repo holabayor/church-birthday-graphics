@@ -7,10 +7,39 @@ export interface Member {
   email?: string | null;
   date_of_birth: string;
   position: string | null;
+  member_type?: string | null;
+  institution?: string | null;
+  department?: string | null;
+  academic_level?: string | null;
+  student_status?: string | null;
+  residence?: string | null;
+  cell_group?: string | null;
+  nysc_state?: string | null;
+  nysc_ppa?: string | null;
+  employer?: string | null;
+  job_title?: string | null;
+  work_location?: string | null;
+  graduation_year?: string | null;
+  guardian_name?: string | null;
+  guardian_phone?: string | null;
+  skills_interests?: string | null;
+  units?: MemberUnitAssignment[];
   photo_url: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface ChurchUnit {
+  id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MemberUnitAssignment extends ChurchUnit {
+  role: "member" | "assistant" | "head";
 }
 
 export interface ChurchSettings {
@@ -28,4 +57,42 @@ export interface BirthdayLog {
   image_url: string | null;
   sent_at: string;
   status: string;
+}
+
+export interface AttendanceSession {
+  id: string;
+  title: string;
+  service_type: string;
+  session_date: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AttendanceRecord {
+  id: string;
+  session_id: string;
+  member_id: string;
+  status: "present" | "absent" | "excused";
+  marked_at: string;
+}
+
+export interface AbsenteeFollowUp {
+  id: string;
+  session_id: string;
+  member_id: string;
+  status: "pending" | "contacted" | "visited" | "resolved" | "no_response";
+  notes: string | null;
+  assigned_to: string | null;
+  updated_at: string;
+}
+
+export interface AdminProfile {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }

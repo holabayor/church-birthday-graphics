@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { Member } from "@/lib/types";
+import { ChurchUnit, Member } from "@/lib/types";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, X, ChevronLeft, ChevronRight, Upload, User, Users, Phone, Mail, CalendarDays } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, X, ChevronLeft, ChevronRight, Upload, User, Users, Phone, Mail, CalendarDays, GraduationCap, MapPin, BookOpen, Download, FileUp, Loader2 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,8 +15,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 
+type UnitAssignmentChoice = "none" | "member" | "assistant" | "head";
+
 export default function MembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
+  const [units, setUnits] = useState<ChurchUnit[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -35,11 +38,31 @@ export default function MembersPage() {
     email: "",
     date_of_birth: "",
     position: "",
+    member_type: "member",
+    institution: "",
+    department: "",
+    academic_level: "",
+    student_status: "active_student",
+    residence: "",
+    cell_group: "",
+    nysc_state: "",
+    nysc_ppa: "",
+    employer: "",
+    job_title: "",
+    work_location: "",
+    graduation_year: "",
+    guardian_name: "",
+    guardian_phone: "",
+    skills_interests: "",
   });
+  const [unitAssignments, setUnitAssignments] = useState<Record<string, UnitAssignmentChoice>>({});
+  const [selectedUnitId, setSelectedUnitId] = useState("");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
   const limit = 20;
 
   const fetchMembers = useCallback(async () => {
@@ -58,6 +81,13 @@ export default function MembersPage() {
     fetchMembers();
   }, [fetchMembers]);
 
+  useEffect(() => {
+    fetch("/api/units")
+      .then(res => res.json())
+      .then(data => setUnits(Array.isArray(data.data) ? data.data : []))
+      .catch(() => setUnits([]));
+  }, []);
+
   // Debounce search
   useEffect(() => {
     const timeout = setTimeout(() => setPage(1), 300);
@@ -65,6 +95,24 @@ export default function MembersPage() {
   }, [search]);
 
   const totalPages = Math.max(1, Math.ceil(total / limit));
+  const showStudentFields = form.member_type === "student" || form.member_type === "alumnus";
+  const showNyscFields = form.member_type === "nysc";
+  const showWorkFields = form.member_type === "worker" || form.member_type === "alumnus";
+  const showGuardianFields = form.member_type === "student" || form.member_type === "visitor";
+  const assignedUnits = units.filter(unit => {
+    const role = unitAssignments[unit.id];
+    return role && role !== "none";
+  });
+  const availableUnits = units.filter(unit => !unitAssignments[unit.id] || unitAssignments[unit.id] === "none");
+
+  const handleAddUnit = () => {
+    if (!selectedUnitId) return;
+    setUnitAssignments(assignments => ({
+      ...assignments,
+      [selectedUnitId]: "member",
+    }));
+    setSelectedUnitId("");
+  };
 
   const openAdd = () => {
     setEditing(null);
@@ -76,9 +124,27 @@ export default function MembersPage() {
       email: "",
       date_of_birth: "",
       position: "",
+      member_type: "member",
+      institution: "",
+      department: "",
+      academic_level: "",
+      student_status: "active_student",
+      residence: "",
+      cell_group: "",
+      nysc_state: "",
+      nysc_ppa: "",
+      employer: "",
+      job_title: "",
+      work_location: "",
+      graduation_year: "",
+      guardian_name: "",
+      guardian_phone: "",
+      skills_interests: "",
     });
     setPhotoFile(null);
     setPhotoPreview(null);
+    setUnitAssignments({});
+    setSelectedUnitId("");
     setShowForm(true);
   };
 
@@ -92,9 +158,29 @@ export default function MembersPage() {
       email: m.email || "",
       date_of_birth: m.date_of_birth,
       position: m.position || "",
+      member_type: m.member_type || "member",
+      institution: m.institution || "",
+      department: m.department || "",
+      academic_level: m.academic_level || "",
+      student_status: m.student_status || "active_student",
+      residence: m.residence || "",
+      cell_group: m.cell_group || "",
+      nysc_state: m.nysc_state || "",
+      nysc_ppa: m.nysc_ppa || "",
+      employer: m.employer || "",
+      job_title: m.job_title || "",
+      work_location: m.work_location || "",
+      graduation_year: m.graduation_year || "",
+      guardian_name: m.guardian_name || "",
+      guardian_phone: m.guardian_phone || "",
+      skills_interests: m.skills_interests || "",
     });
     setPhotoFile(null);
     setPhotoPreview(m.photo_url || null);
+    setUnitAssignments(
+      Object.fromEntries((m.units || []).map(unit => [unit.id, unit.role || "member"]))
+    );
+    setSelectedUnitId("");
     setShowForm(true);
   };
 
@@ -126,6 +212,9 @@ export default function MembersPage() {
 
       const payload = {
         ...form,
+        units: Object.entries(unitAssignments)
+          .filter(([, role]) => role !== "none")
+          .map(([unit_id, role]) => ({ unit_id, role })),
         ...(photoUrl !== undefined ? { photo_url: photoUrl } : {}),
       };
 
@@ -135,7 +224,10 @@ export default function MembersPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-        if (!res.ok) throw new Error();
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || "Failed to update member");
+        }
         toast.success("Member updated");
       } else {
         const res = await fetch("/api/members", {
@@ -143,13 +235,16 @@ export default function MembersPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-        if (!res.ok) throw new Error();
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || "Failed to add member");
+        }
         toast.success("Member added");
       }
       setShowForm(false);
       fetchMembers();
-    } catch {
-      toast.error("Failed to save member");
+    } catch(error: any) {
+      toast.error(error.message || "Failed to save member");
     }
     setSaving(false);
   };
@@ -165,6 +260,40 @@ export default function MembersPage() {
     }
   };
 
+  const handleExport = () => {
+    window.location.href = "/api/members/export";
+  };
+
+  const handleImportSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/members/import", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || "Import failed");
+
+      toast.success(`Import complete: ${data.created} created, ${data.skipped} skipped, ${data.failed} failed`);
+      if (Array.isArray(data.errors) && data.errors.length > 0) {
+        toast.info(data.errors.slice(0, 3).join(" "));
+      }
+      fetchMembers();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to import members");
+    } finally {
+      setImporting(false);
+      if (importInputRef.current) importInputRef.current.value = "";
+    }
+  };
+
   return (
     <div className="flex-1 space-y-8 p-4 md:p-8 pt-6 w-full">
       {/* Header Section */}
@@ -175,10 +304,34 @@ export default function MembersPage() {
             Manage your congregation and view member details.
           </p>
         </div>
-        <Button onClick={openAdd} className="shadow-sm w-full sm:w-auto" size="lg">
-          <Plus className="mr-2 h-4 w-4" />
-          Add Member
-        </Button>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            onChange={handleImportSelect}
+            className="hidden"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => importInputRef.current?.click()}
+            disabled={importing}
+            className="shadow-sm"
+            size="lg"
+          >
+            {importing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileUp className="mr-2 h-4 w-4" />}
+            Import CSV
+          </Button>
+          <Button type="button" variant="outline" onClick={handleExport} className="shadow-sm" size="lg">
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+          <Button onClick={openAdd} className="shadow-sm" size="lg">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Member
+          </Button>
+        </div>
       </div>
 
       <Card className="shadow-sm">
@@ -273,11 +426,12 @@ export default function MembersPage() {
             </div>
           ) : (
             <div className="w-full overflow-x-auto">
-            <Table className="min-w-[820px]">
+            <Table className="min-w-[980px]">
               <TableHeader className="bg-muted/50">
                 <TableRow>
                   <TableHead className="w-[300px]">Member</TableHead>
                   <TableHead>Contact</TableHead>
+                  <TableHead>Lifecycle Info</TableHead>
                   <TableHead>Date of Birth</TableHead>
                   <TableHead>Position</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -308,6 +462,32 @@ export default function MembersPage() {
                       <div className="flex flex-col space-y-1 text-sm text-muted-foreground">
                         <span className="text-foreground">{m.phone_number || "-"}</span>
                         <span className="text-xs">{m.email || ""}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col space-y-1 text-sm">
+                        <span className="font-medium text-foreground capitalize">
+                          {(m.member_type || "member").replace(/_/g, " ")}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {m.member_type === "nysc"
+                            ? [m.nysc_state, m.nysc_ppa].filter(Boolean).join(" - ") || "No NYSC details"
+                            : m.member_type === "worker"
+                              ? [m.job_title, m.employer].filter(Boolean).join(" - ") || "No work details"
+                              : m.member_type === "student" || m.member_type === "alumnus"
+                                ? [m.institution, m.department, m.academic_level || m.graduation_year].filter(Boolean).join(" - ") || "No academic details"
+                                : m.member_type === "visitor"
+                                  ? "Visitor profile"
+                                  : "General member"}
+                        </span>
+                        {m.cell_group && (
+                          <span className="text-xs text-muted-foreground">{m.cell_group}</span>
+                        )}
+                        {(m.units || []).length > 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            {(m.units || []).map(unit => unit.name).join(", ")}
+                          </span>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell className="text-sm">
@@ -518,6 +698,27 @@ export default function MembersPage() {
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      Member Type
+                    </label>
+                    <Select
+                      value={form.member_type}
+                      onValueChange={value => setForm({ ...form, member_type: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select member type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="member">Member</SelectItem>
+                        <SelectItem value="student">Student</SelectItem>
+                        <SelectItem value="nysc">NYSC / Service</SelectItem>
+                        <SelectItem value="worker">Worker</SelectItem>
+                        <SelectItem value="alumnus">Alumnus</SelectItem>
+                        <SelectItem value="visitor">Visitor</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                       Position/Role
                     </label>
                     <Input
@@ -525,6 +726,292 @@ export default function MembersPage() {
                       value={form.position}
                       onChange={e => setForm({ ...form, position: e.target.value })}
                     />
+                  </div>
+                  {showStudentFields && (
+                    <>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          Institution
+                        </label>
+                        <Input
+                          placeholder="e.g. University of Lagos"
+                          value={form.institution}
+                          onChange={e => setForm({ ...form, institution: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          Department / Course
+                        </label>
+                        <Input
+                          placeholder="e.g. Computer Science"
+                          value={form.department}
+                          onChange={e => setForm({ ...form, department: e.target.value })}
+                        />
+                      </div>
+                      {form.member_type === "student" && (
+                        <>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                              Academic Level
+                            </label>
+                            <Input
+                              placeholder="e.g. 200L, Final Year"
+                              value={form.academic_level}
+                              onChange={e => setForm({ ...form, academic_level: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                              Student Status
+                            </label>
+                            <Select
+                              value={form.student_status}
+                              onValueChange={value => setForm({ ...form, student_status: value })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="active_student">Active Student</SelectItem>
+                                <SelectItem value="fresher">Fresher</SelectItem>
+                                <SelectItem value="final_year">Final Year</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </>
+                      )}
+                      {form.member_type === "alumnus" && (
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                            Graduation Year
+                          </label>
+                          <Input
+                            placeholder="e.g. 2026"
+                            value={form.graduation_year}
+                            onChange={e => setForm({ ...form, graduation_year: e.target.value })}
+                          />
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {(form.member_type === "student" || form.member_type === "nysc" || form.member_type === "visitor") && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        Residence / Hostel
+                      </label>
+                      <Input
+                        placeholder="e.g. Moremi Hall, off-campus lodge"
+                        value={form.residence}
+                        onChange={e => setForm({ ...form, residence: e.target.value })}
+                      />
+                    </div>
+                  )}
+                  {showNyscFields && (
+                    <>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          NYSC State
+                        </label>
+                        <Input
+                          placeholder="e.g. Lagos"
+                          value={form.nysc_state}
+                          onChange={e => setForm({ ...form, nysc_state: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          Place of Primary Assignment
+                        </label>
+                        <Input
+                          placeholder="e.g. Government College"
+                          value={form.nysc_ppa}
+                          onChange={e => setForm({ ...form, nysc_ppa: e.target.value })}
+                        />
+                      </div>
+                    </>
+                  )}
+                  {showWorkFields && (
+                    <>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          Employer
+                        </label>
+                        <Input
+                          placeholder="e.g. Acme Ltd"
+                          value={form.employer}
+                          onChange={e => setForm({ ...form, employer: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          Job Title
+                        </label>
+                        <Input
+                          placeholder="e.g. Product Designer"
+                          value={form.job_title}
+                          onChange={e => setForm({ ...form, job_title: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          Work Location
+                        </label>
+                        <Input
+                          placeholder="e.g. Yaba, Lagos"
+                          value={form.work_location}
+                          onChange={e => setForm({ ...form, work_location: e.target.value })}
+                        />
+                      </div>
+                    </>
+                  )}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      Cell / Small Group
+                    </label>
+                    <Input
+                      placeholder="e.g. Akoka Cell"
+                      value={form.cell_group}
+                      onChange={e => setForm({ ...form, cell_group: e.target.value })}
+                    />
+                  </div>
+                  {showGuardianFields && (
+                    <>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          Guardian Name
+                        </label>
+                        <Input
+                          placeholder="Optional"
+                          value={form.guardian_name}
+                          onChange={e => setForm({ ...form, guardian_name: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          Guardian Phone
+                        </label>
+                        <Input
+                          type="tel"
+                          placeholder="Optional"
+                          value={form.guardian_phone}
+                          onChange={e => setForm({ ...form, guardian_phone: e.target.value })}
+                        />
+                      </div>
+                    </>
+                  )}
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      Skills / Interests
+                    </label>
+                    <Input
+                      placeholder="e.g. media, music, ushering, teaching"
+                      value={form.skills_interests}
+                      onChange={e => setForm({ ...form, skills_interests: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-3 md:col-span-2 rounded-lg border border-zinc-200 bg-zinc-50/50 p-4">
+                    <div>
+                      <h4 className="text-sm font-semibold text-zinc-900">Church Units</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Assign this member to ministry/service units and set their responsibility.
+                      </p>
+                    </div>
+                    {units.length > 0 ? (
+                      <div className="space-y-4">
+                        {availableUnits.length > 0 ? (
+                          <div className="flex flex-col gap-2 sm:flex-row">
+                            <Select value={selectedUnitId || undefined} onValueChange={setSelectedUnitId}>
+                              <SelectTrigger className="bg-white sm:flex-1">
+                                <SelectValue placeholder="Choose a unit to add" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {availableUnits.map(unit => (
+                                  <SelectItem key={unit.id} value={unit.id}>
+                                    {unit.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={handleAddUnit}
+                              disabled={!selectedUnitId}
+                              className="sm:w-auto"
+                            >
+                              <Plus className="mr-2 h-4 w-4" />
+                              Add Unit
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="rounded-md border border-dashed border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700">
+                            All available units have been selected.
+                          </div>
+                        )}
+
+                        {assignedUnits.length > 0 ? (
+                          <div className="space-y-2">
+                            {assignedUnits.map(unit => (
+                              <div
+                                key={unit.id}
+                                className="flex flex-col gap-2 rounded-md border border-zinc-200 bg-white p-3 sm:flex-row sm:items-center"
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-medium text-zinc-900">{unit.name}</p>
+                                  {unit.description && (
+                                    <p className="truncate text-xs text-muted-foreground">{unit.description}</p>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Select
+                                    value={unitAssignments[unit.id] || "member"}
+                                    onValueChange={value =>
+                                      setUnitAssignments(assignments => ({
+                                        ...assignments,
+                                        [unit.id]: value as UnitAssignmentChoice,
+                                      }))
+                                    }
+                                  >
+                                    <SelectTrigger className="w-[150px] bg-white">
+                                      <SelectValue placeholder="Role" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="member">Member</SelectItem>
+                                      <SelectItem value="assistant">Assistant</SelectItem>
+                                      <SelectItem value="head">Head</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="shrink-0 text-muted-foreground hover:text-destructive"
+                                    onClick={() =>
+                                      setUnitAssignments(assignments => ({
+                                        ...assignments,
+                                        [unit.id]: "none",
+                                      }))
+                                    }
+                                  >
+                                    <X className="h-4 w-4" />
+                                    <span className="sr-only">Remove {unit.name}</span>
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="rounded-md border border-dashed border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700">
+                            No units selected yet.
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="rounded-md border border-dashed border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700">
+                        No church units have been created yet.
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -571,6 +1058,14 @@ export default function MembersPage() {
                       {viewing.position}
                     </Badge>
                   )}
+                  <Badge variant="outline" className="px-3 py-1 font-medium mt-1 capitalize">
+                    {(viewing.member_type || "member").replace(/_/g, " ")}
+                  </Badge>
+                  {(viewing.member_type || "member") === "student" && viewing.student_status && (
+                    <Badge variant="outline" className="px-3 py-1 font-medium mt-1 capitalize">
+                      {viewing.student_status.replace(/_/g, " ")}
+                    </Badge>
+                  )}
                 </div>
               </div>
 
@@ -608,6 +1103,110 @@ export default function MembersPage() {
                           day: "numeric",
                         })}
                       </span>
+                    </div>
+                  </div>
+                  {(["student", "alumnus"].includes(viewing.member_type || "member")) && (
+                    <>
+                      <div className="flex items-center gap-3 text-sm">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                          <GraduationCap className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-muted-foreground text-xs font-medium">Institution</span>
+                          <span className="font-medium text-foreground">{viewing.institution || "Not provided"}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                          <BookOpen className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-muted-foreground text-xs font-medium">Department / Level</span>
+                          <span className="font-medium text-foreground">
+                            {[viewing.department, viewing.academic_level || viewing.graduation_year].filter(Boolean).join(" - ") || "Not provided"}
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  {viewing.member_type === "nysc" && (
+                    <div className="flex items-center gap-3 text-sm">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <MapPin className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground text-xs font-medium">NYSC Details</span>
+                        <span className="font-medium text-foreground">
+                          {[viewing.nysc_state, viewing.nysc_ppa].filter(Boolean).join(" - ") || "Not provided"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {(["worker", "alumnus"].includes(viewing.member_type || "")) && (
+                    <div className="flex items-center gap-3 text-sm">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <BookOpen className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground text-xs font-medium">Work Details</span>
+                        <span className="font-medium text-foreground">
+                          {[viewing.job_title, viewing.employer, viewing.work_location].filter(Boolean).join(" - ") || "Not provided"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {(["student", "nysc", "visitor"].includes(viewing.member_type || "member") || viewing.cell_group) && (
+                    <div className="flex items-center gap-3 text-sm">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <MapPin className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground text-xs font-medium">Residence / Cell</span>
+                        <span className="font-medium text-foreground">
+                          {[viewing.residence, viewing.cell_group].filter(Boolean).join(" - ") || "Not provided"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {(["student", "visitor"].includes(viewing.member_type || "member")) && (
+                    <div className="flex items-center gap-3 text-sm">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <User className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground text-xs font-medium">Guardian Contact</span>
+                        <span className="font-medium text-foreground">
+                          {[viewing.guardian_name, viewing.guardian_phone].filter(Boolean).join(" - ") || "Not provided"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-3 text-sm">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Users className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-muted-foreground text-xs font-medium">Skills / Interests</span>
+                      <span className="font-medium text-foreground">{viewing.skills_interests || "Not provided"}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 text-sm">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Users className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <span className="text-muted-foreground text-xs font-medium">Church Units</span>
+                      {(viewing.units || []).length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {(viewing.units || []).map(unit => (
+                            <Badge key={unit.id} variant="secondary" className="capitalize">
+                              {unit.name} - {unit.role}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="font-medium text-foreground">Not assigned</span>
+                      )}
                     </div>
                   </div>
                 </div>

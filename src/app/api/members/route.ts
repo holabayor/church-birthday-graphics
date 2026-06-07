@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/server";
 import { cookies } from "next/headers";
+import { attachMemberProfiles, saveMemberProfiles } from "@/lib/memberProfiles";
+import { attachMemberUnits, saveMemberUnits } from "@/lib/memberUnits";
+import { requirePermission } from "@/lib/adminPermissions";
 
 export async function GET(req: NextRequest) {
+  const { allowed } = await requirePermission("members.view");
+  if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   const searchParams = req.nextUrl.searchParams;
   const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20")));
@@ -22,7 +28,7 @@ export async function GET(req: NextRequest) {
   let query = supabase.from("members").select("*", { count: "exact" }).order(sort, { ascending: order === "asc" });
 
   if (search) {
-    query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,position.ilike.%${search}%`);
+    query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,phone_number.ilike.%${search}%,position.ilike.%${search}%,member_type.ilike.%${search}%`);
   }
 
   if (hasMonthFilter) {
@@ -38,8 +44,12 @@ export async function GET(req: NextRequest) {
       return birthMonth === monthNumber;
     });
 
+    const pageData = filtered.slice(from, to + 1);
+    const dataWithProfiles = await attachMemberProfiles(supabase, pageData);
+    const dataWithUnits = await attachMemberUnits(supabase, dataWithProfiles);
+
     return NextResponse.json({
-      data: filtered.slice(from, to + 1),
+      data: dataWithUnits,
       total: filtered.length,
       page,
       limit,
@@ -52,12 +62,43 @@ export async function GET(req: NextRequest) {
     console.error("Supabase query error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  return NextResponse.json({ data, total: count || 0, page, limit });
+  const dataWithProfiles = await attachMemberProfiles(supabase, data || []);
+  const dataWithUnits = await attachMemberUnits(supabase, dataWithProfiles);
+  return NextResponse.json({ data: dataWithUnits, total: count || 0, page, limit });
 }
 
 export async function POST(req: NextRequest) {
+  const { allowed } = await requirePermission("members.manage");
+  if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   const body = await req.json();
-  const { first_name, middle_name, last_name, phone_number, email, date_of_birth, position, photo_url } = body;
+  const {
+    first_name,
+    middle_name,
+    last_name,
+    phone_number,
+    email,
+    date_of_birth,
+    position,
+    member_type,
+    institution,
+    department,
+    academic_level,
+    student_status,
+    residence,
+    cell_group,
+    nysc_state,
+    nysc_ppa,
+    employer,
+    job_title,
+    work_location,
+    graduation_year,
+    guardian_name,
+    guardian_phone,
+    skills_interests,
+    units,
+    photo_url,
+  } = body;
 
   if (!first_name || !last_name || !date_of_birth) {
     return NextResponse.json({ error: "First name, last name, and date of birth are required" }, { status: 400 });
@@ -76,11 +117,49 @@ export async function POST(req: NextRequest) {
       email: email || null,
       date_of_birth,
       position: position || null,
+      member_type: member_type || "member",
       photo_url: photo_url || null,
     })
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data, { status: 201 });
+    console.log("Error creating member profile", error)
+  if (error) {
+    if (error.code === "PGRST204" || error.code === "PGRST205" || error.code === "42P01") {
+      return NextResponse.json({
+        error: "Database migration required. Run the latest SUPABASE_SETUP.md migration so members.member_type and profile/unit tables exist.",
+      }, { status: 400 });
+    }
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  const profileError = await saveMemberProfiles(supabase, data.id, {
+    member_type,
+    institution,
+    department,
+    academic_level,
+    student_status,
+    residence,
+    cell_group,
+    nysc_state,
+    nysc_ppa,
+    employer,
+    job_title,
+    work_location,
+    graduation_year,
+    guardian_name,
+    guardian_phone,
+    skills_interests,
+  });
+
+  if (profileError) return NextResponse.json({ error: profileError.message }, { status: 500 });
+
+  if (Array.isArray(units)) {
+    const unitsError = await saveMemberUnits(supabase, data.id, units);
+    if (unitsError) return NextResponse.json({ error: unitsError.message }, { status: 500 });
+  }
+
+  const [memberWithProfiles] = await attachMemberProfiles(supabase, [data]);
+  const [memberWithUnits] = await attachMemberUnits(supabase, [memberWithProfiles]);
+  return NextResponse.json(memberWithUnits, { status: 201 });
 }

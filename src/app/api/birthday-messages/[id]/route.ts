@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/server";
 import { cookies } from "next/headers";
+import { requirePermission } from "@/lib/adminPermissions";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { allowed } = await requirePermission("birthdays.manage");
+    if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
     const { id } = await params;
     const body = await req.json();
     const { message } = body;
@@ -31,6 +35,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { allowed } = await requirePermission("birthdays.manage");
+    if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
     const { id } = await params;
     const cookieStore = await cookies();
     const supabase = createClient(cookieStore);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/server";
 import { cookies } from "next/headers";
+import { requirePermission } from "@/lib/adminPermissions";
 
 const FALLBACK_MESSAGES = [
   { id: "fallback-1", message: "May the Lord continue to bless you and keep you. May His face shine upon you and give you peace throughout this new year." },
@@ -35,6 +36,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const { allowed } = await requirePermission("birthdays.manage");
+    if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
     const body = await req.json();
     const { message } = body;
 

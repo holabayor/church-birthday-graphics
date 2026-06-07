@@ -2,13 +2,24 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Users, Home, Palette, Settings, LogOut, User } from "lucide-react";
+import { Users, Home, Palette, Settings, LogOut, User, CalendarCheck, MessageCircle } from "lucide-react";
 import { useEffect, useState } from "react";
+
+type Permission =
+  | "dashboard.view"
+  | "members.view"
+  | "attendance.view"
+  | "birthdays.manage"
+  | "outreach.view"
+  | "settings.manage"
+  | "admins.manage"
+  | "units.manage";
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [role, setRole] = useState<"admin" | "member" | null>(null);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,6 +30,7 @@ export function Sidebar() {
           const data = await res.json();
           if (data.user) {
             setRole("admin");
+            setPermissions(data.user.permissions || []);
           } else if (data.memberId) {
             setRole("member");
           }
@@ -58,13 +70,17 @@ export function Sidebar() {
     );
   }
 
+  const can = (permission: Permission) => permissions.includes(permission);
+
   const activeLinks = role === "member"
     ? [{ href: "/profile", label: "My Profile", icon: User }]
     : [
-        { href: "/", label: "Dashboard", icon: Home },
-        { href: "/members", label: "Members", icon: Users },
-        { href: "/designs", label: "Designs", icon: Palette },
-        { href: "/settings", label: "Settings", icon: Settings },
+        ...(can("dashboard.view") ? [{ href: "/", label: "Dashboard", icon: Home }] : []),
+        ...(can("members.view") ? [{ href: "/members", label: "Members", icon: Users }] : []),
+        ...(can("attendance.view") ? [{ href: "/attendance", label: "Attendance", icon: CalendarCheck }] : []),
+        ...(can("outreach.view") ? [{ href: "/outreach", label: "Outreach", icon: MessageCircle }] : []),
+        ...(can("birthdays.manage") ? [{ href: "/designs", label: "Designs", icon: Palette }] : []),
+        ...(can("settings.manage") || can("admins.manage") || can("units.manage") ? [{ href: "/settings", label: "Settings", icon: Settings }] : []),
       ];
 
   return (

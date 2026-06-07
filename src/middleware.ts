@@ -1,11 +1,29 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
+const rolePermissions: Record<string, string[]> = {
+  super_admin: ["dashboard.view", "members.view", "attendance.view", "birthdays.manage", "outreach.view", "settings.manage", "admins.manage", "units.manage"],
+  pastor: ["dashboard.view", "members.view", "attendance.view", "birthdays.manage", "outreach.view", "units.manage"],
+  assistant_pastor: ["dashboard.view", "members.view", "attendance.view", "outreach.view", "units.manage"],
+  secretary: ["dashboard.view", "members.view", "attendance.view", "units.manage"],
+  media: ["dashboard.view", "members.view", "birthdays.manage", "outreach.view"],
+  follow_up: ["dashboard.view", "members.view", "attendance.view", "outreach.view"],
+  unit_leader: ["dashboard.view", "members.view", "attendance.view", "outreach.view"],
+};
+
+const pagePermissions = [
+  { path: "/members", permission: "members.view" },
+  { path: "/attendance", permission: "attendance.view" },
+  { path: "/outreach", permission: "outreach.view" },
+  { path: "/designs", permission: "birthdays.manage" },
+  { path: "/settings", permission: "settings.manage", any: ["settings.manage", "admins.manage", "units.manage"] },
+];
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Always allow: static assets, login page, public API endpoints
-  const publicPaths = ["/login", "/admin/login", "/api/auth", "/api/birthdays/send", "/api/generate"];
+  const publicPaths = ["/login", "/register", "/admin/login", "/api/auth", "/api/birthdays/send", "/api/generate"];
   if (
     publicPaths.some(p => pathname.startsWith(p)) ||
     pathname.startsWith("/_next") ||
@@ -45,13 +63,49 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  if (user) {
+    const pageRule = pathname === "/"
+      ? { path: "/", permission: "dashboard.view" }
+      : pagePermissions.find(rule => pathname === rule.path || pathname.startsWith(`${rule.path}/`));
+
+    if (pageRule) {
+      const { data: profile, error } = await supabase
+        .from("admin_profiles")
+        .select("role, is_active")
+        .eq("email", user.email)
+        .maybeSingle();
+
+      let permissions = rolePermissions.super_admin;
+
+      if (!error && profile) {
+        if (profile.is_active === false) {
+          const loginUrl = new URL("/login", request.url);
+          return NextResponse.redirect(loginUrl);
+        }
+        permissions = rolePermissions[profile.role] || rolePermissions.secretary;
+      }
+
+      const anyPermissions = "any" in pageRule ? pageRule.any : undefined;
+      const allowed = anyPermissions
+        ? anyPermissions.some(permission => permissions.includes(permission))
+        : permissions.includes(pageRule.permission);
+
+      if (!allowed) {
+        const homeUrl = new URL("/", request.url);
+        return NextResponse.redirect(homeUrl);
+      }
+    }
+  }
+
   // Member user security constraints
   if (!user && memberId) {
     const allowedMemberPages = ["/profile"];
     const allowedMemberApis = [
       `/api/members/${memberId}`, 
       "/api/auth", 
-      "/api/upload"
+      "/api/upload",
+      "/api/units",
+      "/api/birthday-messages"
     ];
 
     const isAllowedPage = allowedMemberPages.some(p => pathname === p);
