@@ -57,7 +57,7 @@ export default function AdminLoginForm() {
           </div>
           <div className="space-y-1">
             <CardTitle className="text-2xl font-bold tracking-tight">Admin Sign In</CardTitle>
-            <CardDescription className="text-base">Manage members, attendance, outreach, and settings</CardDescription>
+            <CardDescription className="text-base">Super admin access only</CardDescription>
           </div>
         </CardHeader>
 
@@ -118,7 +118,7 @@ export default function AdminLoginForm() {
                   Authenticating...
                 </>
               ) : (
-                "Sign In"
+                "Sign In as Super Admin"
               )}
             </Button>
           </form>

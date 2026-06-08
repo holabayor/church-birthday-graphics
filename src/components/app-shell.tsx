@@ -1,20 +1,34 @@
 "use client";
 
 import { Sidebar } from "@/components/sidebar";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { usePathname } from "next/navigation";
+import type { CSSProperties, ReactNode } from "react";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const isLogin = pathname === "/login" || pathname === "/admin/login";
+  const isAuthPage = pathname === "/login" || pathname === "/register" || pathname === "/admin" || pathname === "/admin/login";
 
-  if (isLogin) {
+  if (isAuthPage) {
     return <>{children}</>;
   }
 
   return (
-    <div className="flex min-h-dvh flex-col overflow-hidden md:flex-row">
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "17.5rem",
+          "--sidebar-width-icon": "3.25rem",
+        } as CSSProperties
+      }
+    >
       <Sidebar />
-      <main className="min-w-0 flex-1 overflow-auto bg-zinc-50 pb-24 md:pb-0">{children}</main>
-    </div>
+      <SidebarInset className="min-w-0 bg-[var(--surface)]">
+        <header className="sticky top-0 z-30 flex h-14 items-center border-b border-[var(--outline-variant)] bg-white/90 px-4 backdrop-blur md:hidden">
+          <SidebarTrigger className="size-9 rounded-lg text-primary hover:bg-[var(--surface-container)]" />
+        </header>
+        <main className="min-w-0 flex-1 pb-8">{children}</main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

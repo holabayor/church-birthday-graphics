@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/server";
 import { cookies } from "next/headers";
-import { getAdminContext } from "@/lib/adminPermissions";
+import { getAdminContext, getPermissionsForRole, isMissingTableError } from "@/lib/adminPermissions";
+import { Permission } from "@/lib/adminRoles";
 
 export async function GET(req: NextRequest) {
   try {
@@ -10,8 +11,49 @@ export async function GET(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     const adminContext = user ? await getAdminContext(cookieStore) : null;
 
-    const memberId = cookieStore.get("member_id")?.value;
+    let memberId = cookieStore.get("member_id")?.value || null;
+    let memberEmail: string | null = null;
+    let memberName: string | null = null;
+
+    if (!memberId && user?.email) {
+      const { data: member } = await supabase
+        .from("members")
+        .select("id, email, first_name, last_name")
+        .eq("email", user.email)
+        .maybeSingle();
+
+      memberId = member?.id || null;
+      memberEmail = member?.email || null;
+      memberName = member ? `${member.first_name} ${member.last_name}` : null;
+    }
+
+    if (memberId && !memberEmail) {
+      const { data: member } = await supabase
+        .from("members")
+        .select("email, first_name, last_name")
+        .eq("id", memberId)
+        .maybeSingle();
+
+      memberEmail = member?.email || null;
+      memberName = member ? `${member.first_name} ${member.last_name}` : null;
+    }
+
     let memberUnitLeadership: Array<{ id: string; name: string; role: string }> = [];
+    let memberRole: string | null = null;
+    let memberPermissions: Permission[] = [];
+
+    if (memberEmail) {
+      const { data: memberAdminProfile, error: memberAdminProfileError } = await supabase
+        .from("admin_profiles")
+        .select("role, is_active")
+        .eq("email", memberEmail)
+        .maybeSingle();
+
+      if (!memberAdminProfileError && memberAdminProfile?.is_active !== false && memberAdminProfile?.role) {
+        memberRole = memberAdminProfile.role;
+        memberPermissions = await getPermissionsForRole(supabase, memberRole);
+      }
+    }
 
     if (memberId) {
       const { data: unitRows } = await supabase
@@ -27,7 +69,7 @@ export async function GET(req: NextRequest) {
         }, []);
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       user: user && adminContext ? {
         email: user.email,
         role: adminContext.role,
@@ -35,8 +77,28 @@ export async function GET(req: NextRequest) {
         permissions: adminContext.permissions,
       } : null,
       memberId: memberId || null,
+      member: memberId ? {
+        id: memberId,
+        email: memberEmail,
+        name: memberName,
+        role: memberRole,
+        permissions: memberPermissions,
+      } : null,
+      permissions: adminContext?.permissions || memberPermissions,
       memberUnitLeadership,
     });
+
+    if (memberId && !cookieStore.get("member_id")?.value) {
+      response.cookies.set("member_id", memberId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7,
+        path: "/",
+      });
+    }
+
+    return response;
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch session" }, { status: 500 });
   }
@@ -206,5 +268,55 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 401 });
   }
 
-  return NextResponse.json({ success: true, user: data.user?.email });
+  const signedInEmail = data.user?.email;
+  if (!signedInEmail) return NextResponse.json({ error: "Unable to resolve signed-in admin account" }, { status: 401 });
+
+  const adminSupabase = createAdminClient();
+  const { data: adminProfile, error: adminProfileError } = await adminSupabase
+    .from("admin_profiles")
+    .select("role, is_active")
+    .eq("email", signedInEmail)
+    .maybeSingle();
+
+  if (adminProfileError && !isMissingTableError(adminProfileError)) {
+    await supabase.auth.signOut();
+    return NextResponse.json({ error: adminProfileError.message }, { status: 500 });
+  }
+
+  if (adminProfile?.is_active === false) {
+    await supabase.auth.signOut();
+    return NextResponse.json({ error: "This admin account is inactive" }, { status: 403 });
+  }
+
+  const { data: memberProfile, error: memberProfileError } = await adminSupabase
+    .from("members")
+    .select("id")
+    .eq("email", signedInEmail)
+    .maybeSingle();
+
+  if (memberProfileError && !isMissingTableError(memberProfileError)) {
+    await supabase.auth.signOut();
+    return NextResponse.json({ error: memberProfileError.message }, { status: 500 });
+  }
+
+  const isLegacySuperAdmin = !adminProfile || adminProfile.role === "super_admin";
+  if (!isLegacySuperAdmin) {
+    await supabase.auth.signOut();
+    return NextResponse.json({
+      error: "Please sign in through the member login page. Only super admins use the admin sign-in route.",
+    }, { status: 403 });
+  }
+
+  const response = NextResponse.json({ success: true, user: signedInEmail, memberId: memberProfile?.id || null });
+  if (memberProfile?.id) {
+    response.cookies.set("member_id", memberProfile.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
+    });
+  }
+
+  return response;
 }

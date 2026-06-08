@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CalendarCheck, Check, Clock, Loader2, Phone, Search, UserCheck, UserX } from "lucide-react";
 import { AttendanceSession, Member } from "@/lib/types";
+import { PageHeader } from "@/components/page-header";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -224,20 +225,14 @@ export default function AttendancePage() {
   };
 
   return (
-    <div className="flex-1 space-y-8 p-4 md:p-8 pt-6 w-full">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="space-y-1.5">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <CalendarCheck className="h-8 w-8 text-primary" />
-            Attendance
-          </h1>
-          <p className="text-muted-foreground font-medium">
-            Track service attendance and manage absentee follow-up.
-          </p>
-        </div>
-      </div>
+    <div className="flex-1 w-full">
+      <PageHeader
+        eyebrow="Service operations"
+        title="Attendance"
+        description="Track service attendance and manage absentee follow-up."
+      />
 
-      <div className="grid gap-6 xl:grid-cols-[360px_1fr]">
+      <div className="grid gap-6 p-4 md:p-8 xl:grid-cols-[360px_1fr]">
         <div className="space-y-6">
           <Card className="shadow-sm">
             <CardHeader>

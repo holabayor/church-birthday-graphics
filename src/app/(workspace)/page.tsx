@@ -5,6 +5,7 @@ import { Member } from "@/lib/types";
 import { designs, defaultMessages } from "@/lib/designs";
 import { toast } from "sonner";
 import { Gift, Users, Send, Image as ImageIcon, Download, Sparkles, Loader2 } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -86,29 +87,25 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex-1 space-y-8 p-4 md:p-8 pt-6 w-full">
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="space-y-1.5">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground font-medium">
-            {new Date().toLocaleDateString("en-US", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </p>
-        </div>
-        <Button
-          onClick={triggerSend}
-          className="shadow-sm w-full sm:w-auto"
-          size="lg"
-        >
-          <Send className="mr-2 h-4 w-4" />
-          Send Today&apos;s Greetings
-        </Button>
-      </div>
+    <div className="flex-1 w-full">
+      <PageHeader
+        eyebrow="Workspace overview"
+        title="Dashboard"
+        description={new Date().toLocaleDateString("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })}
+        actions={
+          <Button onClick={triggerSend} variant="secondary" className="w-full sm:w-auto">
+            <Send className="mr-2 h-4 w-4" />
+            Send Today&apos;s Greetings
+          </Button>
+        }
+      />
+
+      <div className="space-y-8 p-4 md:p-8">
 
       {/* KPI Stats Section */}
       <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
@@ -117,8 +114,8 @@ export default function Dashboard() {
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Total Members
             </CardTitle>
-            <div className="h-9 w-9 bg-blue-500/10 rounded-full flex items-center justify-center">
-              <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <div className="h-9 w-9 bg-primary/10 rounded-full flex items-center justify-center">
+              <Users className="h-4 w-4 text-primary" />
             </div>
           </CardHeader>
           <CardContent>
@@ -136,8 +133,8 @@ export default function Dashboard() {
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Birthdays Today
             </CardTitle>
-            <div className="h-9 w-9 bg-amber-500/10 rounded-full flex items-center justify-center">
-              <Gift className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <div className="h-9 w-9 bg-secondary/15 rounded-full flex items-center justify-center">
+              <Gift className="h-4 w-4 text-secondary" />
             </div>
           </CardHeader>
           <CardContent>
@@ -155,8 +152,8 @@ export default function Dashboard() {
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Design Templates
             </CardTitle>
-            <div className="h-9 w-9 bg-purple-500/10 rounded-full flex items-center justify-center">
-              <ImageIcon className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+            <div className="h-9 w-9 bg-primary/10 rounded-full flex items-center justify-center">
+              <ImageIcon className="h-4 w-4 text-primary" />
             </div>
           </CardHeader>
           <CardContent>
@@ -361,6 +358,7 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      </div>
     </div>
   );
 }
@@ -394,7 +392,7 @@ function BirthdayCard({
                 {member.position}
               </Badge>
             ) : null}
-            <span className="text-xs text-muted-foreground font-medium text-amber-600 dark:text-amber-400">
+            <span className="text-xs font-semibold text-amber-600">
               {new Date(member.date_of_birth).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
             </span>
           </div>

@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { ChurchUnit, Member } from "@/lib/types";
 import { designs, defaultMessages } from "@/lib/designs";
 import { toast } from "sonner";
+import { PageHeader } from "@/components/page-header";
 import {
   User,
   CalendarDays,
@@ -303,16 +304,14 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="flex-1 space-y-8 p-4 md:p-8 pt-6 w-full max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">My Profile</h1>
-          <p className="text-muted-foreground font-medium">Manage your personal congregation record.</p>
-        </div>
-      </div>
+    <div className="flex-1 w-full">
+      <PageHeader
+        eyebrow="Personal record"
+        title="My Profile"
+        description="Manage your personal congregation record."
+      />
 
-      <div className="grid gap-6 lg:grid-cols-12 items-start">
+      <div className="mx-auto grid w-full max-w-6xl gap-6 p-4 md:p-8 lg:grid-cols-12 items-start">
         {/* Left Column: Member Card & Card Preview */}
         <div className="lg:col-span-5 space-y-6">
           {/* Visual Member Badge Card */}

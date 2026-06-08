@@ -1,24 +1,29 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Manrope } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { VisualEditsMessenger } from "orchids-visual-edits";
 import { Analytics } from "@vercel/analytics/next";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Church Birthday Graphics",
-  description: "Auto-generate and send birthday graphics for church members",
+  title: "Kinship Management System",
+  description: "Member, unit, attendance, outreach, and birthday management for a youth church",
 };
 
 export default function RootLayout({
@@ -28,7 +33,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${manrope.variable} ${inter.variable} ${jetBrainsMono.variable} antialiased`}>
         <AppShell>{children}</AppShell>
         <Toaster richColors position="top-right" />
         <VisualEditsMessenger />

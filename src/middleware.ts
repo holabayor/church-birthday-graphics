@@ -2,14 +2,36 @@ import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 const rolePermissions: Record<string, string[]> = {
-  super_admin: ["dashboard.view", "members.view", "attendance.view", "birthdays.manage", "outreach.view", "settings.manage", "admins.manage", "units.view", "units.manage"],
-  pastor: ["dashboard.view", "members.view", "attendance.view", "birthdays.manage", "outreach.view", "units.view", "units.manage"],
-  assistant_pastor: ["dashboard.view", "members.view", "attendance.view", "outreach.view", "units.view", "units.manage"],
-  secretary: ["dashboard.view", "members.view", "attendance.view", "units.view", "units.manage"],
+  super_admin: ["dashboard.view", "members.view", "members.manage", "attendance.view", "attendance.manage", "followups.manage", "birthdays.manage", "outreach.view", "settings.manage", "admins.manage", "units.view", "units.manage"],
+  pastor: ["dashboard.view", "members.view", "attendance.view", "attendance.manage", "followups.manage", "birthdays.manage", "outreach.view", "units.view", "units.manage"],
+  assistant_pastor: ["dashboard.view", "members.view", "attendance.view", "attendance.manage", "followups.manage", "outreach.view", "units.view", "units.manage"],
+  secretary: ["dashboard.view", "members.view", "members.manage", "attendance.view", "attendance.manage", "units.view", "units.manage"],
   media: ["dashboard.view", "members.view", "birthdays.manage", "outreach.view"],
-  follow_up: ["dashboard.view", "members.view", "attendance.view", "outreach.view"],
+  follow_up: ["dashboard.view", "members.view", "attendance.view", "followups.manage", "outreach.view"],
   unit_leader: ["dashboard.view", "members.view", "attendance.view", "outreach.view", "units.view"],
 };
+
+const isMissingPermissionTableError = (error: { code?: string; message?: string } | null | undefined) =>
+  error?.code === "PGRST205" ||
+  error?.code === "42P01" ||
+  Boolean(error?.message?.toLowerCase().includes("could not find the table"));
+
+async function resolveRolePermissions(supabase: any, role: string | null | undefined) {
+  if (!role) return [];
+  if (role === "super_admin") return rolePermissions.super_admin;
+
+  const fallback = rolePermissions[role] || [];
+  const { data, error } = await supabase
+    .from("app_role_permissions")
+    .select("permission")
+    .eq("role_key", role);
+
+  if (error) {
+    return isMissingPermissionTableError(error) ? fallback : fallback;
+  }
+
+  return data?.length ? data.map((row: any) => row.permission).filter(Boolean) : fallback;
+}
 
 const pagePermissions = [
   { path: "/members", permission: "members.view" },
@@ -17,7 +39,7 @@ const pagePermissions = [
   { path: "/units", permission: "units.view", any: ["units.view", "units.manage"] },
   { path: "/outreach", permission: "outreach.view" },
   { path: "/designs", permission: "birthdays.manage" },
-  { path: "/settings", permission: "settings.manage", any: ["settings.manage", "admins.manage", "units.manage"] },
+  { path: "/settings", permission: "settings.manage", any: ["settings.manage", "admins.manage"] },
 ];
 
 export async function middleware(request: NextRequest) {
@@ -85,7 +107,7 @@ export async function middleware(request: NextRequest) {
           const loginUrl = new URL("/login", request.url);
           return NextResponse.redirect(loginUrl);
         }
-        permissions = rolePermissions[profile.role] || rolePermissions.secretary;
+        permissions = await resolveRolePermissions(supabase, profile.role);
       }
 
       const anyPermissions = "any" in pageRule ? pageRule.any : undefined;
@@ -102,16 +124,61 @@ export async function middleware(request: NextRequest) {
 
   // Member user security constraints
   if (!user && memberId) {
-    const allowedMemberPages = ["/profile", "/units"];
+    const { data: memberProfile } = await supabase
+      .from("members")
+      .select("email")
+      .eq("id", memberId)
+      .maybeSingle();
+
+    let permissions: string[] = [];
+    if (memberProfile?.email) {
+      const { data: adminProfile } = await supabase
+        .from("admin_profiles")
+        .select("role, is_active")
+        .eq("email", memberProfile.email)
+        .maybeSingle();
+
+      if (adminProfile?.is_active !== false && adminProfile?.role) {
+        permissions = await resolveRolePermissions(supabase, adminProfile.role);
+      }
+    }
+
+    const { data: unitLeadership } = await supabase
+      .from("church_unit_members")
+      .select("unit_id")
+      .eq("member_id", memberId)
+      .in("role", ["head", "assistant"]);
+
+    const hasUnitLeadership = Boolean(unitLeadership && unitLeadership.length > 0);
+    const pageRule = pathname === "/"
+      ? { path: "/", permission: "dashboard.view" }
+      : pagePermissions.find(rule => pathname === rule.path || pathname.startsWith(`${rule.path}/`));
+
+    const anyPermissions = pageRule && "any" in pageRule ? pageRule.any : undefined;
+    const pageAllowedByPermission = pageRule
+      ? anyPermissions
+        ? anyPermissions.some(permission => permissions.includes(permission))
+        : permissions.includes(pageRule.permission)
+      : false;
+
+    const allowedMemberPages = [
+      "/profile",
+      ...(pageAllowedByPermission ? [pathname] : []),
+      ...(hasUnitLeadership ? ["/units"] : []),
+    ];
     const allowedMemberApis = [
       `/api/members/${memberId}`, 
       "/api/auth", 
       "/api/upload",
       "/api/units",
-      "/api/birthday-messages"
+      "/api/birthday-messages",
+      ...(permissions.includes("members.view") || permissions.includes("members.manage") ? ["/api/members"] : []),
+      ...(permissions.includes("attendance.view") || permissions.includes("attendance.manage") ? ["/api/attendance"] : []),
+      ...(permissions.includes("outreach.view") ? ["/api/outreach"] : []),
+      ...(permissions.includes("settings.manage") ? ["/api/church-settings"] : []),
     ];
 
-    const isAllowedPage = allowedMemberPages.some(p => pathname === p);
+    const isAllowedPage = allowedMemberPages.some(p => pathname === p || (p === "/units" && pathname.startsWith("/units/")));
     const isAllowedApi = allowedMemberApis.some(p => pathname === p || pathname.startsWith(p));
     const isApiRoute = pathname.startsWith("/api");
 

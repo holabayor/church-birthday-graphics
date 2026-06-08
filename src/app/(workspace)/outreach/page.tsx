@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Copy, Download, MessageCircle, Search } from "lucide-react";
+import { Copy, Download, Search } from "lucide-react";
 import { AttendanceSession, ChurchUnit } from "@/lib/types";
+import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -135,17 +136,14 @@ export default function OutreachPage() {
   };
 
   return (
-    <div className="flex-1 space-y-8 p-4 md:p-8 pt-6 w-full">
-      <div className="space-y-1.5">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
-          <MessageCircle className="h-8 w-8 text-primary" />
-          Outreach Lists
-        </h1>
-        <p className="text-muted-foreground font-medium">
-          Prepare WhatsApp-ready contact lists for birthdays, absentees, and church units.
-        </p>
-      </div>
+    <div className="flex-1 w-full">
+      <PageHeader
+        eyebrow="Follow-up operations"
+        title="Outreach Lists"
+        description="Prepare WhatsApp-ready contact lists for birthdays, absentees, and church units."
+      />
 
+      <div className="space-y-8 p-4 md:p-8">
       <Card className="shadow-sm">
         <CardHeader className="gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -273,6 +271,7 @@ export default function OutreachPage() {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

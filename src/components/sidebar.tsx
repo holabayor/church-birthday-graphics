@@ -2,8 +2,34 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Users, Home, Palette, Settings, LogOut, User, CalendarCheck, MessageCircle, Building2 } from "lucide-react";
+import {
+  Building2,
+  CalendarCheck,
+  Home,
+  LogOut,
+  MessageCircle,
+  Palette,
+  Settings,
+  User,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { useEffect, useState } from "react";
+
+import {
+  Sidebar as ShadcnSidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSkeleton,
+  SidebarRail,
+} from "@/components/ui/sidebar";
 
 type Permission =
   | "dashboard.view"
@@ -16,10 +42,26 @@ type Permission =
   | "admins.manage"
   | "units.manage";
 
+type NavSection = "personal" | "operations" | "system";
+
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  section: NavSection;
+};
+
+const navSections: Array<{ key: NavSection; label: string }> = [
+  { key: "personal", label: "Personal" },
+  { key: "operations", label: "Operations" },
+  { key: "system", label: "System" },
+];
+
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [role, setRole] = useState<"admin" | "member" | null>(null);
+  const [sessionKind, setSessionKind] = useState<"super_admin" | "member" | null>(null);
+  const [hasMemberProfile, setHasMemberProfile] = useState(false);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [memberUnitLeadership, setMemberUnitLeadership] = useState<Array<{ id: string; name: string; role: string }>>([]);
   const [loading, setLoading] = useState(true);
@@ -31,12 +73,14 @@ export function Sidebar() {
         if (res.ok) {
           const data = await res.json();
           if (data.user) {
-            setRole("admin");
-            setPermissions(data.user.permissions || []);
-          } else if (data.memberId) {
-            setRole("member");
-            setMemberUnitLeadership(data.memberUnitLeadership || []);
+            setSessionKind("super_admin");
+            setHasMemberProfile(Boolean(data.memberId));
+          } else if (data.memberId || data.member) {
+            setSessionKind("member");
+            setHasMemberProfile(true);
           }
+          setPermissions(data.permissions || data.user?.permissions || data.member?.permissions || []);
+          setMemberUnitLeadership(data.memberUnitLeadership || []);
         }
       } catch (e) {
         console.error("Failed to check auth session:", e);
@@ -44,12 +88,9 @@ export function Sidebar() {
         setLoading(false);
       }
     }
-    
+
     checkSession();
   }, [pathname]);
-
-  // Hide sidebar on login pages
-  if (pathname === "/login" || pathname === "/register" || pathname === "/admin" || pathname === "/admin/login") return null;
 
   const handleLogout = async () => {
     await fetch("/api/auth", {
@@ -57,102 +98,152 @@ export function Sidebar() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "logout" }),
     });
-    router.push(role === "admin" ? "/admin" : "/login");
+    router.push(sessionKind === "super_admin" ? "/admin" : "/login");
     router.refresh();
   };
 
-  if (loading) {
-    return (
-      <aside className="hidden md:flex w-64 bg-white border-r border-zinc-200 flex-col shrink-0 animate-pulse">
-        <div className="p-6 border-b border-zinc-200 h-[89px]"></div>
-        <div className="flex-1 p-3 space-y-4">
-          <div className="h-10 bg-zinc-100 rounded-lg"></div>
-          <div className="h-10 bg-zinc-100 rounded-lg"></div>
-        </div>
-      </aside>
-    );
-  }
-
   const can = (permission: Permission) => permissions.includes(permission);
+  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+  const workspaceLabel =
+    permissions.length > 0 || memberUnitLeadership.length > 0 ? "Ministry workspace" : "Member workspace";
+  const hasAdminCapability = permissions.length > 0;
 
-  const activeLinks = role === "member"
-    ? [
-        { href: "/profile", label: "My Profile", icon: User },
-        ...(memberUnitLeadership.length > 0 ? [{ href: "/units", label: "My Units", icon: Building2 }] : []),
-      ]
-    : [
-        ...(can("dashboard.view") ? [{ href: "/", label: "Dashboard", icon: Home }] : []),
-        ...(can("members.view") ? [{ href: "/members", label: "Members", icon: Users }] : []),
-        ...(can("attendance.view") ? [{ href: "/attendance", label: "Attendance", icon: CalendarCheck }] : []),
-        ...(can("units.view") || can("units.manage") ? [{ href: "/units", label: "Units", icon: Building2 }] : []),
-        ...(can("outreach.view") ? [{ href: "/outreach", label: "Outreach", icon: MessageCircle }] : []),
-        ...(can("birthdays.manage") ? [{ href: "/designs", label: "Designs", icon: Palette }] : []),
-        ...(can("settings.manage") || can("admins.manage") || can("units.manage") ? [{ href: "/settings", label: "Settings", icon: Settings }] : []),
-      ];
+  const activeLinks: NavItem[] = [
+    ...(hasMemberProfile ? [{ href: "/profile", label: "My Profile", icon: User, section: "personal" as const }] : []),
+    ...(can("dashboard.view") ? [{ href: "/", label: "Dashboard", icon: Home, section: "operations" as const }] : []),
+    ...(can("members.view") ? [{ href: "/members", label: "Members", icon: Users, section: "operations" as const }] : []),
+    ...(can("attendance.view")
+      ? [{ href: "/attendance", label: "Attendance", icon: CalendarCheck, section: "operations" as const }]
+      : []),
+    ...(can("units.view") || can("units.manage") || memberUnitLeadership.length > 0
+      ? [
+          {
+            href: "/units",
+            label: hasMemberProfile && !can("units.view") && !can("units.manage") ? "My Units" : "Units",
+            icon: Building2,
+            section: "operations" as const,
+          },
+        ]
+      : []),
+    ...(can("outreach.view")
+      ? [{ href: "/outreach", label: "Outreach", icon: MessageCircle, section: "operations" as const }]
+      : []),
+    ...(can("birthdays.manage") ? [{ href: "/designs", label: "Birthdays", icon: Palette, section: "operations" as const }] : []),
+    ...(can("settings.manage") || can("admins.manage")
+      ? [{ href: "/settings", label: "Settings", icon: Settings, section: "system" as const }]
+      : []),
+  ];
 
   return (
-    <>
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 bg-white border-r border-zinc-200 flex-col shrink-0">
-        <div className="p-6 border-b border-zinc-200">
-          <h1 className="text-lg font-bold text-zinc-900">Birthday Graphics</h1>
-          <p className="text-xs text-zinc-500 mt-1">
-            {role === "member" ? "Congregation Portal" : "Church Media Tool"}
+    <ShadcnSidebar
+      collapsible="icon"
+      className="border-sidebar-border bg-sidebar text-sidebar-foreground"
+    >
+      <SidebarHeader className="border-b border-sidebar-border p-3">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              size="lg"
+              className="h-14 gap-3 rounded-lg px-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent"
+              tooltip="Kinship Management"
+            >
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--primary)] text-base font-bold text-white shadow-[0_10px_24px_rgba(37,99,235,0.18)]">
+                K
+              </div>
+              <div className="grid flex-1 text-left leading-tight">
+                <span className="font-mono text-[12px] font-medium uppercase leading-4 tracking-[0.05em] text-sidebar-foreground/60">
+                  Kinship
+                </span>
+                <span className="truncate font-[var(--font-manrope)] text-[20px] font-semibold leading-7 text-sidebar-foreground">
+                  Management
+                </span>
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+ 
+        <div className="rounded-lg border border-sidebar-border bg-sidebar-accent px-3 py-2 group-data-[collapsible=icon]:hidden">
+          <p className="font-mono text-[12px] font-medium uppercase leading-4 tracking-[0.05em] text-[var(--primary)]">
+            {sessionKind === "super_admin" ? "Super admin" : workspaceLabel}
+          </p>
+          <p className="mt-1 text-sm leading-5 text-sidebar-foreground/80">
+            {sessionKind === "super_admin"
+              ? "Restricted console"
+              : hasAdminCapability
+                ? "Member access with assigned permissions"
+                : "Your congregation space"}
           </p>
         </div>
-        <nav className="flex-1 p-3 space-y-1">
-          {activeLinks.map(({ href, label, icon: Icon }) => {
-            const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+      </SidebarHeader>
+ 
+      <SidebarContent className="gap-1 px-1 py-3">
+        {loading ? (
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuSkeleton showIcon />
+                <SidebarMenuSkeleton showIcon />
+                <SidebarMenuSkeleton showIcon />
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ) : (
+          navSections.map((section) => {
+            const links = activeLinks.filter((link) => link.section === section.key);
+            if (links.length === 0) return null;
+ 
             return (
-              <Link
-                key={href}
-                href={href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  active ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
-                }`}
-              >
-                <Icon size={18} />
-                {label}
-              </Link>
+              <SidebarGroup key={section.key} className="py-1">
+                <SidebarGroupLabel className="font-mono text-[12px] font-medium uppercase tracking-[0.05em] text-sidebar-foreground/50">
+                  {section.label}
+                </SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {links.map(({ href, label, icon: Icon }) => {
+                      const active = isActive(href);
+ 
+                      return (
+                        <SidebarMenuItem key={href} className="relative">
+                          {active && (
+                            <div className="absolute left-[-4px] top-[10px] bottom-[10px] w-1 rounded-r bg-[var(--primary)]" />
+                          )}
+                          <SidebarMenuButton
+                            asChild
+                            isActive={active}
+                            tooltip={label}
+                            className="min-h-10 rounded-lg text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground [&>svg]:text-sidebar-foreground data-[active=true]:[&>svg]:text-[var(--primary)]"
+                          >
+                            <Link href={href} aria-current={active ? "page" : undefined}>
+                              <Icon />
+                              <span>{label}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
             );
-          })}
-        </nav>
-        <div className="p-3 border-t border-zinc-200">
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition-colors w-full"
-          >
-            <LogOut size={18} />
-            Logout
-          </button>
-        </div>
-      </aside>
-
-      {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-200 grid auto-cols-fr grid-flow-col gap-1 px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] z-50">
-        {activeLinks.map(({ href, label, icon: Icon }) => {
-          const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-                className={`min-w-0 flex flex-col items-center gap-1 rounded-lg px-1 py-2 text-[11px] font-medium transition-colors ${
-                  active ? "text-zinc-900" : "text-zinc-500 hover:text-zinc-900"
-                }`}
-              >
-                <Icon size={20} className="shrink-0" />
-                <span className="max-w-full truncate">{label}</span>
-              </Link>
-            );
-          })}
-        <button
-          onClick={handleLogout}
-          className="min-w-0 flex flex-col items-center gap-1 rounded-lg px-1 py-2 text-[11px] font-medium text-zinc-500 hover:text-zinc-900 transition-colors"
-        >
-          <LogOut size={20} className="shrink-0" />
-          <span className="max-w-full truncate">Logout</span>
-        </button>
-      </nav>
-    </>
+          })
+        )}
+      </SidebarContent>
+ 
+      <SidebarFooter className="border-t border-sidebar-border p-3">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={handleLogout}
+              tooltip="Logout"
+              className="min-h-10 rounded-lg text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground [&>svg]:text-sidebar-foreground"
+            >
+              <LogOut />
+              <span>Logout</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+      <SidebarRail />
+    </ShadcnSidebar>
   );
 }
