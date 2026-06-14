@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/server";
 import { cookies } from "next/headers";
 import { requirePermission } from "@/lib/adminPermissions";
+import { PERMISSION } from "@/lib/adminRoles";
+import { ATTENDANCE_STATUS, SERVICE_TYPE } from "@/lib/attendanceStatus";
+import { MEMBERSHIP_STATUS } from "@/lib/memberLifecycle";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { allowed } = await requirePermission("attendance.view");
+  const { allowed } = await requirePermission(PERMISSION.ATTENDANCE_VIEW);
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
@@ -15,8 +18,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     supabase.from("attendance_sessions").select("*").eq("id", id).maybeSingle(),
     supabase
       .from("members")
-      .select("id, first_name, middle_name, last_name, phone_number, photo_url, is_active, member_type")
-      .eq("is_active", true)
+      .select("id, first_name, middle_name, last_name, phone_number, photo_url, membership_status, is_active, life_stage")
+      .eq("membership_status", MEMBERSHIP_STATUS.ACTIVE)
       .order("first_name", { ascending: true }),
   ]);
 
@@ -40,13 +43,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     attendance: recordsByMember.get(member.id) || {
       session_id: id,
       member_id: member.id,
-      status: "absent",
+      status: ATTENDANCE_STATUS.ABSENT,
     },
     follow_up: followUpsByMember.get(member.id) || null,
   }));
 
-  const presentCount = roster.filter(member => member.attendance.status === "present").length;
-  const excusedCount = roster.filter(member => member.attendance.status === "excused").length;
+  const presentCount = roster.filter(member => member.attendance.status === ATTENDANCE_STATUS.PRESENT).length;
+  const excusedCount = roster.filter(member => member.attendance.status === ATTENDANCE_STATUS.EXCUSED).length;
   const absentCount = roster.length - presentCount - excusedCount;
 
   return NextResponse.json({
@@ -62,7 +65,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { allowed } = await requirePermission("attendance.manage");
+  const { allowed } = await requirePermission(PERMISSION.ATTENDANCE_MANAGE);
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
@@ -79,7 +82,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     .from("attendance_sessions")
     .update({
       title: title.trim(),
-      service_type: service_type?.trim() || "service",
+      service_type: service_type?.trim() || SERVICE_TYPE.SERVICE,
       session_date,
       notes: notes?.trim() || null,
       updated_at: new Date().toISOString(),
@@ -93,7 +96,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { allowed } = await requirePermission("attendance.manage");
+  const { allowed } = await requirePermission(PERMISSION.ATTENDANCE_MANAGE);
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;

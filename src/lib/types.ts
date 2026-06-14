@@ -1,3 +1,6 @@
+import type { AttendanceStatus, FollowUpStatus } from "@/lib/attendanceStatus";
+import type { UnitRole } from "@/lib/unitRoles";
+
 export interface Member {
   id: string;
   first_name: string;
@@ -7,7 +10,8 @@ export interface Member {
   email?: string | null;
   date_of_birth: string;
   position: string | null;
-  member_type?: string | null;
+  life_stage?: string | null;
+  membership_status?: string | null;
   institution?: string | null;
   department?: string | null;
   academic_level?: string | null;
@@ -25,7 +29,7 @@ export interface Member {
   skills_interests?: string | null;
   units?: MemberUnitAssignment[];
   photo_url: string | null;
-  is_active: boolean;
+  is_active?: boolean | null;
   created_at: string;
   updated_at: string;
 }
@@ -39,7 +43,7 @@ export interface ChurchUnit {
 }
 
 export interface MemberUnitAssignment extends ChurchUnit {
-  role: "member" | "assistant" | "head";
+  role: UnitRole;
 }
 
 export interface ChurchSettings {
@@ -73,7 +77,7 @@ export interface AttendanceRecord {
   id: string;
   session_id: string;
   member_id: string;
-  status: "present" | "absent" | "excused";
+  status: AttendanceStatus;
   marked_at: string;
 }
 
@@ -81,7 +85,7 @@ export interface AbsenteeFollowUp {
   id: string;
   session_id: string;
   member_id: string;
-  status: "pending" | "contacted" | "visited" | "resolved" | "no_response";
+  status: FollowUpStatus;
   notes: string | null;
   assigned_to: string | null;
   updated_at: string;

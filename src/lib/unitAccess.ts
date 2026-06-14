@@ -1,8 +1,10 @@
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/server";
 import { getAdminContext, hasPermission } from "@/lib/adminPermissions";
+import { PERMISSION } from "@/lib/adminRoles";
+import { UNIT_ROLE, type UnitLeadershipRole } from "@/lib/unitRoles";
 
-export type UnitAccessRole = "admin" | "head" | "assistant";
+export type UnitAccessRole = "admin" | UnitLeadershipRole;
 
 export interface UnitAccessContext {
   memberId: string | null;
@@ -16,8 +18,8 @@ export async function getUnitAccess(cookieStore: Awaited<ReturnType<typeof cooki
   const supabase = createClient(cookieStore);
   const adminContext = await getAdminContext(cookieStore);
   const memberId = cookieStore.get("member_id")?.value || null;
-  const canManageAllUnits = hasPermission(adminContext, "units.manage");
-  const canViewAllUnits = canManageAllUnits || hasPermission(adminContext, "units.view");
+  const canManageAllUnits = hasPermission(adminContext, PERMISSION.UNITS_MANAGE);
+  const canViewAllUnits = canManageAllUnits || hasPermission(adminContext, PERMISSION.UNITS_VIEW);
   const rolesByUnit: Record<string, UnitAccessRole> = {};
 
   if (canViewAllUnits) {
@@ -29,10 +31,10 @@ export async function getUnitAccess(cookieStore: Awaited<ReturnType<typeof cooki
       .from("church_unit_members")
       .select("unit_id, role")
       .eq("member_id", memberId)
-      .in("role", ["head", "assistant"]);
+      .in("role", [UNIT_ROLE.HEAD, UNIT_ROLE.ASSISTANT]);
 
     for (const row of data || []) {
-      rolesByUnit[row.unit_id] = row.role === "head" ? "head" : "assistant";
+      rolesByUnit[row.unit_id] = row.role === UNIT_ROLE.HEAD ? UNIT_ROLE.HEAD : UNIT_ROLE.ASSISTANT;
     }
   }
 
@@ -49,4 +51,6 @@ export const canAccessUnit = (context: UnitAccessContext, unitId: string) =>
   context.canViewAllUnits || Boolean(context.rolesByUnit[unitId]);
 
 export const canManageUnitMembers = (context: UnitAccessContext, unitId: string) =>
-  context.canManageAllUnits || context.rolesByUnit[unitId] === "head" || context.rolesByUnit[unitId] === "assistant";
+  context.canManageAllUnits ||
+  context.rolesByUnit[unitId] === UNIT_ROLE.HEAD ||
+  context.rolesByUnit[unitId] === UNIT_ROLE.ASSISTANT;

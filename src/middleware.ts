@@ -1,15 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
-
-const rolePermissions: Record<string, string[]> = {
-  super_admin: ["dashboard.view", "members.view", "members.manage", "attendance.view", "attendance.manage", "followups.manage", "birthdays.manage", "outreach.view", "settings.manage", "admins.manage", "units.view", "units.manage"],
-  pastor: ["dashboard.view", "members.view", "attendance.view", "attendance.manage", "followups.manage", "birthdays.manage", "outreach.view", "units.view", "units.manage"],
-  assistant_pastor: ["dashboard.view", "members.view", "attendance.view", "attendance.manage", "followups.manage", "outreach.view", "units.view", "units.manage"],
-  secretary: ["dashboard.view", "members.view", "members.manage", "attendance.view", "attendance.manage", "units.view", "units.manage"],
-  media: ["dashboard.view", "members.view", "birthdays.manage", "outreach.view"],
-  follow_up: ["dashboard.view", "members.view", "attendance.view", "followups.manage", "outreach.view"],
-  unit_leader: ["dashboard.view", "members.view", "attendance.view", "outreach.view", "units.view"],
-};
+import { ADMIN_ROLE, PERMISSION, pageAccessDefinitions, rolePermissions } from "@/lib/adminRoles";
+import { UNIT_ROLE } from "@/lib/unitRoles";
 
 const isMissingPermissionTableError = (error: { code?: string; message?: string } | null | undefined) =>
   error?.code === "PGRST205" ||
@@ -18,9 +10,9 @@ const isMissingPermissionTableError = (error: { code?: string; message?: string 
 
 async function resolveRolePermissions(supabase: any, role: string | null | undefined) {
   if (!role) return [];
-  if (role === "super_admin") return rolePermissions.super_admin;
+  if (role === ADMIN_ROLE.SUPER_ADMIN) return rolePermissions[ADMIN_ROLE.SUPER_ADMIN];
 
-  const fallback = rolePermissions[role] || [];
+  const fallback = rolePermissions[role as keyof typeof rolePermissions] || [];
   const { data, error } = await supabase
     .from("app_role_permissions")
     .select("permission")
@@ -33,21 +25,20 @@ async function resolveRolePermissions(supabase: any, role: string | null | undef
   return data?.length ? data.map((row: any) => row.permission).filter(Boolean) : fallback;
 }
 
-const pagePermissions = [
-  { path: "/members", permission: "members.view" },
-  { path: "/attendance", permission: "attendance.view" },
-  { path: "/units", permission: "units.view", any: ["units.view", "units.manage"] },
-  { path: "/outreach", permission: "outreach.view" },
-  { path: "/designs", permission: "birthdays.manage" },
-  { path: "/settings", permission: "settings.manage", any: ["settings.manage", "admins.manage"] },
-];
+const pagePermissions = pageAccessDefinitions
+  .filter(page => page.path !== "/")
+  .map(page => ({
+    path: page.path,
+    permission: page.enablePermission,
+    any: page.visibilityPermissions,
+  }));
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Always allow: static assets, auth entry pages, public API endpoints
   const publicPages = ["/login", "/register", "/admin", "/admin/login"];
-  const publicApiPaths = ["/api/auth", "/api/birthdays/send", "/api/generate"];
+  const publicApiPaths = ["/api/auth", "/api/church-settings", "/api/birthdays/send", "/api/generate"];
   if (
     publicPages.includes(pathname) ||
     publicApiPaths.some(p => pathname.startsWith(p)) ||
@@ -90,7 +81,7 @@ export async function middleware(request: NextRequest) {
 
   if (user) {
     const pageRule = pathname === "/"
-      ? { path: "/", permission: "dashboard.view" }
+      ? { path: "/", permission: PERMISSION.DASHBOARD_VIEW, any: [PERMISSION.DASHBOARD_VIEW] }
       : pagePermissions.find(rule => pathname === rule.path || pathname.startsWith(`${rule.path}/`));
 
     if (pageRule) {
@@ -100,7 +91,7 @@ export async function middleware(request: NextRequest) {
         .eq("email", user.email)
         .maybeSingle();
 
-      let permissions = rolePermissions.super_admin;
+      let permissions = rolePermissions[ADMIN_ROLE.SUPER_ADMIN];
 
       if (!error && profile) {
         if (profile.is_active === false) {
@@ -110,10 +101,7 @@ export async function middleware(request: NextRequest) {
         permissions = await resolveRolePermissions(supabase, profile.role);
       }
 
-      const anyPermissions = "any" in pageRule ? pageRule.any : undefined;
-      const allowed = anyPermissions
-        ? anyPermissions.some(permission => permissions.includes(permission))
-        : permissions.includes(pageRule.permission);
+      const allowed = pageRule.any.some(permission => permissions.includes(permission));
 
       if (!allowed) {
         const homeUrl = new URL("/", request.url);
@@ -147,18 +135,15 @@ export async function middleware(request: NextRequest) {
       .from("church_unit_members")
       .select("unit_id")
       .eq("member_id", memberId)
-      .in("role", ["head", "assistant"]);
+      .in("role", [UNIT_ROLE.HEAD, UNIT_ROLE.ASSISTANT]);
 
     const hasUnitLeadership = Boolean(unitLeadership && unitLeadership.length > 0);
     const pageRule = pathname === "/"
-      ? { path: "/", permission: "dashboard.view" }
+      ? { path: "/", permission: PERMISSION.DASHBOARD_VIEW, any: [PERMISSION.DASHBOARD_VIEW] }
       : pagePermissions.find(rule => pathname === rule.path || pathname.startsWith(`${rule.path}/`));
 
-    const anyPermissions = pageRule && "any" in pageRule ? pageRule.any : undefined;
     const pageAllowedByPermission = pageRule
-      ? anyPermissions
-        ? anyPermissions.some(permission => permissions.includes(permission))
-        : permissions.includes(pageRule.permission)
+      ? pageRule.any.some(permission => permissions.includes(permission))
       : false;
 
     const allowedMemberPages = [
@@ -172,10 +157,10 @@ export async function middleware(request: NextRequest) {
       "/api/upload",
       "/api/units",
       "/api/birthday-messages",
-      ...(permissions.includes("members.view") || permissions.includes("members.manage") ? ["/api/members"] : []),
-      ...(permissions.includes("attendance.view") || permissions.includes("attendance.manage") ? ["/api/attendance"] : []),
-      ...(permissions.includes("outreach.view") ? ["/api/outreach"] : []),
-      ...(permissions.includes("settings.manage") ? ["/api/church-settings"] : []),
+      ...(permissions.includes(PERMISSION.MEMBERS_VIEW) || permissions.includes(PERMISSION.MEMBERS_MANAGE) ? ["/api/members"] : []),
+      ...(permissions.includes(PERMISSION.ATTENDANCE_VIEW) || permissions.includes(PERMISSION.ATTENDANCE_MANAGE) ? ["/api/attendance"] : []),
+      ...(permissions.includes(PERMISSION.OUTREACH_VIEW) ? ["/api/outreach"] : []),
+      ...(permissions.includes(PERMISSION.SETTINGS_MANAGE) ? ["/api/church-settings"] : []),
     ];
 
     const isAllowedPage = allowedMemberPages.some(p => pathname === p || (p === "/units" && pathname.startsWith("/units/")));

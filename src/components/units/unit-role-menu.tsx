@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { UnitRole } from "@/components/units/types";
-import { unitRoleLabels } from "@/components/units/types";
+import { unitRoleOptions } from "@/lib/unitRoles";
 
 type UnitRoleMenuProps = {
   currentRole: UnitRole;
@@ -36,13 +36,13 @@ export function UnitRoleMenu({ currentRole, disabled, onChange }: UnitRoleMenuPr
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="border-[var(--outline-variant)]">
         <DropdownMenuLabel>Set unit role</DropdownMenuLabel>
-        {(["member", "assistant", "head"] as UnitRole[]).map(role => (
+        {unitRoleOptions.map(({ value, label }) => (
           <DropdownMenuItem
-            key={role}
-            disabled={currentRole === role || disabled}
-            onClick={() => onChange(role)}
+            key={value}
+            disabled={currentRole === value || disabled}
+            onClick={() => onChange(value as UnitRole)}
           >
-            {unitRoleLabels[role]}
+            {label}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

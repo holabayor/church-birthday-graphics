@@ -4,6 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Copy, Download, Search } from "lucide-react";
 import { AttendanceSession, ChurchUnit } from "@/lib/types";
+import { getLifeStageLabel } from "@/lib/memberLifecycle";
+import {
+  BIRTHDAY_RANGE,
+  OUTREACH_TYPE,
+  birthdayRangeOptions,
+  outreachTypeOptions,
+  type OutreachType,
+} from "@/lib/outreachOptions";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,7 +25,7 @@ type OutreachRow = {
   id: string;
   name: string;
   phone_number: string | null;
-  member_type: string;
+  life_stage: string;
   date_of_birth?: string;
   attendance_status?: string;
   follow_up_status?: string;
@@ -27,7 +35,7 @@ type OutreachRow = {
 };
 
 const toCsv = (rows: OutreachRow[]) => {
-  const columns = ["name", "phone_number", "member_type", "date_of_birth", "follow_up_status", "assigned_to", "unit_role", "units"];
+  const columns = ["name", "phone_number", "life_stage", "date_of_birth", "follow_up_status", "assigned_to", "unit_role", "units"];
   const escape = (value: unknown) => {
     const text = value === null || value === undefined ? "" : String(value);
     return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
@@ -53,8 +61,8 @@ const downloadCsv = (rows: OutreachRow[], filename: string) => {
 };
 
 export default function OutreachPage() {
-  const [activeTab, setActiveTab] = useState("birthdays");
-  const [birthdayRange, setBirthdayRange] = useState("today");
+  const [activeTab, setActiveTab] = useState<OutreachType>(OUTREACH_TYPE.BIRTHDAYS);
+  const [birthdayRange, setBirthdayRange] = useState<string>(BIRTHDAY_RANGE.TODAY);
   const [sessions, setSessions] = useState<AttendanceSession[]>([]);
   const [sessionId, setSessionId] = useState("");
   const [units, setUnits] = useState<ChurchUnit[]>([]);
@@ -69,7 +77,7 @@ export default function OutreachPage() {
     return rows.filter(row =>
       row.name.toLowerCase().includes(query) ||
       row.phone_number?.includes(query) ||
-      row.member_type?.toLowerCase().includes(query) ||
+      row.life_stage?.toLowerCase().includes(query) ||
       row.follow_up_status?.toLowerCase().includes(query) ||
       row.units?.some(unit => unit.name.toLowerCase().includes(query))
     );
@@ -96,15 +104,15 @@ export default function OutreachPage() {
 
   useEffect(() => {
     const params = new URLSearchParams({ type: activeTab });
-    if (activeTab === "birthdays") params.set("range", birthdayRange);
-    if (activeTab === "absentees") {
+    if (activeTab === OUTREACH_TYPE.BIRTHDAYS) params.set("range", birthdayRange);
+    if (activeTab === OUTREACH_TYPE.ABSENTEES) {
       if (!sessionId) {
         setRows([]);
         return;
       }
       params.set("session_id", sessionId);
     }
-    if (activeTab === "units") {
+    if (activeTab === OUTREACH_TYPE.UNITS) {
       if (!unitId) {
         setRows([]);
         return;
@@ -162,28 +170,32 @@ export default function OutreachPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs value={activeTab} onValueChange={value => setActiveTab(value as OutreachType)}>
             <TabsList>
-              <TabsTrigger value="birthdays">Birthdays</TabsTrigger>
-              <TabsTrigger value="absentees">Absentees</TabsTrigger>
-              <TabsTrigger value="units">Units</TabsTrigger>
+              {outreachTypeOptions.map(option => (
+                <TabsTrigger key={option.value} value={option.value}>
+                  {option.label}
+                </TabsTrigger>
+              ))}
             </TabsList>
 
             <div className="mt-4 grid gap-3 md:grid-cols-[220px_1fr]">
-              <TabsContent value="birthdays" className="m-0">
+              <TabsContent value={OUTREACH_TYPE.BIRTHDAYS} className="m-0">
                 <Select value={birthdayRange} onValueChange={setBirthdayRange}>
                   <SelectTrigger>
                     <SelectValue placeholder="Range" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="today">Today</SelectItem>
-                    <SelectItem value="week">Next 7 Days</SelectItem>
-                    <SelectItem value="month">Next 31 Days</SelectItem>
+                    {birthdayRangeOptions.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </TabsContent>
 
-              <TabsContent value="absentees" className="m-0">
+              <TabsContent value={OUTREACH_TYPE.ABSENTEES} className="m-0">
                 <Select value={sessionId} onValueChange={setSessionId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select session" />
@@ -198,7 +210,7 @@ export default function OutreachPage() {
                 </Select>
               </TabsContent>
 
-              <TabsContent value="units" className="m-0">
+              <TabsContent value={OUTREACH_TYPE.UNITS} className="m-0">
                 <Select value={unitId} onValueChange={setUnitId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select unit" />
@@ -242,7 +254,7 @@ export default function OutreachPage() {
                     <p className="font-semibold text-zinc-900">{row.name}</p>
                     <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
                       <span>{row.phone_number || "No phone"}</span>
-                      <Badge variant="outline" className="capitalize">{row.member_type}</Badge>
+                      <Badge variant="outline">{getLifeStageLabel(row.life_stage)}</Badge>
                       {row.date_of_birth && <Badge variant="secondary">{new Date(row.date_of_birth).toLocaleDateString()}</Badge>}
                       {row.follow_up_status && <Badge variant="secondary" className="capitalize">{row.follow_up_status.replace(/_/g, " ")}</Badge>}
                       {row.unit_role && <Badge variant="secondary" className="capitalize">{row.unit_role}</Badge>}

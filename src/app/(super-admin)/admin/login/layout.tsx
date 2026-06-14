@@ -1,7 +1,8 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Admin Sign In - Church Birthday Graphics",
+  title: "Super Admin Sign In | Kinship",
+  description: "Restricted sign-in for Kinship super administrators.",
 };
 
 export default function AdminLoginLayout({ children }: { children: React.ReactNode }) {

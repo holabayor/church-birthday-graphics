@@ -34,14 +34,18 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Permission,
-  PermissionDefinition,
-  PageAccessDefinition,
-  RoleDefinition,
+  ADMIN_ACCOUNT_STATUS,
+  ADMIN_ROLE,
+  PERMISSION,
+  adminAccountStatusOptions,
   getRoleLabel,
   pageAccessDefinitions,
   permissionDefinitions,
   roleLabels,
+  type PageAccessDefinition,
+  type Permission,
+  type PermissionDefinition,
+  type RoleDefinition,
 } from "@/lib/adminRoles";
 
 export default function SettingsPage() {
@@ -58,16 +62,16 @@ export default function SettingsPage() {
   const [admins, setAdmins] = useState<AdminProfile[]>([]);
   const [loadingAdmins, setLoadingAdmins] = useState(true);
   const [adminSetupRequired, setAdminSetupRequired] = useState(false);
-  const [newAdmin, setNewAdmin] = useState({ email: "", full_name: "", role: "secretary" as AdminRole });
+  const [newAdmin, setNewAdmin] = useState({ email: "", full_name: "", role: ADMIN_ROLE.SECRETARY as AdminRole });
   const [editingAdminId, setEditingAdminId] = useState<string | null>(null);
-  const [editingAdmin, setEditingAdmin] = useState({ email: "", full_name: "", role: "secretary" as AdminRole, is_active: true });
+  const [editingAdmin, setEditingAdmin] = useState({ email: "", full_name: "", role: ADMIN_ROLE.SECRETARY as AdminRole, is_active: true });
   const [savingAdmin, setSavingAdmin] = useState(false);
   const [roles, setRoles] = useState<RoleDefinition[]>([]);
   const [rolePermissionDefinitions, setRolePermissionDefinitions] = useState<PermissionDefinition[]>(permissionDefinitions);
   const [loadingRoles, setLoadingRoles] = useState(true);
   const [rolesSetupRequired, setRolesSetupRequired] = useState(false);
   const [savingRoleKey, setSavingRoleKey] = useState<string | null>(null);
-  const [selectedRoleKey, setSelectedRoleKey] = useState("pastor");
+  const [selectedRoleKey, setSelectedRoleKey] = useState<string>(ADMIN_ROLE.PASTOR);
   const [newRole, setNewRole] = useState({ key: "", name: "", description: "" });
   const [savingNewRole, setSavingNewRole] = useState(false);
 
@@ -200,7 +204,7 @@ export default function SettingsPage() {
 
       if (res.ok) {
         toast.success("Admin added successfully");
-        setNewAdmin({ email: "", full_name: "", role: "secretary" });
+        setNewAdmin({ email: "", full_name: "", role: ADMIN_ROLE.SECRETARY });
         fetchAdmins();
       } else {
         toast.error(data.error || "Failed to add admin");
@@ -259,7 +263,7 @@ export default function SettingsPage() {
   };
 
   const handleToggleRolePermission = (roleKey: string, permission: Permission, checked: boolean) => {
-    if (roleKey === "super_admin") return;
+    if (roleKey === ADMIN_ROLE.SUPER_ADMIN) return;
 
     setRoles(currentRoles =>
       currentRoles.map(role => {
@@ -273,7 +277,7 @@ export default function SettingsPage() {
   };
 
   const handleTogglePageVisibility = (roleKey: string, page: PageAccessDefinition, checked: boolean) => {
-    if (roleKey === "super_admin") return;
+    if (roleKey === ADMIN_ROLE.SUPER_ADMIN) return;
 
     setRoles(currentRoles =>
       currentRoles.map(role => {
@@ -328,7 +332,7 @@ export default function SettingsPage() {
           key,
           name: newRole.name,
           description: newRole.description,
-          permissions: ["dashboard.view"],
+          permissions: [PERMISSION.DASHBOARD_VIEW],
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -582,15 +586,18 @@ export default function SettingsPage() {
                                 </SelectContent>
                               </Select>
                               <Select
-                                value={editingAdmin.is_active ? "active" : "inactive"}
-                                onValueChange={value => setEditingAdmin({ ...editingAdmin, is_active: value === "active" })}
+                                value={editingAdmin.is_active ? ADMIN_ACCOUNT_STATUS.ACTIVE : ADMIN_ACCOUNT_STATUS.INACTIVE}
+                                onValueChange={value => setEditingAdmin({ ...editingAdmin, is_active: value === ADMIN_ACCOUNT_STATUS.ACTIVE })}
                               >
                                 <SelectTrigger className="bg-white">
                                   <SelectValue placeholder="Status" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="active">Active</SelectItem>
-                                  <SelectItem value="inactive">Inactive</SelectItem>
+                                  {adminAccountStatusOptions.map(option => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                      {option.label}
+                                    </SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </div>
@@ -733,7 +740,7 @@ export default function SettingsPage() {
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
                           <h4 className="font-semibold text-zinc-950">{selectedRole.name}</h4>
-                          {selectedRole.key === "super_admin" ? (
+                          {selectedRole.key === ADMIN_ROLE.SUPER_ADMIN ? (
                             <Badge className="bg-primary text-primary-foreground hover:bg-primary">Always visible</Badge>
                           ) : null}
                         </div>
@@ -745,7 +752,7 @@ export default function SettingsPage() {
                         type="button"
                         size="sm"
                         onClick={() => handleSaveRole(selectedRole)}
-                        disabled={rolesSetupRequired || selectedRole.key === "super_admin" || savingRoleKey === selectedRole.key}
+                        disabled={rolesSetupRequired || selectedRole.key === ADMIN_ROLE.SUPER_ADMIN || savingRoleKey === selectedRole.key}
                         className="self-start"
                       >
                         {savingRoleKey === selectedRole.key ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
@@ -772,7 +779,7 @@ export default function SettingsPage() {
                                 >
                                   <Checkbox
                                     checked={visible}
-                                    disabled={rolesSetupRequired || selectedRole.key === "super_admin"}
+                                    disabled={rolesSetupRequired || selectedRole.key === ADMIN_ROLE.SUPER_ADMIN}
                                     onCheckedChange={value =>
                                       handleTogglePageVisibility(selectedRole.key, page, Boolean(value))
                                     }
@@ -915,7 +922,7 @@ export default function SettingsPage() {
                         type="button"
                         size="sm"
                         onClick={() => handleSaveRole(selectedRole)}
-                        disabled={rolesSetupRequired || selectedRole.key === "super_admin" || savingRoleKey === selectedRole.key}
+                        disabled={rolesSetupRequired || selectedRole.key === ADMIN_ROLE.SUPER_ADMIN || savingRoleKey === selectedRole.key}
                         className="self-start"
                       >
                         {savingRoleKey === selectedRole.key ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
@@ -936,7 +943,7 @@ export default function SettingsPage() {
                                 <label key={permission.key} className="flex cursor-pointer items-start gap-3">
                                   <Checkbox
                                     checked={checked}
-                                    disabled={rolesSetupRequired || selectedRole.key === "super_admin"}
+                                    disabled={rolesSetupRequired || selectedRole.key === ADMIN_ROLE.SUPER_ADMIN}
                                     onCheckedChange={value =>
                                       handleToggleRolePermission(selectedRole.key, permission.key, Boolean(value))
                                     }

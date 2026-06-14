@@ -1,28 +1,46 @@
 "use client";
 
-import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarDays, Loader2, Phone, UserPlus } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  CalendarDays,
+  Loader2,
+  Mail,
+  Phone,
+  UserRound,
+} from "lucide-react";
+import { Suspense, useState } from "react";
 import { toast } from "sonner";
+
+import { AuthField } from "@/components/auth/auth-field";
+import { AuthShell } from "@/components/auth/auth-shell";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AUTH_ACTION } from "@/lib/authActions";
+import { LIFE_STAGE, lifeStageOptions } from "@/lib/memberLifecycle";
+
+const inputClassName =
+  "h-12 border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] text-base shadow-none";
 
 function RegisterLoading() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-xl shadow-lg border-muted/60">
-        <CardHeader className="space-y-3 text-center pb-4 pt-8">
-          <div className="w-14 h-14 bg-primary/10 rounded-2xl mx-auto mb-2" />
-          <CardTitle className="text-2xl font-bold tracking-tight">Create Your Profile</CardTitle>
-          <CardDescription className="text-base">Loading your profile form...</CardDescription>
-        </CardHeader>
-      </Card>
-    </div>
+    <AuthShell
+      variant="member"
+      eyebrow="Member registration"
+      title="Create your member profile"
+      description="We are preparing the registration form."
+    >
+      <div className="space-y-4" aria-label="Loading registration form">
+        <div className="h-12 animate-pulse rounded-md bg-[var(--surface-container-low)]" />
+        <div className="h-12 animate-pulse rounded-md bg-[var(--surface-container-low)]" />
+        <div className="h-12 animate-pulse rounded-md bg-[var(--surface-container-low)]" />
+      </div>
+    </AuthShell>
   );
 }
 
@@ -38,168 +56,189 @@ function RegisterForm() {
     phone_number: searchParams.get("phone") || "",
     email: "",
     date_of_birth: "",
-    member_type: "member",
+    life_stage: LIFE_STAGE.OTHER,
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const updateField = (field: keyof typeof form, value: string) => {
+    setForm(current => ({ ...current, [field]: value }));
+    if (error) setError("");
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setError("");
     setSaving(true);
 
     try {
-      const res = await fetch("/api/auth", {
+      const response = await fetch("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "member-register", ...form }),
+        body: JSON.stringify({
+          action: AUTH_ACTION.MEMBER_REGISTER,
+          ...form,
+          phone_number: form.phone_number.trim(),
+          email: form.email.trim(),
+        }),
       });
-      const data = await res.json();
+      const data = await response.json().catch(() => ({}));
 
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to create your profile");
+      if (!response.ok) {
+        throw new Error(data.error || "We could not create your profile. Please try again.");
       }
 
       toast.success(data.existing ? "Welcome back. We found your profile." : "Your profile has been created.");
       router.push("/profile");
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || "Failed to create your profile");
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "We could not create your profile.");
     } finally {
       setSaving(false);
     }
   };
 
+  const canSubmit = Boolean(
+    form.first_name.trim() &&
+      form.last_name.trim() &&
+      form.phone_number.trim() &&
+      form.date_of_birth,
+  );
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4 relative">
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[25%] -left-[10%] w-[50%] h-[50%] rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute top-[60%] -right-[10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-3xl" />
-      </div>
+    <AuthShell
+      variant="member"
+      eyebrow="Member registration"
+      title="Create your member profile"
+      description="Start with the essentials. You can complete the rest of your details from your profile."
+      footer={
+        <Link
+          href="/login"
+          className="inline-flex items-center gap-2 font-semibold text-primary hover:underline hover:underline-offset-4"
+        >
+          <ArrowLeft className="size-4" />
+          Back to sign in
+        </Link>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid gap-5 sm:grid-cols-2">
+          <AuthField id="first_name" label="First name" icon={UserRound}>
+            <Input
+              id="first_name"
+              value={form.first_name}
+              onChange={event => updateField("first_name", event.target.value)}
+              autoComplete="given-name"
+              required
+              autoFocus
+              aria-invalid={Boolean(error)}
+              className={`${inputClassName} pl-10`}
+            />
+          </AuthField>
 
-      <Card className="w-full max-w-xl shadow-lg border-muted/60 relative z-10">
-        <CardHeader className="space-y-3 text-center pb-4 pt-8">
-          <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-2 ring-1 ring-primary/20">
-            <UserPlus className="h-7 w-7 text-primary" />
-          </div>
-          <div className="space-y-1">
-            <CardTitle className="text-2xl font-bold tracking-tight">Create Your Profile</CardTitle>
-            <CardDescription className="text-base">
-              Tell us the basics so you can access and update your church profile.
-            </CardDescription>
-          </div>
-        </CardHeader>
+          <AuthField id="last_name" label="Last name">
+            <Input
+              id="last_name"
+              value={form.last_name}
+              onChange={event => updateField("last_name", event.target.value)}
+              autoComplete="family-name"
+              required
+              aria-invalid={Boolean(error)}
+              className={inputClassName}
+            />
+          </AuthField>
 
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="first_name">First Name *</Label>
-                <Input
-                  id="first_name"
-                  value={form.first_name}
-                  onChange={e => setForm({ ...form, first_name: e.target.value })}
-                  required
-                  autoFocus
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="last_name">Last Name *</Label>
-                <Input
-                  id="last_name"
-                  value={form.last_name}
-                  onChange={e => setForm({ ...form, last_name: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="middle_name">Middle Name</Label>
-                <Input
-                  id="middle_name"
-                  value={form.middle_name}
-                  onChange={e => setForm({ ...form, middle_name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="member_type">Member Type</Label>
-                <Select value={form.member_type} onValueChange={value => setForm({ ...form, member_type: value })}>
-                  <SelectTrigger id="member_type">
-                    <SelectValue placeholder="Select member type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="member">Member</SelectItem>
-                    <SelectItem value="student">Student</SelectItem>
-                    <SelectItem value="nysc">NYSC / Service</SelectItem>
-                    <SelectItem value="worker">Worker</SelectItem>
-                    <SelectItem value="alumnus">Alumnus</SelectItem>
-                    <SelectItem value="visitor">Visitor</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone_number">Phone Number *</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="phone_number"
-                    type="tel"
-                    value={form.phone_number}
-                    onChange={e => setForm({ ...form, phone_number: e.target.value })}
-                    required
-                    className="pl-9"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="date_of_birth">Date of Birth *</Label>
-                <div className="relative">
-                  <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="date_of_birth"
-                    type="date"
-                    value={form.date_of_birth}
-                    onChange={e => setForm({ ...form, date_of_birth: e.target.value })}
-                    required
-                    className="pl-9"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={form.email}
-                  onChange={e => setForm({ ...form, email: e.target.value })}
-                  placeholder="Optional"
-                />
-              </div>
-            </div>
+          <AuthField id="middle_name" label="Middle name" optional>
+            <Input
+              id="middle_name"
+              value={form.middle_name}
+              onChange={event => updateField("middle_name", event.target.value)}
+              autoComplete="additional-name"
+              className={inputClassName}
+            />
+          </AuthField>
 
-            {error && (
-              <Alert variant="destructive" className="py-3">
-                <AlertDescription className="text-sm">{error}</AlertDescription>
-              </Alert>
-            )}
+          <AuthField id="phone_number" label="Phone number" icon={Phone}>
+            <Input
+              id="phone_number"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              value={form.phone_number}
+              onChange={event => updateField("phone_number", event.target.value)}
+              placeholder="0803 123 4567"
+              required
+              aria-invalid={Boolean(error)}
+              className={`${inputClassName} pl-10`}
+            />
+          </AuthField>
 
-            <Button type="submit" disabled={saving} className="w-full py-6 text-base shadow-sm">
-              {saving ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Creating Profile...
-                </>
-              ) : (
-                "Create Profile"
-              )}
-            </Button>
-          </form>
-        </CardContent>
+          <AuthField id="date_of_birth" label="Date of birth" icon={CalendarDays}>
+            <Input
+              id="date_of_birth"
+              type="date"
+              autoComplete="bday"
+              value={form.date_of_birth}
+              onChange={event => updateField("date_of_birth", event.target.value)}
+              required
+              aria-invalid={Boolean(error)}
+              className={`${inputClassName} pl-10`}
+            />
+          </AuthField>
 
-        <CardFooter className="flex justify-center pb-8 border-t border-muted/50 pt-4 bg-muted/10">
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/login">Back to sign in</Link>
-          </Button>
-        </CardFooter>
-      </Card>
-    </div>
+          <AuthField id="life_stage" label="Current life stage" optional>
+            <Select value={form.life_stage} onValueChange={value => updateField("life_stage", value)}>
+              <SelectTrigger
+                id="life_stage"
+                className="h-12 w-full border-[var(--outline-variant)] bg-white text-base shadow-none"
+              >
+                <SelectValue placeholder="Select life stage" />
+              </SelectTrigger>
+              <SelectContent>
+                {lifeStageOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </AuthField>
+
+          <AuthField id="email" label="Email address" icon={Mail} optional className="sm:col-span-2">
+            <Input
+              id="email"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              value={form.email}
+              onChange={event => updateField("email", event.target.value)}
+              placeholder="you@example.com"
+              aria-invalid={Boolean(error)}
+              className={`${inputClassName} pl-10`}
+            />
+          </AuthField>
+        </div>
+
+        {error ? (
+          <Alert variant="destructive" role="alert" className="border-destructive/35 bg-[#fff5f4]">
+            <AlertCircle />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : null}
+
+        <Button type="submit" size="lg" disabled={saving || !canSubmit} className="w-full shadow-none">
+          {saving ? (
+            <>
+              <Loader2 className="animate-spin" />
+              Creating your profile...
+            </>
+          ) : (
+            <>
+              Create profile
+              <ArrowRight />
+            </>
+          )}
+        </Button>
+      </form>
+    </AuthShell>
   );
 }
 

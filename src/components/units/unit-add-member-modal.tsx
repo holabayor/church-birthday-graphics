@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { UnitRole } from "@/components/units/types";
-import { unitRoleLabels } from "@/components/units/types";
+import { UNIT_ROLE, unitRoleOptions } from "@/lib/unitRoles";
 
 type UnitAddMemberModalProps = {
   open: boolean;
@@ -33,12 +33,12 @@ type UnitAddMemberModalProps = {
 
 export function UnitAddMemberModal({ open, saving, onOpenChange, onSubmit }: UnitAddMemberModalProps) {
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [role, setRole] = useState<UnitRole>("member");
+  const [role, setRole] = useState<UnitRole>(UNIT_ROLE.MEMBER);
 
   useEffect(() => {
     if (!open) return;
     setPhoneNumber("");
-    setRole("member");
+    setRole(UNIT_ROLE.MEMBER);
   }, [open]);
 
   return (
@@ -81,9 +81,9 @@ export function UnitAddMemberModal({ open, saving, onOpenChange, onSubmit }: Uni
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent className="border-[var(--outline-variant)]">
-                  {(["member", "assistant", "head"] as UnitRole[]).map(option => (
-                    <SelectItem key={option} value={option}>
-                      {unitRoleLabels[option]}
+                  {unitRoleOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

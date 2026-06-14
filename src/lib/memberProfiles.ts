@@ -1,3 +1,5 @@
+import { LIFE_STAGE, normalizeLifeStage, usesNyscProfile, usesStudentProfile, usesWorkProfile } from "@/lib/memberLifecycle";
+
 const studentFields = [
   "institution",
   "department",
@@ -39,7 +41,7 @@ export async function attachMemberProfiles(supabase: any, members: any[]) {
   const churchProfiles = mapByMemberId(churchRes.data);
 
   return members.map(member => {
-    const memberType = member.member_type || "member";
+    const lifeStage = normalizeLifeStage(member.life_stage || member.member_type);
     const memberWithoutStaleProfileFields = {
       ...member,
       institution: null,
@@ -60,27 +62,29 @@ export async function attachMemberProfiles(supabase: any, members: any[]) {
     };
     const churchProfile = churchProfiles.get(member.id) || {};
     const lifecycleProfile =
-      memberType === "student"
+      usesStudentProfile(lifeStage)
         ? studentProfiles.get(member.id) || {}
-        : memberType === "nysc"
+        : usesNyscProfile(lifeStage)
           ? nyscProfiles.get(member.id) || {}
-          : memberType === "worker"
+          : usesWorkProfile(lifeStage)
             ? workProfiles.get(member.id) || {}
-            : memberType === "alumnus"
-              ? { ...(studentProfiles.get(member.id) || {}), ...(workProfiles.get(member.id) || {}) }
-              : {};
+            : {};
+
+    const transitionProfile = usesStudentProfile(lifeStage) && usesWorkProfile(lifeStage)
+      ? { ...(studentProfiles.get(member.id) || {}), ...(workProfiles.get(member.id) || {}) }
+      : lifecycleProfile;
 
     return {
       ...memberWithoutStaleProfileFields,
       ...churchProfile,
-      ...lifecycleProfile,
-      member_type: memberType,
+      ...transitionProfile,
+      life_stage: lifeStage,
     };
   });
 }
 
 export async function saveMemberProfiles(supabase: any, memberId: string, body: Record<string, unknown>) {
-  const memberType = String(body.member_type || "member");
+  const lifeStage = normalizeLifeStage(String(body.life_stage || LIFE_STAGE.OTHER));
   const updatedAt = new Date().toISOString();
 
   const updates = [];
@@ -93,7 +97,7 @@ export async function saveMemberProfiles(supabase: any, memberId: string, body: 
     );
   }
 
-  if ((memberType === "student" || memberType === "alumnus") && hasAnyValue(body, studentFields)) {
+  if (usesStudentProfile(lifeStage) && hasAnyValue(body, studentFields)) {
     updates.push(
       supabase
         .from("member_student_profiles")
@@ -101,7 +105,7 @@ export async function saveMemberProfiles(supabase: any, memberId: string, body: 
     );
   }
 
-  if (memberType === "nysc" && hasAnyValue(body, nyscFields)) {
+  if (usesNyscProfile(lifeStage) && hasAnyValue(body, nyscFields)) {
     updates.push(
       supabase
         .from("member_nysc_profiles")
@@ -109,7 +113,7 @@ export async function saveMemberProfiles(supabase: any, memberId: string, body: 
     );
   }
 
-  if ((memberType === "worker" || memberType === "alumnus") && hasAnyValue(body, workFields)) {
+  if (usesWorkProfile(lifeStage) && hasAnyValue(body, workFields)) {
     updates.push(
       supabase
         .from("member_work_profiles")

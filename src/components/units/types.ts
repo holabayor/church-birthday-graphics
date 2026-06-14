@@ -1,10 +1,8 @@
-export type UnitRole = "member" | "assistant" | "head";
+import type { UnitLeadershipRole, UnitRole } from "@/lib/unitRoles";
+import { unitRoleLabels } from "@/lib/unitRoles";
 
-export const unitRoleLabels: Record<UnitRole, string> = {
-  member: "Member",
-  assistant: "Assistant",
-  head: "Head",
-};
+export type { UnitRole };
+export { unitRoleLabels };
 
 export interface UnitMember {
   id: string;
@@ -13,9 +11,10 @@ export interface UnitMember {
   last_name: string;
   phone_number?: string | null;
   email?: string | null;
-  member_type?: string | null;
+  life_stage?: string | null;
+  membership_status?: string | null;
   photo_url?: string | null;
-  is_active?: boolean;
+  is_active?: boolean | null;
   unit_role: UnitRole;
 }
 
@@ -32,7 +31,7 @@ export interface ManagedUnit {
   access: {
     can_manage_details: boolean;
     can_manage_members: boolean;
-    role: "admin" | "head" | "assistant" | null;
+    role: "admin" | UnitLeadershipRole | null;
   };
   created_at?: string;
   updated_at?: string;

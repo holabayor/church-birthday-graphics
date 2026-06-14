@@ -1,13 +1,22 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, KeyRound, Loader2, Lock, Mail } from "lucide-react";
+import { AlertCircle, ArrowRight, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
+import { useState } from "react";
+
+import { AuthField } from "@/components/auth/auth-field";
+import { AuthShell } from "@/components/auth/auth-shell";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
+function getAdminError(message?: string) {
+  if (!message) return "We could not sign you in. Please try again.";
+  if (message.toLowerCase().includes("invalid login credentials")) {
+    return "The email or password is incorrect.";
+  }
+  return message;
+}
 
 export default function AdminLoginForm() {
   const [email, setEmail] = useState("");
@@ -17,113 +26,115 @@ export default function AdminLoginForm() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleAdminSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAdminSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth", {
+      const response = await fetch("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
+      const data = await response.json().catch(() => ({}));
 
-      if (res.ok) {
+      if (response.ok) {
         router.push("/");
         router.refresh();
-      } else {
-        const data = await res.json();
-        setError(data.error || "Invalid email or password");
+        return;
       }
+
+      setError(getAdminError(data.error));
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError("We could not reach the server. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4 relative">
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[25%] -left-[10%] w-[50%] h-[50%] rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute top-[60%] -right-[10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-3xl" />
-      </div>
+    <AuthShell
+      variant="admin"
+      eyebrow="Restricted access"
+      title="Super admin sign in"
+      description="Use the credentials assigned to your super admin account."
+      footer={<p>Access is limited to approved super administrator accounts.</p>}
+    >
+      <form onSubmit={handleAdminSubmit} className="space-y-5">
+        <AuthField id="admin-email" label="Email address" icon={Mail}>
+          <Input
+            id="admin-email"
+            type="email"
+            autoComplete="username"
+            inputMode="email"
+            value={email}
+            onChange={event => {
+              setEmail(event.target.value);
+              if (error) setError("");
+            }}
+            placeholder="admin@example.com"
+            required
+            autoFocus
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? "admin-login-error" : undefined}
+            className="h-12 border-[var(--outline-variant)] bg-white pl-10 text-base shadow-none"
+          />
+        </AuthField>
 
-      <Card className="w-full max-w-md shadow-lg border-muted/60 relative z-10">
-        <CardHeader className="space-y-3 text-center pb-4 pt-8">
-          <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-2 ring-1 ring-primary/20">
-            <KeyRound className="h-7 w-7 text-primary" />
-          </div>
-          <div className="space-y-1">
-            <CardTitle className="text-2xl font-bold tracking-tight">Admin Sign In</CardTitle>
-            <CardDescription className="text-base">Super admin access only</CardDescription>
-          </div>
-        </CardHeader>
+        <AuthField id="admin-password" label="Password" icon={Lock}>
+          <Input
+            id="admin-password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            value={password}
+            onChange={event => {
+              setPassword(event.target.value);
+              if (error) setError("");
+            }}
+            placeholder="Enter your password"
+            required
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? "admin-login-error" : undefined}
+            className="h-12 border-[var(--outline-variant)] bg-white pl-10 pr-12 text-base shadow-none"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(value => !value)}
+            className="absolute right-1.5 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-md text-[var(--outline)] transition-colors hover:bg-[var(--surface-container-low)] hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-pressed={showPassword}
+          >
+            {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          </button>
+        </AuthField>
 
-        <CardContent>
-          <form onSubmit={handleAdminSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="admin@example.com"
-                  required
-                  autoFocus
-                  className="pl-9"
-                />
-              </div>
-            </div>
+        {error ? (
+          <Alert id="admin-login-error" variant="destructive" role="alert" className="border-destructive/35 bg-[#fff5f4]">
+            <AlertCircle />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : null}
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="Password"
-                  required
-                  className="pl-9 pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(value => !value)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
-                  tabIndex={-1}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            {error && (
-              <Alert variant="destructive" className="py-3">
-                <AlertDescription className="text-sm">{error}</AlertDescription>
-              </Alert>
-            )}
-
-            <Button type="submit" disabled={loading} className="w-full py-6 text-base shadow-sm mt-4">
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Authenticating...
-                </>
-              ) : (
-                "Sign In as Super Admin"
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+        <Button
+          type="submit"
+          size="lg"
+          disabled={loading || !email.trim() || !password}
+          className="w-full shadow-none"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="animate-spin" />
+              Authenticating...
+            </>
+          ) : (
+            <>
+              Sign in securely
+              <ArrowRight />
+            </>
+          )}
+        </Button>
+      </form>
+    </AuthShell>
   );
 }

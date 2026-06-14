@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/server";
-import { Permission, rolePermissions } from "@/lib/adminRoles";
+import { ADMIN_ROLE, type Permission, rolePermissions } from "@/lib/adminRoles";
+import { cacheKeys, getCached } from "@/lib/serverCache";
 
 export interface AdminContext {
   email: string;
@@ -20,8 +21,8 @@ export const isMissingTableError = (error: { code?: string; message?: string } |
 const fallbackSuperAdmin = (email: string, name: string | null = null): AdminContext => ({
   email,
   name,
-  role: "super_admin",
-  permissions: rolePermissions.super_admin,
+  role: ADMIN_ROLE.SUPER_ADMIN,
+  permissions: rolePermissions[ADMIN_ROLE.SUPER_ADMIN],
 });
 
 export async function getPermissionsForRole(
@@ -29,23 +30,27 @@ export async function getPermissionsForRole(
   role: string | null | undefined
 ): Promise<Permission[]> {
   if (!role) return [];
-  if (role === "super_admin") return rolePermissions.super_admin;
+  if (role === ADMIN_ROLE.SUPER_ADMIN) return rolePermissions[ADMIN_ROLE.SUPER_ADMIN];
 
-  const fallback = rolePermissions[role as keyof typeof rolePermissions] || [];
-  const { data, error } = await supabase
-    .from("app_role_permissions")
-    .select("permission")
-    .eq("role_key", role);
+  const { value } = await getCached(cacheKeys.rolePermissions(role), 120, async () => {
+    const fallback = rolePermissions[role as keyof typeof rolePermissions] || [];
+    const { data, error } = await supabase
+      .from("app_role_permissions")
+      .select("permission")
+      .eq("role_key", role);
 
-  if (error) {
-    if (!isMissingTableError(error)) {
-      console.error("Failed to load role permissions; falling back to defaults:", error);
+    if (error) {
+      if (!isMissingTableError(error)) {
+        console.error("Failed to load role permissions; falling back to defaults:", error);
+      }
+      return fallback;
     }
-    return fallback;
-  }
 
-  if (!data || data.length === 0) return fallback;
-  return data.map(row => row.permission).filter(Boolean) as Permission[];
+    if (!data || data.length === 0) return fallback;
+    return data.map(row => row.permission).filter(Boolean) as Permission[];
+  });
+
+  return value;
 }
 
 export async function getAdminContext(cookieStore: Awaited<ReturnType<typeof cookies>>): Promise<AdminContext | null> {
@@ -88,7 +93,7 @@ export async function getAdminContext(cookieStore: Awaited<ReturnType<typeof coo
 
   if (profile.is_active === false) return null;
 
-  const role = profile.role || "secretary";
+  const role = profile.role || ADMIN_ROLE.SECRETARY;
   return {
     email: profile.email,
     name: profile.full_name || null,

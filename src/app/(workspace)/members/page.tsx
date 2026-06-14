@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import {
   Plus,
   Trash2,
-  Search,
   X,
   ChevronLeft,
   ChevronRight,
@@ -17,22 +16,42 @@ import {
   FileUp,
   Loader2,
   SquarePen,
-  Eye,
 } from "lucide-react";
 
-import type { AdminRole, Permission } from "@/lib/adminRoles";
+import { ADMIN_ROLE, PERMISSION, type AdminRole, type Permission } from "@/lib/adminRoles";
 import { MemberDetailDialog } from "@/components/members/member-detail-dialog";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-type UnitAssignmentChoice = "none" | "member" | "assistant" | "head";
+import { DirectoryFilters } from "@/components/members/directory-filters";
+import { DirectoryTable } from "@/components/members/directory-table";
+import { DirectoryListMobile } from "@/components/members/directory-list-mobile";
+import { DirectoryStats } from "@/components/members/directory-stats";
+import { FILTER_VALUE } from "@/lib/filterOptions";
+import {
+  LIFE_STAGE,
+  MEMBERSHIP_STATUS,
+  lifeStageOptions,
+  membershipStatusOptions,
+  normalizeLifeStage,
+  normalizeMembershipStatus,
+  usesGuardianProfile,
+  usesNyscProfile,
+  usesResidenceProfile,
+  usesStudentProfile,
+  usesWorkProfile,
+  type LifeStage,
+  type MembershipStatus,
+} from "@/lib/memberLifecycle";
+import { UNIT_ROLE, unitRoleOptions, type UnitRole } from "@/lib/unitRoles";
+import { STUDENT_STATUS, studentStatusOptions, type StudentStatus } from "@/lib/studentStatus";
+
+type UnitAssignmentChoice = typeof FILTER_VALUE.NONE | UnitRole;
 
 function getMemberName(member: Member) {
   return [member.first_name, member.middle_name, member.last_name].filter(Boolean).join(" ");
@@ -72,6 +91,9 @@ export default function MembersPage() {
   const [sort, setSort] = useState("first_name");
   const [order, setOrder] = useState("asc");
   const [month, setMonth] = useState("");
+  const [memberType, setMemberType] = useState<string>(FILTER_VALUE.ALL);
+  const [unitId, setUnitId] = useState<string>(FILTER_VALUE.ALL);
+  const [stats, setStats] = useState({ total: 0, students: 0, working: 0, visitors: 0 });
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Member | null>(null);
   const [viewing, setViewing] = useState<Member | null>(null);
@@ -87,11 +109,12 @@ export default function MembersPage() {
     email: "",
     date_of_birth: "",
     position: "",
-    member_type: "member",
+    life_stage: LIFE_STAGE.OTHER as LifeStage,
+    membership_status: MEMBERSHIP_STATUS.ACTIVE as MembershipStatus,
     institution: "",
     department: "",
     academic_level: "",
-    student_status: "active_student",
+    student_status: STUDENT_STATUS.ACTIVE as StudentStatus,
     residence: "",
     cell_group: "",
     nysc_state: "",
@@ -118,13 +141,19 @@ export default function MembersPage() {
     setLoading(true);
     const params = new URLSearchParams({ page: page.toString(), limit: limit.toString(), sort, order });
     if (search) params.set("search", search);
-    if (month && month !== "all") params.set("month", month);
+    if (month && month !== FILTER_VALUE.ALL) params.set("month", month);
+    if (memberType && memberType !== FILTER_VALUE.ALL) params.set("life_stage", memberType);
+    if (unitId && unitId !== FILTER_VALUE.ALL) params.set("unit_id", unitId);
+
     const res = await fetch(`/api/members?${params.toString()}`);
     const data = await res.json();
     setMembers(Array.isArray(data.data) ? data.data : []);
     setTotal(data.total || 0);
+    if (data.stats) {
+      setStats(data.stats);
+    }
     setLoading(false);
-  }, [page, search, sort, order, month]);
+  }, [page, search, sort, order, month, memberType, unitId]);
 
   useEffect(() => {
     fetchMembers();
@@ -158,21 +187,27 @@ export default function MembersPage() {
   }, [search]);
 
   const totalPages = Math.max(1, Math.ceil(total / limit));
-  const showStudentFields = form.member_type === "student" || form.member_type === "alumnus";
-  const showNyscFields = form.member_type === "nysc";
-  const showWorkFields = form.member_type === "worker" || form.member_type === "alumnus";
-  const showGuardianFields = form.member_type === "student" || form.member_type === "visitor";
+  const canManage =
+    viewer.role === ADMIN_ROLE.SUPER_ADMIN ||
+    viewer.permissions.includes(PERMISSION.MEMBERS_MANAGE) ||
+    viewer.permissions.includes(PERMISSION.ADMINS_MANAGE);
+  const showStudentFields = usesStudentProfile(form.life_stage);
+  const showNyscFields = usesNyscProfile(form.life_stage);
+  const showWorkFields = usesWorkProfile(form.life_stage);
+  const showGuardianFields = usesGuardianProfile(form.life_stage);
   const assignedUnits = units.filter(unit => {
     const role = unitAssignments[unit.id];
-    return role && role !== "none";
+    return role && role !== FILTER_VALUE.NONE;
   });
-  const availableUnits = units.filter(unit => !unitAssignments[unit.id] || unitAssignments[unit.id] === "none");
+  const availableUnits = units.filter(
+    unit => !unitAssignments[unit.id] || unitAssignments[unit.id] === FILTER_VALUE.NONE,
+  );
 
   const handleAddUnit = () => {
     if (!selectedUnitId) return;
     setUnitAssignments(assignments => ({
       ...assignments,
-      [selectedUnitId]: "member",
+      [selectedUnitId]: UNIT_ROLE.MEMBER,
     }));
     setSelectedUnitId("");
   };
@@ -187,11 +222,12 @@ export default function MembersPage() {
       email: "",
       date_of_birth: "",
       position: "",
-      member_type: "member",
+      life_stage: LIFE_STAGE.OTHER,
+      membership_status: MEMBERSHIP_STATUS.ACTIVE,
       institution: "",
       department: "",
       academic_level: "",
-      student_status: "active_student",
+      student_status: STUDENT_STATUS.ACTIVE,
       residence: "",
       cell_group: "",
       nysc_state: "",
@@ -221,11 +257,12 @@ export default function MembersPage() {
       email: m.email || "",
       date_of_birth: m.date_of_birth,
       position: m.position || "",
-      member_type: m.member_type || "member",
+      life_stage: normalizeLifeStage(m.life_stage),
+      membership_status: normalizeMembershipStatus(m.membership_status, m.is_active),
       institution: m.institution || "",
       department: m.department || "",
       academic_level: m.academic_level || "",
-      student_status: m.student_status || "active_student",
+      student_status: (m.student_status as StudentStatus) || STUDENT_STATUS.ACTIVE,
       residence: m.residence || "",
       cell_group: m.cell_group || "",
       nysc_state: m.nysc_state || "",
@@ -240,7 +277,7 @@ export default function MembersPage() {
     });
     setPhotoFile(null);
     setPhotoPreview(m.photo_url || null);
-    setUnitAssignments(Object.fromEntries((m.units || []).map(unit => [unit.id, unit.role || "member"])));
+    setUnitAssignments(Object.fromEntries((m.units || []).map(unit => [unit.id, unit.role || UNIT_ROLE.MEMBER])));
     setSelectedUnitId("");
     setShowForm(true);
   };
@@ -274,7 +311,7 @@ export default function MembersPage() {
       const payload = {
         ...form,
         units: Object.entries(unitAssignments)
-          .filter(([, role]) => role !== "none")
+          .filter(([, role]) => role !== FILTER_VALUE.NONE)
           .map(([unit_id, role]) => ({ unit_id, role })),
         ...(photoUrl !== undefined ? { photo_url: photoUrl } : {}),
       };
@@ -398,6 +435,13 @@ export default function MembersPage() {
       />
 
       <div className="space-y-8 p-4 md:p-8">
+        <DirectoryStats
+          total={stats.total}
+          students={stats.students}
+          working={stats.working}
+          visitors={stats.visitors}
+        />
+
         <Card className="overflow-hidden border-[var(--outline-variant)] bg-white shadow-sm">
           <CardHeader className="gap-5 border-b border-[var(--outline-variant)] bg-white pb-5">
             <div className="flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
@@ -409,85 +453,47 @@ export default function MembersPage() {
                 Directory table
               </p>
             </div>
-
-            <div className="grid gap-3 lg:grid-cols-[minmax(260px,1fr)_180px_220px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--outline)]" />
-                <Input
-                  type="search"
-                  placeholder="Search by name or phone"
-                  className="h-11 border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] pl-10 pr-10"
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                />
-                {search ? (
-                  <button
-                    type="button"
-                    onClick={() => setSearch("")}
-                    className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[var(--outline)] transition-colors hover:bg-[var(--surface-container)] hover:text-[#0B1C30]"
-                    aria-label="Clear search"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                ) : null}
-              </div>
-
-              <Select
-                value={month}
-                onValueChange={val => {
-                  setMonth(val);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="h-11 border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]">
-                  <SelectValue placeholder="Birth Month" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All months</SelectItem>
-                  <SelectItem value="1">January</SelectItem>
-                  <SelectItem value="2">February</SelectItem>
-                  <SelectItem value="3">March</SelectItem>
-                  <SelectItem value="4">April</SelectItem>
-                  <SelectItem value="5">May</SelectItem>
-                  <SelectItem value="6">June</SelectItem>
-                  <SelectItem value="7">July</SelectItem>
-                  <SelectItem value="8">August</SelectItem>
-                  <SelectItem value="9">September</SelectItem>
-                  <SelectItem value="10">October</SelectItem>
-                  <SelectItem value="11">November</SelectItem>
-                  <SelectItem value="12">December</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={`${sort}-${order}`}
-                onValueChange={val => {
-                  const [s, o] = val.split("-");
-                  setSort(s);
-                  setOrder(o);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="h-11 border-[var(--outline-variant)] bg-[var(--surface-container-lowest)]">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="first_name-asc">First name, A-Z</SelectItem>
-                  <SelectItem value="first_name-desc">First name, Z-A</SelectItem>
-                  <SelectItem value="last_name-asc">Last name, A-Z</SelectItem>
-                  <SelectItem value="last_name-desc">Last name, Z-A</SelectItem>
-                  <SelectItem value="date_of_birth-asc">Birthday, earliest</SelectItem>
-                  <SelectItem value="date_of_birth-desc">Birthday, latest</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </CardHeader>
+
+          <DirectoryFilters
+            search={search}
+            onSearchChange={val => {
+              setSearch(val);
+              setPage(1);
+            }}
+            memberType={memberType}
+            onMemberTypeChange={val => {
+              setMemberType(val);
+              setPage(1);
+            }}
+            unitId={unitId}
+            onUnitIdChange={val => {
+              setUnitId(val);
+              setPage(1);
+            }}
+            month={month}
+            onMonthChange={val => {
+              setMonth(val);
+              setPage(1);
+            }}
+            sort={sort}
+            order={order}
+            onSortChange={(s, o) => {
+              setSort(s);
+              setOrder(o);
+              setPage(1);
+            }}
+            units={units}
+          />
 
           <CardContent className="p-0">
             {loading ? (
               <div className="p-6 space-y-4">
                 {[1, 2, 3, 4, 5].map(i => (
-                  <div key={i} className="flex items-center space-x-4 border-b pb-4 last:border-0 last:pb-0">
+                  <div
+                    key={i}
+                    className="flex items-center space-x-4 border-b pb-4 last:border-0 last:pb-0 border-[var(--outline-variant)]/30"
+                  >
                     <Skeleton className="h-10 w-10 rounded-full" />
                     <div className="space-y-2 flex-1">
                       <Skeleton className="h-4 w-[250px]" />
@@ -515,184 +521,14 @@ export default function MembersPage() {
               </div>
             ) : (
               <>
-                <div className="divide-y divide-[var(--outline-variant)] md:hidden">
-                  {members.map(m => {
-                    const unitSummary = getUnitSummary(m);
-
-                    return (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => setViewing(m)}
-                        className="flex w-full items-center gap-3 bg-white px-4 py-4 text-left transition-colors hover:bg-[var(--surface-container-low)]"
-                      >
-                        <Avatar className="h-12 w-12 shrink-0 border border-[var(--outline-variant)] bg-[var(--surface-container-low)]">
-                          <AvatarImage src={m.photo_url || ""} />
-                          <AvatarFallback className="bg-primary/10 font-semibold text-primary">
-                            {m.first_name[0]}
-                            {m.last_name[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="truncate font-semibold text-[#0B1C30]">{getMemberName(m)}</p>
-                              <p className="mt-0.5 text-sm text-[var(--on-surface-variant)]">
-                                {m.phone_number || "No phone number"}
-                              </p>
-                            </div>
-                            <Badge className="shrink-0 rounded-full border border-[var(--outline-variant)] bg-[var(--surface-container)] px-2.5 py-1 font-normal capitalize text-[#0B1C30] hover:bg-[var(--surface-container)]">
-                              {(m.member_type || "member").replace(/_/g, " ")}
-                            </Badge>
-                          </div>
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            {unitSummary.visible.map(unit => (
-                              <span
-                                key={unit}
-                                className="rounded-full bg-[var(--surface-container-low)] px-2.5 py-1 text-xs font-medium text-[var(--on-surface-variant)]"
-                              >
-                                {unit}
-                              </span>
-                            ))}
-                            {unitSummary.extra > 0 ? (
-                              <span className="rounded-full bg-[var(--surface-container)] px-2.5 py-1 text-xs font-medium text-primary">
-                                +{unitSummary.extra}
-                              </span>
-                            ) : null}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="hidden w-full overflow-x-auto md:block">
-                  <Table className="min-w-[720px]">
-                    <TableHeader className="bg-[var(--surface-container-low)]">
-                      <TableRow className="border-[var(--outline-variant)]">
-                        <TableHead className="w-[280px] px-5 py-3 font-medium text-[#0B1C30]">Name</TableHead>
-                        <TableHead className="px-5 py-3 font-medium text-[#0B1C30]">Contact</TableHead>
-                        <TableHead className="px-5 py-3 font-medium text-[#0B1C30]">Type</TableHead>
-                        <TableHead className="px-5 py-3 font-medium text-[#0B1C30]">Unit</TableHead>
-                        <TableHead className="hidden px-5 py-3 text-right font-medium text-[#0B1C30] md:table-cell">
-                          Actions
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {members.map(m => {
-                        const unitSummary = getUnitSummary(m);
-                        const whatsappHref = getWhatsAppHref(m.phone_number);
-
-                        return (
-                          <TableRow
-                            key={m.id}
-                            className="group border-[var(--outline-variant)] hover:bg-[var(--surface-container-low)]"
-                          >
-                            <TableCell className="px-5 py-4">
-                              <div className="flex items-center gap-3">
-                                <Avatar className="h-12 w-12 border border-muted shadow-sm">
-                                  <AvatarImage src={m.photo_url || ""} />
-                                  <AvatarFallback className="bg-primary/5 text-primary">
-                                    {m.first_name[0]}
-                                    {m.last_name[0]}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="min-w-0">
-                                  <span className="block truncate font-semibold text-[#0B1C30]">
-                                    {getMemberName(m)}
-                                  </span>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="px-5 py-4">
-                              <div className="flex items-center gap-2 text-sm text-[#0B1C30]">
-                                <span>{m.phone_number || "-"}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="px-5 py-4">
-                              <Badge className="rounded-full border border-[var(--outline-variant)] bg-[var(--surface-container)] px-2.5 py-1 font-normal capitalize text-[#0B1C30] hover:bg-[var(--surface-container)]">
-                                {(m.member_type || "member").replace(/_/g, " ")}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="px-5 py-4">
-                              <div className="flex flex-wrap gap-1.5">
-                                {unitSummary.visible.map(unit => (
-                                  <span
-                                    key={unit}
-                                    className="rounded-full bg-[var(--surface-container-low)] px-2.5 py-1 text-xs font-medium text-[var(--on-surface-variant)]"
-                                  >
-                                    {unit}
-                                  </span>
-                                ))}
-                                {unitSummary.extra > 0 ? (
-                                  <span className="rounded-full bg-[var(--surface-container)] px-2.5 py-1 text-xs font-medium text-primary">
-                                    +{unitSummary.extra}
-                                  </span>
-                                ) : null}
-                              </div>
-                            </TableCell>
-                            <TableCell className="hidden px-5 py-4 text-right md:table-cell">
-                              <div className="flex items-center justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={e => {
-                                    e.stopPropagation();
-                                    setViewing(m);
-                                  }}
-                                  className="h-8 w-8 text-[var(--on-surface-variant)] transition-colors hover:bg-[var(--surface-container)] hover:text-primary"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                  <span className="sr-only">View</span>
-                                </Button>
-                                {whatsappHref ? (
-                                  <Button
-                                    asChild
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-[#007D55] hover:bg-[var(--surface-container)] hover:text-[#006242]"
-                                  >
-                                    <a
-                                      href={whatsappHref}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      onClick={e => e.stopPropagation()}
-                                    >
-                                      <WhatsAppIcon className="h-4 w-4" />
-                                      <span className="sr-only">Message</span>
-                                    </a>
-                                  </Button>
-                                ) : null}
-                                {/* <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={e => {
-                                    e.stopPropagation();
-                                    openEdit(m);
-                                  }}
-                                  className="h-8 w-8 text-[var(--on-surface-variant)] transition-colors hover:bg-[var(--surface-container)] hover:text-primary"
-                                >
-                                  <SquarePen className="h-4 w-4" />
-                                  <span className="sr-only">Edit</span>
-                                </Button>
-                                <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => { e.stopPropagation(); handleDelete(m.id); }}
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          <span className="sr-only">Delete</span>
-                        </Button> */}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
+                <DirectoryTable
+                  members={members}
+                  onView={setViewing}
+                  onEdit={openEdit}
+                  onDelete={handleDelete}
+                  canManageMembers={canManage}
+                />
+                <DirectoryListMobile members={members} onView={setViewing} />
               </>
             )}
           </CardContent>
@@ -856,22 +692,38 @@ export default function MembersPage() {
                     </div>
                     <div className="space-y-2 md:col-span-2">
                       <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        Member Type
+                        Life Stage
                       </label>
-                      <Select
-                        value={form.member_type}
-                        onValueChange={value => setForm({ ...form, member_type: value })}
-                      >
+                      <Select value={form.life_stage} onValueChange={value => setForm({ ...form, life_stage: value as LifeStage })}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select member type" />
+                          <SelectValue placeholder="Select life stage" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="member">Member</SelectItem>
-                          <SelectItem value="student">Student</SelectItem>
-                          <SelectItem value="nysc">NYSC / Service</SelectItem>
-                          <SelectItem value="worker">Worker</SelectItem>
-                          <SelectItem value="alumnus">Alumnus</SelectItem>
-                          <SelectItem value="visitor">Visitor</SelectItem>
+                          {lifeStageOptions.map(option => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        Membership Status
+                      </label>
+                      <Select
+                        value={form.membership_status}
+                        onValueChange={value => setForm({ ...form, membership_status: value as MembershipStatus })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select membership status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {membershipStatusOptions.map(option => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -907,7 +759,7 @@ export default function MembersPage() {
                             onChange={e => setForm({ ...form, department: e.target.value })}
                           />
                         </div>
-                        {form.member_type === "student" && (
+                        {form.life_stage === LIFE_STAGE.STUDENT && (
                           <>
                             <div className="space-y-2">
                               <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
@@ -925,21 +777,23 @@ export default function MembersPage() {
                               </label>
                               <Select
                                 value={form.student_status}
-                                onValueChange={value => setForm({ ...form, student_status: value })}
+                                onValueChange={value => setForm({ ...form, student_status: value as StudentStatus })}
                               >
                                 <SelectTrigger>
                                   <SelectValue placeholder="Select status" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="active_student">Active Student</SelectItem>
-                                  <SelectItem value="fresher">Fresher</SelectItem>
-                                  <SelectItem value="final_year">Final Year</SelectItem>
+                                  {studentStatusOptions.map(option => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                      {option.label}
+                                    </SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </div>
                           </>
                         )}
-                        {form.member_type === "alumnus" && (
+                        {form.life_stage === LIFE_STAGE.GRADUATE && (
                           <div className="space-y-2">
                             <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                               Graduation Year
@@ -953,9 +807,7 @@ export default function MembersPage() {
                         )}
                       </>
                     )}
-                    {(form.member_type === "student" ||
-                      form.member_type === "nysc" ||
-                      form.member_type === "visitor") && (
+                    {usesResidenceProfile(form.life_stage) && (
                       <div className="space-y-2">
                         <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                           Residence / Hostel
@@ -1125,7 +977,7 @@ export default function MembersPage() {
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <Select
-                                      value={unitAssignments[unit.id] || "member"}
+                                      value={unitAssignments[unit.id] || UNIT_ROLE.MEMBER}
                                       onValueChange={value =>
                                         setUnitAssignments(assignments => ({
                                           ...assignments,
@@ -1137,9 +989,11 @@ export default function MembersPage() {
                                         <SelectValue placeholder="Role" />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        <SelectItem value="member">Member</SelectItem>
-                                        <SelectItem value="assistant">Assistant</SelectItem>
-                                        <SelectItem value="head">Head</SelectItem>
+                                        {unitRoleOptions.map(option => (
+                                          <SelectItem key={option.value} value={option.value}>
+                                            {option.label}
+                                          </SelectItem>
+                                        ))}
                                       </SelectContent>
                                     </Select>
                                     <Button
@@ -1150,7 +1004,7 @@ export default function MembersPage() {
                                       onClick={() =>
                                         setUnitAssignments(assignments => ({
                                           ...assignments,
-                                          [unit.id]: "none",
+                                          [unit.id]: FILTER_VALUE.NONE,
                                         }))
                                       }
                                     >

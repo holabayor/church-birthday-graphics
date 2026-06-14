@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/server";
 import { cookies } from "next/headers";
 import { designs, defaultMessages } from "@/lib/designs";
+import { MEMBERSHIP_STATUS } from "@/lib/memberLifecycle";
 
 // This endpoint can be called by a cron job (e.g., Vercel Cron) daily
 // It checks today's birthdays, generates a random design, and logs it
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  const { data: members, error } = await supabase.from("members").select("*").eq("is_active", true);
+  const { data: members, error } = await supabase.from("members").select("*").eq("membership_status", MEMBERSHIP_STATUS.ACTIVE);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

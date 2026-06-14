@@ -1,4 +1,6 @@
-export type UnitRole = "member" | "assistant" | "head";
+import { normalizeUnitRole, type UnitRole } from "@/lib/unitRoles";
+
+export type { UnitRole };
 
 export async function attachMemberUnits(supabase: any, members: any[]) {
   const ids = members.map(member => member.id).filter(Boolean);
@@ -25,7 +27,7 @@ export async function attachMemberUnits(supabase: any, members: any[]) {
       id: unit.id,
       name: unit.name,
       description: unit.description,
-      role: row.role || "member",
+      role: normalizeUnitRole(row.role),
     });
     unitsByMember.set(row.member_id, assignments);
   }
@@ -53,7 +55,7 @@ export async function saveMemberUnits(
     .map(unit => ({
       member_id: memberId,
       unit_id: unit.unit_id,
-      role: unit.role,
+      role: normalizeUnitRole(unit.role),
     }));
 
   if (rows.length === 0) return null;

@@ -21,7 +21,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import type { AdminRole, Permission } from "@/lib/adminRoles";
+import { PERMISSION, fullMemberDetailRoles, type AdminRole, type Permission } from "@/lib/adminRoles";
 import type { Member, MemberUnitAssignment } from "@/lib/types";
 import type { UnitRole } from "@/components/units/types";
 import { unitRoleLabels } from "@/components/units/types";
@@ -29,6 +29,16 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import {
+  getLifeStageLabel,
+  getMembershipStatusLabel,
+  isAvailableMember,
+  normalizeLifeStage,
+  usesNyscProfile,
+  usesStudentProfile,
+  usesWorkProfile,
+} from "@/lib/memberLifecycle";
+import { getStudentStatusLabel } from "@/lib/studentStatus";
 
 type MemberDetailRecord = Partial<Member> & {
   id: string;
@@ -60,23 +70,22 @@ function getMemberName(member: MemberDetailRecord) {
 function getDetailLevel(viewer?: MemberDetailViewer): DetailLevel {
   const role = viewer?.role || null;
   const permissions = viewer?.permissions || [];
-  const fullRoles: Array<AdminRole> = ["super_admin", "pastor", "assistant_pastor"];
 
   if (
-    (role && fullRoles.includes(role)) ||
-    permissions.includes("members.manage") ||
-    permissions.includes("admins.manage")
+    (role && fullMemberDetailRoles.includes(role as any)) ||
+    permissions.includes(PERMISSION.MEMBERS_MANAGE) ||
+    permissions.includes(PERMISSION.ADMINS_MANAGE)
   ) {
     return "full";
   }
 
   if (
-    permissions.includes("members.view") ||
-    permissions.includes("attendance.view") ||
-    permissions.includes("attendance.manage") ||
-    permissions.includes("followups.manage") ||
-    permissions.includes("outreach.view") ||
-    permissions.includes("units.manage")
+    permissions.includes(PERMISSION.MEMBERS_VIEW) ||
+    permissions.includes(PERMISSION.ATTENDANCE_VIEW) ||
+    permissions.includes(PERMISSION.ATTENDANCE_MANAGE) ||
+    permissions.includes(PERMISSION.FOLLOWUPS_MANAGE) ||
+    permissions.includes(PERMISSION.OUTREACH_VIEW) ||
+    permissions.includes(PERMISSION.UNITS_MANAGE)
   ) {
     return "operational";
   }
@@ -145,7 +154,7 @@ function CollapsibleSection({
       onOpenChange={setOpen}
       className="bg-[var(--surface-container-lowest)] rounded-xl border border-[var(--outline-variant)]/40 overflow-hidden shadow-xs"
     >
-      <CollapsibleTrigger className="flex w-full items-center justify-between font-sans font-semibold text-base md:text-lg cursor-pointer p-4 bg-[var(--surface-container-lowest)] hover:bg-(--surface-container-low) transition-colors select-none text-left">
+      <CollapsibleTrigger className="flex w-full items-center justify-between font-sans font-semibold text-base md:text-lg cursor-pointer p-4 bg-[var(--surface-container-lowest)] hover:bg-[var(--surface-container-low)] transition-colors select-none text-left">
         <div className="flex items-center gap-3 text-foreground">
           <Icon className={`h-5 w-5 ${iconColorClass}`} />
           {title}
@@ -167,6 +176,9 @@ export function MemberDetailDialog({ member, viewer, unitName, actions, onOpenCh
   const canSeeFull = detailLevel === "full";
 
   const assignedUnits = member ? unitLabels(member, unitName) : [];
+  const lifeStage = normalizeLifeStage(member?.life_stage);
+  const isActiveMember = isAvailableMember(member?.membership_status, member?.is_active);
+  const membershipStatusLabel = getMembershipStatusLabel(member?.membership_status, member?.is_active);
 
   // Generate dynamic timeline items for Church History section
   const timelineItems = [];
@@ -201,11 +213,11 @@ export function MemberDetailDialog({ member, viewer, unitName, actions, onOpenCh
 
   return (
     <Dialog open={!!member} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[80dvh] w-full flex-col overflow-hidden border-none bg-[var(--surface-container-lowest)] p-0 sm:max-w-xl md:max-w-2xl lg:max-w-3xl xl:max-w-4xl rounded-2xl shadow-xl">
+      <DialogContent className="flex max-h-[60dvh] h-full w-full flex-col overflow-hidden border-none bg-[var(--surface-container-lowest)] p-0 sm:max-w-xl md:max-w-2xl lg:max-w-3xl xl:max-w-4xl rounded-2xl shadow-xl">
         {member ? (
           <div className="flex flex-col md:flex-row h-full overflow-hidden relative">
             {/* LEFT COLUMN: Profile Image (Approx 35%) */}
-            <div className="w-full md:w-[35%] shrink-0 relative bg-(--surface-container-low) border-r border-(--outline-variant)/20 hidden md:block">
+            <div className="w-full md:w-[35%] shrink-0 relative bg-[var(--surface-container-low)] border-r border-[var(--outline-variant)]/20 hidden md:block">
               <div className="h-full w-full">
                 {member.photo_url ? (
                   <img
@@ -214,24 +226,28 @@ export function MemberDetailDialog({ member, viewer, unitName, actions, onOpenCh
                     className="h-full w-full object-cover object-center"
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-primary to-blue-700 font-bold text-4xl text-white">
+                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary to-blue-700 font-bold text-4xl text-white">
                     {member.first_name?.[0]}
                     {member.last_name?.[0]}
                   </div>
                 )}
               </div>
               {/* Gradient overlay at bottom for quick stats */}
-              <div className="absolute bottom-0 w-full bg-linear-to-t from-[var(--inverse-surface)]/90 via-[var(--inverse-surface)]/60 to-transparent p-6 pt-20">
+              <div className="absolute bottom-0 w-full bg-gradient-to-t from-[var(--inverse-surface)]/90 via-[var(--inverse-surface)]/60 to-transparent p-6 pt-20">
                 <div className="flex items-center gap-2 text-[var(--inverse-on-surface)] mb-2">
-                  {member.is_active !== false ? (
+                  {isActiveMember ? (
                     <>
                       <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                      <span className="font-mono text-xs uppercase tracking-wider font-semibold">Active Member</span>
+                      <span className="font-mono text-xs uppercase tracking-wider font-semibold">
+                        {membershipStatusLabel}
+                      </span>
                     </>
                   ) : (
                     <>
                       <XCircle className="h-4 w-4 text-destructive" />
-                      <span className="font-mono text-xs uppercase tracking-wider font-semibold">Inactive</span>
+                      <span className="font-mono text-xs uppercase tracking-wider font-semibold">
+                        {membershipStatusLabel}
+                      </span>
                     </>
                   )}
                 </div>
@@ -255,12 +271,12 @@ export function MemberDetailDialog({ member, viewer, unitName, actions, onOpenCh
                     className="w-full h-full object-cover object-center"
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-primary to-blue-700 font-bold text-4xl text-white">
+                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary to-blue-700 font-bold text-4xl text-white">
                     {member.first_name?.[0]}
                     {member.last_name?.[0]}
                   </div>
                 )}
-                <div className="absolute inset-0 bg-linear-to-t from-[var(--surface-container-lowest)] via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[var(--surface-container-lowest)] via-transparent to-transparent" />
               </div>
 
               <div className="p-6 md:p-10 flex-1 space-y-8">
@@ -269,14 +285,14 @@ export function MemberDetailDialog({ member, viewer, unitName, actions, onOpenCh
                   {/* Badges */}
                   <div className="flex flex-wrap items-center gap-2 mb-3">
                     <Badge className="bg-primary/10 text-primary border-none rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize shadow-none hover:bg-primary/15">
-                      {(member.member_type || "member").replace(/_/g, " ")}
+                      {getLifeStageLabel(lifeStage)}
                     </Badge>
                     {assignedUnits.map(unit => {
                       const UnitIcon = getUnitIcon(unit.name);
                       return (
                         <Badge
                           key={unit.id}
-                          className="bg-(--surface-container-low) text-[var(--on-surface-variant)] border border-[var(--outline-variant)]/30 rounded-full px-2.5 py-0.5 text-xs font-medium shadow-none inline-flex items-center gap-1"
+                          className="bg-[var(--surface-container-low)] text-[var(--on-surface-variant)] border border-[var(--outline-variant)]/30 rounded-full px-2.5 py-0.5 text-xs font-medium shadow-none inline-flex items-center gap-1"
                         >
                           <UnitIcon className="h-3 w-3 text-primary" />
                           {unit.name} - {unitRoleLabels[unit.role as UnitRole] || unit.role}
@@ -366,7 +382,7 @@ export function MemberDetailDialog({ member, viewer, unitName, actions, onOpenCh
                   </CollapsibleSection>
 
                   {/* Student Profile Collapsible */}
-                  {canSeeFull && ["student", "alumnus"].includes(member.member_type || "") && (
+                  {canSeeFull && usesStudentProfile(lifeStage) && (
                     <CollapsibleSection title="Student Profile" icon={GraduationCap} iconColorClass="text-secondary">
                       <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-y-5 gap-x-6 text-sm">
                         <div>
@@ -389,8 +405,8 @@ export function MemberDetailDialog({ member, viewer, unitName, actions, onOpenCh
                           <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
                             Student Status
                           </p>
-                          <p className="font-semibold text-foreground capitalize">
-                            {member.student_status?.replace(/_/g, " ") || "Not provided"}
+                          <p className="font-semibold text-foreground">
+                            {member.student_status ? getStudentStatusLabel(member.student_status) : "Not provided"}
                           </p>
                         </div>
                       </div>
@@ -398,7 +414,7 @@ export function MemberDetailDialog({ member, viewer, unitName, actions, onOpenCh
                   )}
 
                   {/* NYSC Profile Collapsible */}
-                  {canSeeFull && member.member_type === "nysc" && (
+                  {canSeeFull && usesNyscProfile(lifeStage) && (
                     <CollapsibleSection title="NYSC Profile" icon={MapPin} iconColorClass="text-secondary">
                       <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-y-5 gap-x-6 text-sm">
                         <div>
@@ -418,7 +434,7 @@ export function MemberDetailDialog({ member, viewer, unitName, actions, onOpenCh
                   )}
 
                   {/* Professional Profile Collapsible */}
-                  {canSeeFull && ["worker", "alumnus"].includes(member.member_type || "") && (
+                  {canSeeFull && usesWorkProfile(lifeStage) && (
                     <CollapsibleSection
                       title="Professional Profile"
                       icon={BriefcaseBusiness}

@@ -4,6 +4,17 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CalendarCheck, Check, Clock, Loader2, Phone, Search, UserCheck, UserX } from "lucide-react";
 import { AttendanceSession, Member } from "@/lib/types";
+import { getLifeStageLabel } from "@/lib/memberLifecycle";
+import {
+  ATTENDANCE_STATUS,
+  FOLLOW_UP_STATUS,
+  SERVICE_TYPE,
+  type AttendanceStatus,
+  type FollowUpStatus,
+  type ServiceType,
+  followUpStatusOptions,
+  serviceTypeOptions,
+} from "@/lib/attendanceStatus";
 import { PageHeader } from "@/components/page-header";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -14,10 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 
-type AttendanceStatus = "present" | "absent" | "excused";
-type FollowUpStatus = "pending" | "contacted" | "visited" | "resolved" | "no_response";
-
-type RosterMember = Pick<Member, "id" | "first_name" | "middle_name" | "last_name" | "phone_number" | "photo_url" | "member_type"> & {
+type RosterMember = Pick<Member, "id" | "first_name" | "middle_name" | "last_name" | "phone_number" | "photo_url" | "life_stage"> & {
   attendance: {
     status: AttendanceStatus;
   };
@@ -39,7 +47,7 @@ type AttendanceReport = AttendanceSession & {
 
 const today = new Date().toISOString().slice(0, 10);
 
-const fullName = (member: RosterMember) =>
+const fullName = (member: Pick<Member, "first_name" | "middle_name" | "last_name">) =>
   [member.first_name, member.middle_name, member.last_name].filter(Boolean).join(" ");
 
 export default function AttendancePage() {
@@ -60,9 +68,14 @@ export default function AttendancePage() {
     totalSessions: 0,
   });
   const [followUpDrafts, setFollowUpDrafts] = useState<Record<string, { status: FollowUpStatus; notes: string; assigned_to: string }>>({});
-  const [newSession, setNewSession] = useState({
+  const [newSession, setNewSession] = useState<{
+    title: string;
+    service_type: ServiceType;
+    session_date: string;
+    notes: string;
+  }>({
     title: "Sunday Service",
-    service_type: "service",
+    service_type: SERVICE_TYPE.SERVICE,
     session_date: today,
     notes: "",
   });
@@ -75,11 +88,11 @@ export default function AttendancePage() {
     return roster.filter(member =>
       fullName(member).toLowerCase().includes(query) ||
       member.phone_number?.toLowerCase().includes(query) ||
-      member.member_type?.toLowerCase().includes(query)
+      member.life_stage?.toLowerCase().includes(query)
     );
   }, [roster, search]);
 
-  const absenteeRoster = filteredRoster.filter(member => member.attendance.status === "absent");
+  const absenteeRoster = filteredRoster.filter(member => member.attendance.status === ATTENDANCE_STATUS.ABSENT);
 
   const fetchSessions = async () => {
     setLoadingSessions(true);
@@ -113,7 +126,7 @@ export default function AttendancePage() {
           (data.roster || []).map((member: RosterMember) => [
             member.id,
             {
-              status: member.follow_up?.status || "pending",
+              status: member.follow_up?.status || FOLLOW_UP_STATUS.PENDING,
               notes: member.follow_up?.notes || "",
               assigned_to: member.follow_up?.assigned_to || "",
             },
@@ -208,7 +221,7 @@ export default function AttendancePage() {
 
   const saveFollowUp = async (memberId: string) => {
     if (!selectedSessionId) return;
-    const draft = followUpDrafts[memberId] || { status: "pending", notes: "", assigned_to: "" };
+    const draft = followUpDrafts[memberId] || { status: FOLLOW_UP_STATUS.PENDING, notes: "", assigned_to: "" };
 
     try {
       const res = await fetch("/api/attendance/followups", {
@@ -255,16 +268,17 @@ export default function AttendancePage() {
                     <label className="text-sm font-medium leading-none">Type</label>
                     <Select
                       value={newSession.service_type}
-                      onValueChange={value => setNewSession({ ...newSession, service_type: value })}
+                      onValueChange={value => setNewSession({ ...newSession, service_type: value as ServiceType })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="service">Service</SelectItem>
-                        <SelectItem value="midweek">Midweek</SelectItem>
-                        <SelectItem value="event">Event</SelectItem>
-                        <SelectItem value="meeting">Meeting</SelectItem>
+                        {serviceTypeOptions.map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -478,31 +492,31 @@ export default function AttendancePage() {
                                 {member.phone_number}
                               </span>
                             )}
-                            <Badge variant="outline" className="capitalize">{member.member_type || "member"}</Badge>
+                            <Badge variant="outline">{getLifeStageLabel(member.life_stage)}</Badge>
                           </div>
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <Button
                           size="sm"
-                          variant={member.attendance.status === "present" ? "default" : "outline"}
-                          onClick={() => markAttendance(member.id, "present")}
+                          variant={member.attendance.status === ATTENDANCE_STATUS.PRESENT ? "default" : "outline"}
+                          onClick={() => markAttendance(member.id, ATTENDANCE_STATUS.PRESENT)}
                         >
                           <UserCheck className="mr-2 h-4 w-4" />
                           Present
                         </Button>
                         <Button
                           size="sm"
-                          variant={member.attendance.status === "absent" ? "destructive" : "outline"}
-                          onClick={() => markAttendance(member.id, "absent")}
+                          variant={member.attendance.status === ATTENDANCE_STATUS.ABSENT ? "destructive" : "outline"}
+                          onClick={() => markAttendance(member.id, ATTENDANCE_STATUS.ABSENT)}
                         >
                           <UserX className="mr-2 h-4 w-4" />
                           Absent
                         </Button>
                         <Button
                           size="sm"
-                          variant={member.attendance.status === "excused" ? "secondary" : "outline"}
-                          onClick={() => markAttendance(member.id, "excused")}
+                          variant={member.attendance.status === ATTENDANCE_STATUS.EXCUSED ? "secondary" : "outline"}
+                          onClick={() => markAttendance(member.id, ATTENDANCE_STATUS.EXCUSED)}
                         >
                           <Clock className="mr-2 h-4 w-4" />
                           Excused
@@ -530,7 +544,7 @@ export default function AttendancePage() {
               ) : (
                 <div className="space-y-4">
                   {absenteeRoster.map(member => {
-                    const draft = followUpDrafts[member.id] || { status: "pending", notes: "", assigned_to: "" };
+                    const draft = followUpDrafts[member.id] || { status: FOLLOW_UP_STATUS.PENDING, notes: "", assigned_to: "" };
                     return (
                       <div key={member.id} className="rounded-lg border border-zinc-200 p-4 space-y-4">
                         <div className="flex items-center justify-between gap-3">
@@ -554,11 +568,11 @@ export default function AttendancePage() {
                               <SelectValue placeholder="Follow-up status" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="contacted">Contacted</SelectItem>
-                              <SelectItem value="visited">Visited</SelectItem>
-                              <SelectItem value="resolved">Resolved</SelectItem>
-                              <SelectItem value="no_response">No Response</SelectItem>
+                              {followUpStatusOptions.map(option => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                           <Input

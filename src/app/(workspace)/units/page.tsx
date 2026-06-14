@@ -1,35 +1,64 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Building2, Plus, Search, SquarePen, Trash2, Users } from "lucide-react";
+import {
+  Building2,
+  Plus,
+  Search,
+  Download,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  Shield,
+  HelpCircle,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
 import { UnitFormModal } from "@/components/units/unit-form-modal";
-import { UnitLeadershipStack } from "@/components/units/unit-leadership-summary";
-import type { ManagedUnit } from "@/components/units/types";
-import { Badge } from "@/components/ui/badge";
+import type { ManagedUnit, UnitMember } from "@/components/units/types";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { PERMISSION, type Permission } from "@/lib/adminRoles";
+import { UnitDirectoryTable } from "@/components/units/unit-directory-table";
+import { MobileUnitCard } from "@/components/units/mobile-unit-card";
+import { UNIT_ROLE } from "@/lib/unitRoles";
 
-type SortMode = "name-asc" | "name-desc" | "members-desc" | "members-asc";
+// Dynamically categorize units for filters
+const getUnitCategory = (name: string): string => {
+  const lower = name.toLowerCase();
+  if (lower.includes("choir") || lower.includes("music") || lower.includes("worship")) {
+    return "worship";
+  }
+  if (lower.includes("media") || lower.includes("tech") || lower.includes("sound")) {
+    return "technical";
+  }
+  if (lower.includes("usher") || lower.includes("protocol") || lower.includes("hospitality")) {
+    return "service";
+  }
+  return "other";
+};
 
 export default function UnitsPage() {
   const [units, setUnits] = useState<ManagedUnit[]>([]);
-  const [permissions, setPermissions] = useState<string[]>([]);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<SortMode>("name-asc");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [sortAsc, setSortAsc] = useState<boolean>(true);
   const [formOpen, setFormOpen] = useState(false);
   const [editingUnit, setEditingUnit] = useState<ManagedUnit | null>(null);
 
-  const canManageUnits = permissions.includes("units.manage") || units.some(unit => unit.access.can_manage_details);
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+
+  const canManageUnits =
+    permissions.includes(PERMISSION.UNITS_MANAGE) || units.some(unit => unit.access.can_manage_details);
 
   const fetchUnits = async () => {
     setLoading(true);
@@ -40,7 +69,9 @@ export default function UnitsPage() {
 
       if (!unitsRes.ok) throw new Error(unitsData.error || "Failed to load units");
       setUnits(Array.isArray(unitsData.data) ? unitsData.data : []);
-      setPermissions(authData.permissions || authData.user?.permissions || authData.member?.permissions || []);
+      setPermissions(
+        (authData.permissions || authData.user?.permissions || authData.member?.permissions || []) as Permission[],
+      );
     } catch (err: any) {
       toast.error(err.message || "Failed to load units");
     } finally {
@@ -52,21 +83,63 @@ export default function UnitsPage() {
     fetchUnits();
   }, []);
 
+  // Filter and Sort units
   const filteredUnits = useMemo(() => {
     const query = search.trim().toLowerCase();
-    const next = units.filter(
+    let next = units.filter(
       unit => !query || unit.name.toLowerCase().includes(query) || unit.description?.toLowerCase().includes(query),
     );
 
+    // Apply category filter
+    if (selectedCategory !== "all") {
+      next = next.filter(unit => getUnitCategory(unit.name) === selectedCategory);
+    }
+
+    // Apply status filter (mocked - active if has members or has HOD, inactive otherwise)
+    if (selectedStatus !== "all") {
+      next = next.filter(unit => {
+        const isActive = unit.stats.total_members > 0 || unit.members.some(m => m.unit_role === UNIT_ROLE.HEAD);
+        return selectedStatus === "active" ? isActive : !isActive;
+      });
+    }
+
+    // Sort name
     next.sort((a, b) => {
-      if (sort === "name-desc") return b.name.localeCompare(a.name);
-      if (sort === "members-desc") return b.stats.total_members - a.stats.total_members;
-      if (sort === "members-asc") return a.stats.total_members - b.stats.total_members;
-      return a.name.localeCompare(b.name);
+      return sortAsc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
     });
 
     return next;
-  }, [search, sort, units]);
+  }, [search, selectedCategory, selectedStatus, sortAsc, units]);
+
+  // Paginated units
+  const paginatedUnits = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredUnits.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredUnits, currentPage]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredUnits.length / itemsPerPage));
+
+  // Reset page on filter/search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, selectedCategory, selectedStatus]);
+
+  // Statistics calculation
+  const totalUnitsCount = units.length;
+  const activeMembersSum = units.reduce((sum, u) => sum + u.stats.total_members, 0);
+  const leadershipFilledPercent = useMemo(() => {
+    if (units.length === 0) return 0;
+    const filledHods = units.filter(u => u.members.some(m => m.unit_role === UNIT_ROLE.HEAD)).length;
+    return Math.round((filledHods / units.length) * 100);
+  }, [units]);
+
+  const vacantLeadershipPositions = useMemo(() => {
+    return units.reduce((acc, u) => {
+      const hasHod = u.members.some(m => m.unit_role === UNIT_ROLE.HEAD);
+      const hasAsst = u.members.some(m => m.unit_role === UNIT_ROLE.ASSISTANT);
+      return acc + (hasHod ? 0 : 1) + (hasAsst ? 0 : 1);
+    }, 0);
+  }, [units]);
 
   const openCreate = () => {
     setEditingUnit(null);
@@ -78,18 +151,61 @@ export default function UnitsPage() {
     setFormOpen(true);
   };
 
-  const saveUnit = async (payload: { name: string; description: string }) => {
+  const assignLeader = async (
+    unitId: string,
+    memberId: string | null,
+    role: "head" | "assistant",
+    prevLeader?: UnitMember | null,
+  ) => {
+    if (prevLeader && prevLeader.id !== memberId) {
+      await fetch(`/api/units/${unitId}/members`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ member_id: prevLeader.id, role: UNIT_ROLE.MEMBER }),
+      });
+    }
+
+    if (memberId) {
+      await fetch(`/api/units/${unitId}/members`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ member_id: memberId, role }),
+      });
+    }
+  };
+
+  const saveUnit = async (payload: {
+    name: string;
+    description: string;
+    category: string;
+    hodId: string | null;
+    assistantId: string | null;
+    isPublic: boolean;
+  }) => {
     setSaving(true);
     try {
       const res = await fetch(editingUnit ? `/api/units/${editingUnit.id}` : "/api/units", {
         method: editingUnit ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          name: payload.name,
+          description: payload.description,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Failed to save unit");
 
-      toast.success(editingUnit ? "Unit updated" : "Unit created");
+      const targetUnitId = editingUnit ? editingUnit.id : data.id;
+
+      const prevHod = editingUnit ? editingUnit.members.find(m => m.unit_role === UNIT_ROLE.HEAD) : null;
+      const prevAsst = editingUnit ? editingUnit.members.find(m => m.unit_role === UNIT_ROLE.ASSISTANT) : null;
+
+      await Promise.all([
+        assignLeader(targetUnitId, payload.hodId, UNIT_ROLE.HEAD, prevHod),
+        assignLeader(targetUnitId, payload.assistantId, UNIT_ROLE.ASSISTANT, prevAsst),
+      ]);
+
+      toast.success(editingUnit ? "Unit updated successfully" : "Unit created successfully");
       setFormOpen(false);
       setEditingUnit(null);
       fetchUnits();
@@ -118,6 +234,10 @@ export default function UnitsPage() {
     }
   };
 
+  const handleExportCSV = () => {
+    toast.success("Exporting unit records to CSV...");
+  };
+
   if (loading) {
     return (
       <div className="flex-1 space-y-6 p-4 md:p-8">
@@ -131,227 +251,256 @@ export default function UnitsPage() {
   return (
     <div className="flex-1 w-full">
       <PageHeader
-        eyebrow="Operational view"
+        eyebrow="People operations"
         title="Unit Management"
-        description="Find, create, and manage church units from one focused workspace."
+        description="Manage and organize the various functional units within the community."
         actions={
-          canManageUnits ? (
-            <Button onClick={openCreate} variant="secondary">
-              <Plus className="mr-2 h-4 w-4" />
-              Create Unit
+          <>
+            <Button
+              onClick={handleExportCSV}
+              variant="outline"
+              className="hidden h-10 border-[var(--outline-variant)] bg-white text-primary hover:bg-[var(--surface-container)] hover:text-primary/90"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export CSV
             </Button>
-          ) : null
+            {canManageUnits && (
+              <Button onClick={openCreate} variant="secondary">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Unit
+              </Button>
+            )}
+          </>
         }
       />
 
-      <div className="space-y-6 p-4 md:p-8">
-        <Card className="overflow-hidden border-[var(--outline-variant)] bg-white shadow-sm">
-          <CardHeader className="gap-5 border-b border-[var(--outline-variant)] bg-white pb-5">
-            <div className="flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
-              <div>
-                <CardTitle className="font-[var(--font-manrope)] text-xl text-[#0B1C30]">All Units</CardTitle>
-                <CardDescription>
-                  {filteredUnits.length} of {units.length} units visible to you
-                </CardDescription>
+      {/* Main Content Area */}
+      <main className="space-y-8 p-4 md:p-8">
+        {/* Table & Filters Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          {/* Desktop Filter Bar */}
+          <div className="hidden md:flex p-6 border-b border-slate-100 items-center space-x-4 bg-slate-50/50">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search by unit name..."
+                className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Filter By:</span>
+              <select
+                value={selectedCategory}
+                onChange={e => setSelectedCategory(e.target.value)}
+                className="text-sm border-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 py-2 bg-white"
+              >
+                <option value="all">All Departments</option>
+                <option value="worship">Worship</option>
+                <option value="technical">Technical</option>
+                <option value="service">Service</option>
+              </select>
+
+              <select
+                value={selectedStatus}
+                onChange={e => setSelectedStatus(e.target.value)}
+                className="text-sm border-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 py-2 bg-white"
+              >
+                <option value="all">Status: All</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setSortAsc(prev => !prev)}
+              className="p-2 border border-slate-200 rounded-lg text-slate-400 hover:bg-slate-50 transition-colors bg-white"
+              title="Toggle Sort Direction"
+            >
+              <ArrowUpDown className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Mobile Filter Bar */}
+          <div className="md:hidden space-y-3 p-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input
+                type="search"
+                placeholder="Search units..."
+                value={search}
+                onChange={event => setSearch(event.target.value)}
+                className="h-11 border-slate-200 bg-white rounded-xl pl-10 shadow-sm"
+              />
+            </div>
+
+            {/* Mobile Chips */}
+            <div className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <button
+                onClick={() => setSelectedCategory("all")}
+                className={`px-6 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                  selectedCategory === "all"
+                    ? "bg-[#0052CC] text-white"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setSelectedCategory("worship")}
+                className={`px-6 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                  selectedCategory === "worship"
+                    ? "bg-[#0052CC] text-white"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
+              >
+                Departmental
+              </button>
+              <button
+                onClick={() => setSelectedCategory("technical")}
+                className={`px-6 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                  selectedCategory === "technical"
+                    ? "bg-[#0052CC] text-white"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
+              >
+                Fellowships
+              </button>
+              <button
+                onClick={() => setSelectedCategory("service")}
+                className={`px-6 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                  selectedCategory === "service"
+                    ? "bg-[#0052CC] text-white"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
+              >
+                Committees
+              </button>
+            </div>
+          </div>
+
+          {/* Desktop Table View */}
+          {filteredUnits.length > 0 ? (
+            <UnitDirectoryTable
+              units={paginatedUnits}
+              canManageUnits={canManageUnits}
+              saving={saving}
+              onEdit={openEdit}
+              onDelete={deleteUnit}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center py-16 text-center border-t border-slate-100 bg-white">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 text-slate-400">
+                <Building2 className="h-8 w-8" />
               </div>
-              <p className="font-mono text-[12px] font-medium uppercase leading-4 tracking-[0.05em] text-[var(--outline)]">
-                Unit index
+              <h3 className="font-headline text-lg font-bold text-slate-900">No units found</h3>
+              <p className="mt-1 max-w-sm text-sm text-slate-400">
+                Try a different search query or change filter selections.
               </p>
             </div>
+          )}
 
-            <div className="grid gap-3 md:grid-cols-[minmax(260px,1fr)_220px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--outline)]" />
-                <Input
-                  type="search"
-                  placeholder="Search units"
-                  value={search}
-                  onChange={event => setSearch(event.target.value)}
-                  className="h-11 border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] pl-10"
-                />
+          {/* Mobile Card Layout */}
+          <div className="md:hidden space-y-3 px-1 mt-2">
+            {filteredUnits.map(unit => (
+              <MobileUnitCard key={unit.id} unit={unit} />
+            ))}
+          </div>
+
+          {/* Desktop Pagination */}
+          {filteredUnits.length > 0 && (
+            <div className="hidden md:flex px-6 py-4 bg-white border-t border-slate-100 items-center justify-between">
+              <div className="text-sm text-slate-500">
+                Showing{" "}
+                <span className="font-medium text-slate-900">
+                  {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredUnits.length)}
+                </span>{" "}
+                of <span className="font-medium text-slate-900">{filteredUnits.length}</span> units
               </div>
-              <Select value={sort} onValueChange={value => setSort(value as SortMode)}>
-                <SelectTrigger className="h-11 w-full border-[var(--outline-variant)] bg-white">
-                  <SelectValue placeholder="Sort units" />
-                </SelectTrigger>
-                <SelectContent className="border-[var(--outline-variant)]">
-                  <SelectItem value="name-asc">Name, A-Z</SelectItem>
-                  <SelectItem value="name-desc">Name, Z-A</SelectItem>
-                  <SelectItem value="members-desc">Most members</SelectItem>
-                  <SelectItem value="members-asc">Fewest members</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center space-x-1">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="p-2 border border-slate-200 rounded text-slate-400 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed bg-white"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="w-8 h-8 flex items-center justify-center rounded bg-[#0052CC] text-white text-sm font-medium">
+                  {currentPage}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="p-2 border border-slate-200 rounded text-slate-400 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed bg-white"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-          </CardHeader>
+          )}
+        </div>
 
-          <CardContent className="p-0">
-            {filteredUnits.length === 0 ? (
-              <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface-container-low)]">
-                  <Building2 className="h-8 w-8 text-[var(--on-surface-variant)]" />
-                </div>
-                <h3 className="font-semibold text-[#0B1C30]">No units found</h3>
-                <p className="mt-1 max-w-md text-sm text-[var(--on-surface-variant)]">
-                  {search ? "Try a different search term." : "Create a unit to start assigning leaders and members."}
-                </p>
+        {/* Desktop Bottom Stat Cards Grid */}
+        <div className="hidden md:grid grid-cols-4 gap-6 mt-8">
+          {/* Card 1: Total Units */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between min-h-[120px]">
+            <div className="flex items-center justify-between">
+              <div className="p-2 bg-blue-50 text-[#0052CC] rounded-lg">
+                <Building2 className="w-5 h-5" />
               </div>
-            ) : (
-              <>
-                <div className="hidden overflow-x-auto md:block">
-                  <Table className="min-w-[760px]">
-                    <TableHeader className="bg-[var(--surface-container-low)]">
-                      <TableRow className="border-[var(--outline-variant)]">
-                        <TableHead className="px-5 py-3 font-medium text-[#0B1C30]">Unit</TableHead>
-                        <TableHead className="px-5 py-3 font-medium text-[#0B1C30]">Members</TableHead>
-                        <TableHead className="px-5 py-3 font-medium text-[#0B1C30]">Leadership</TableHead>
-                        <TableHead className="px-5 py-3 text-right font-medium text-[#0B1C30]">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredUnits.map(unit => (
-                        <TableRow
-                          key={unit.id}
-                          className="border-[var(--outline-variant)] hover:bg-[var(--surface-container-low)]"
-                        >
-                          <TableCell className="px-5 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                <Building2 className="h-5 w-5" />
-                              </div>
-                              <div className="min-w-0">
-                                <Link
-                                  href={`/units/${unit.id}`}
-                                  className="font-semibold text-foreground hover:text-primary"
-                                >
-                                  {unit.name}
-                                </Link>
-                                <p className="line-clamp-1 text-xs text-[var(--on-surface-variant)]">
-                                  {unit.description || "No description"}
-                                </p>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="px-5 py-4">
-                            <Badge className="rounded-full bg-[var(--surface-container)] font-normal text-[#0B1C30] hover:bg-[var(--surface-container)]">
-                              <Users className="mr-1.5 h-3.5 w-3.5" />
-                              {unit.stats.total_members}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="px-5 py-4">
-                            <UnitLeadershipStack members={unit.members} />
-                          </TableCell>
-                          <TableCell className="px-5 py-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <Button
-                                asChild
-                                variant="outline"
-                                size="sm"
-                                className="h-9 border-[var(--outline-variant)] bg-white text-primary hover:bg-[var(--surface-container)] hover:text-primary/90"
-                              >
-                                <Link href={`/units/${unit.id}`}>View</Link>
-                              </Button>
-                              {unit.access.can_manage_details ? (
-                                <>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    // size="icon"
-                                    onClick={() => openEdit(unit)}
-                                    className="h-9"
-                                  >
-                                    Edit
-                                    <span className="sr-only"></span>
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="destructive"
-                                    onClick={() => deleteUnit(unit)}
-                                    disabled={saving}
-                                    className="h-9 hover:bg-destructive/10 hover:text-destructive"
-                                  >
-                                    Delete
-                                  </Button>
-                                </>
-                              ) : null}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-                <div className="divide-y divide-[var(--outline-variant)] md:hidden">
-                  {filteredUnits.map(unit => (
-                    <div key={unit.id} className="space-y-4 px-4 py-4">
-                      <div className="flex items-start gap-3">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                          <Building2 className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <Link
-                            href={`/units/${unit.id}`}
-                            className="font-semibold text-foreground hover:text-primary"
-                          >
-                            {unit.name}
-                          </Link>
-                          <p className="mt-1 line-clamp-2 text-xs text-[var(--on-surface-variant)]">
-                            {unit.description || "No description"}
-                          </p>
-                        </div>
-                        <Badge className="shrink-0 rounded-full bg-[var(--surface-container)] font-normal text-[#0B1C30] hover:bg-[var(--surface-container)]">
-                          <Users className="mr-1.5 h-3.5 w-3.5" />
-                          {unit.stats.total_members}
-                        </Badge>
-                      </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-3">Total Units</p>
+              <p className="text-3xl font-bold text-slate-900 mt-1">{totalUnitsCount}</p>
+            </div>
+          </div>
 
-                      <div className="rounded-lg border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-3 py-3">
-                        <UnitLeadershipStack members={unit.members} />
-                      </div>
+          {/* Card 2: Active Members */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between min-h-[120px]">
+            <div className="flex items-center justify-between">
+              <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
+                <Users className="w-5 h-5" />
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-3">Active Members</p>
+              <p className="text-3xl font-bold text-slate-900 mt-1">{activeMembersSum}</p>
+            </div>
+          </div>
 
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          asChild
-                          variant="outline"
-                          size="sm"
-                          className="h-9 border-[var(--outline-variant)] bg-white text-primary hover:bg-[var(--surface-container)] hover:text-primary/90"
-                        >
-                          <Link href={`/units/${unit.id}`}>View</Link>
-                        </Button>
-                        {unit.access.can_manage_details ? (
-                          <>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => openEdit(unit)}
-                              className="h-9 w-9 text-[var(--on-surface-variant)] hover:bg-[var(--surface-container)] hover:text-primary"
-                            >
-                              <SquarePen className="h-4 w-4" />
-                              <span className="sr-only">Edit unit</span>
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => deleteUnit(unit)}
-                              disabled={saving}
-                              className="h-9 w-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              <span className="sr-only">Delete unit</span>
-                            </Button>
-                          </>
-                        ) : null}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+          {/* Card 3: Leadership Filled */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between min-h-[120px]">
+            <div className="flex items-center justify-between">
+              <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                <Shield className="w-5 h-5" />
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-3">Leadership Filled</p>
+              <p className="text-3xl font-bold text-slate-900 mt-1">{leadershipFilledPercent}%</p>
+            </div>
+          </div>
 
+          {/* Card 4: Vacant Positions */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between min-h-[120px]">
+            <div className="flex items-center justify-between">
+              <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
+                <HelpCircle className="w-5 h-5" />
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-3">Vacant Positions</p>
+              <p className="text-3xl font-bold text-slate-900 mt-1">{vacantLeadershipPositions}</p>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* Unit Form Modal */}
       <UnitFormModal
         open={formOpen}
         unit={editingUnit}

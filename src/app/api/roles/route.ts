@@ -3,13 +3,16 @@ import { cookies } from "next/headers";
 
 import { isMissingTableError, requirePermission } from "@/lib/adminPermissions";
 import { createClient } from "@/lib/server";
+import { cacheKeys, getCached, invalidateCache } from "@/lib/serverCache";
 import {
-  Permission,
+  ADMIN_ROLE,
+  PERMISSION,
   defaultRoleDefinitions,
   permissionDefinitions,
   roleDescriptions,
   roleLabels,
   rolePermissions,
+  type Permission,
 } from "@/lib/adminRoles";
 
 const missingRolesTableMessage =
@@ -22,66 +25,74 @@ function fallbackRoles() {
 }
 
 export async function GET() {
-  const { allowed } = await requirePermission("admins.manage");
+  const { allowed } = await requirePermission(PERMISSION.ADMINS_MANAGE);
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  try {
+    const { hit, value } = await getCached(cacheKeys.roles, 120, async () => {
+      const cookieStore = await cookies();
+      const supabase = createClient(cookieStore);
 
-  const { data: roles, error: rolesError } = await supabase
-    .from("app_roles")
-    .select("key, name, description, is_system")
-    .order("is_system", { ascending: false })
-    .order("name", { ascending: true });
+      const { data: roles, error: rolesError } = await supabase
+        .from("app_roles")
+        .select("key, name, description, is_system")
+        .order("is_system", { ascending: false })
+        .order("name", { ascending: true });
 
-  if (rolesError) {
-    if (isMissingTableError(rolesError)) {
-      return NextResponse.json({
-        data: fallbackRoles(),
-        permissions: permissionDefinitions,
-        setupRequired: true,
-        error: missingRolesTableMessage,
-      });
-    }
-    return NextResponse.json({ error: rolesError.message }, { status: 500 });
+      if (rolesError) {
+        if (isMissingTableError(rolesError)) {
+          return {
+            data: fallbackRoles(),
+            permissions: permissionDefinitions,
+            setupRequired: true,
+            error: missingRolesTableMessage,
+          };
+        }
+        throw new Error(rolesError.message);
+      }
+
+      const { data: permissionRows, error: permissionsError } = await supabase
+        .from("app_role_permissions")
+        .select("role_key, permission");
+
+      if (permissionsError) {
+        if (isMissingTableError(permissionsError)) {
+          return {
+            data: fallbackRoles(),
+            permissions: permissionDefinitions,
+            setupRequired: true,
+            error: missingRolesTableMessage,
+          };
+        }
+        throw new Error(permissionsError.message);
+      }
+
+      const permissionsByRole = new Map<string, Permission[]>();
+      for (const row of permissionRows || []) {
+        const permissions = permissionsByRole.get(row.role_key) || [];
+        permissions.push(row.permission as Permission);
+        permissionsByRole.set(row.role_key, permissions);
+      }
+
+      const data = (roles || []).map(role => ({
+        key: role.key,
+        name: role.name || roleLabels[role.key] || role.key,
+        description: role.description || roleDescriptions[role.key as keyof typeof roleDescriptions] || null,
+        is_system: role.is_system !== false,
+        permissions: permissionsByRole.get(role.key) || rolePermissions[role.key as keyof typeof rolePermissions] || [],
+      }));
+
+      return { data, permissions: permissionDefinitions, setupRequired: false };
+    });
+
+    return NextResponse.json(value, { headers: { "X-App-Cache": hit ? "HIT" : "MISS" } });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
-  const { data: permissionRows, error: permissionsError } = await supabase
-    .from("app_role_permissions")
-    .select("role_key, permission");
-
-  if (permissionsError) {
-    if (isMissingTableError(permissionsError)) {
-      return NextResponse.json({
-        data: fallbackRoles(),
-        permissions: permissionDefinitions,
-        setupRequired: true,
-        error: missingRolesTableMessage,
-      });
-    }
-    return NextResponse.json({ error: permissionsError.message }, { status: 500 });
-  }
-
-  const permissionsByRole = new Map<string, Permission[]>();
-  for (const row of permissionRows || []) {
-    const permissions = permissionsByRole.get(row.role_key) || [];
-    permissions.push(row.permission as Permission);
-    permissionsByRole.set(row.role_key, permissions);
-  }
-
-  const data = (roles || []).map(role => ({
-    key: role.key,
-    name: role.name || roleLabels[role.key] || role.key,
-    description: role.description || roleDescriptions[role.key as keyof typeof roleDescriptions] || null,
-    is_system: role.is_system !== false,
-    permissions: permissionsByRole.get(role.key) || rolePermissions[role.key as keyof typeof rolePermissions] || [],
-  }));
-
-  return NextResponse.json({ data, permissions: permissionDefinitions, setupRequired: false });
 }
 
 export async function PUT(req: NextRequest) {
-  const { allowed } = await requirePermission("admins.manage");
+  const { allowed } = await requirePermission(PERMISSION.ADMINS_MANAGE);
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { key, name, description, permissions } = await req.json();
@@ -94,7 +105,7 @@ export async function PUT(req: NextRequest) {
     validPermissions.has(permission as Permission)
   ) as Permission[];
 
-  if (cleanKey === "super_admin" && cleanPermissions.length !== validPermissions.size) {
+  if (cleanKey === ADMIN_ROLE.SUPER_ADMIN && cleanPermissions.length !== validPermissions.size) {
     return NextResponse.json({ error: "Super admin must retain all permissions" }, { status: 400 });
   }
 
@@ -133,5 +144,7 @@ export async function PUT(req: NextRequest) {
     if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
 
+  invalidateCache(cacheKeys.roles);
+  invalidateCache("role-permissions");
   return NextResponse.json({ success: true });
 }

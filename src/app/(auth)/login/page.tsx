@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { KeyRound, Loader2, Phone, UserPlus } from "lucide-react";
+import { AlertCircle, ArrowRight, Loader2, Phone, RotateCcw, UserPlus } from "lucide-react";
+import { useState } from "react";
+
+import { AuthField } from "@/components/auth/auth-field";
+import { AuthShell } from "@/components/auth/auth-shell";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { AUTH_ACTION } from "@/lib/authActions";
 
 export default function LoginPage() {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -17,115 +19,142 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleMemberSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const resetFeedback = () => {
     setError("");
     setProfileMissing(false);
+  };
+
+  const handleMemberSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    resetFeedback();
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth", {
+      const response = await fetch("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "member-login", phone_number: phoneNumber }),
+        body: JSON.stringify({
+          action: AUTH_ACTION.MEMBER_LOGIN,
+          phone_number: phoneNumber.trim(),
+        }),
       });
+      const data = await response.json().catch(() => ({}));
 
-      if (res.ok) {
+      if (response.ok) {
         router.push("/profile");
         router.refresh();
+        return;
+      }
+
+      if (response.status === 404 || data.code === "member_not_found") {
+        setProfileMissing(true);
       } else {
-        const data = await res.json();
-        if (res.status === 404 || data.code === "member_not_found") {
-          setProfileMissing(true);
-          setError("");
-        } else {
-          setError(data.error || "Invalid phone number");
-        }
+        setError(data.error || "We could not sign you in. Please check the number and try again.");
       }
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError("We could not reach the server. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4 relative">
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[25%] -left-[10%] w-[50%] h-[50%] rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute top-[60%] -right-[10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-3xl" />
-      </div>
+    <AuthShell
+      variant="member"
+      eyebrow="Member access"
+      title="Welcome back"
+      description="Sign in with the phone number on your church profile."
+    >
+      <form onSubmit={handleMemberSubmit} className="space-y-5">
+        <AuthField
+          id="phone"
+          label="Phone number"
+          icon={Phone}
+          hint="Use the same number you registered with the church."
+        >
+          <Input
+            id="phone"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            value={phoneNumber}
+            onChange={event => {
+              setPhoneNumber(event.target.value);
+              if (error || profileMissing) resetFeedback();
+            }}
+            placeholder="0803 123 4567"
+            required
+            autoFocus
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? "member-login-error" : undefined}
+            className="h-12 border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] pl-10 text-base shadow-none"
+          />
+        </AuthField>
 
-      <Card className="w-full max-w-md shadow-lg border-muted/60 relative z-10">
-        <CardHeader className="space-y-3 text-center pb-4 pt-8">
-          <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-2 ring-1 ring-primary/20">
-            <KeyRound className="h-7 w-7 text-primary" />
-          </div>
-          <div className="space-y-1">
-            <CardTitle className="text-2xl font-bold tracking-tight">Member Sign In</CardTitle>
-            <CardDescription className="text-base">Access your church profile</CardDescription>
-          </div>
-        </CardHeader>
-
-        <CardContent>
-          <form onSubmit={handleMemberSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={phoneNumber}
-                  onChange={e => setPhoneNumber(e.target.value)}
-                  placeholder="08031234567"
-                  required
-                  autoFocus
-                  className="pl-9"
-                />
+        {profileMissing ? (
+          <div className="rounded-lg border border-[#ffb95f]/55 bg-[#fff7ed] p-4" aria-live="polite">
+            <div className="flex gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#ffddb8] text-[#653e00]">
+                <UserPlus className="size-4" />
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Enter the phone number registered with the church.
-              </p>
+              <div className="min-w-0">
+                <h2 className="font-[var(--font-manrope)] text-base font-semibold text-foreground">
+                  No profile found yet
+                </h2>
+                <p className="mt-1 text-sm leading-5 text-[var(--on-surface-variant)]">
+                  Create your member profile with this number to continue.
+                </p>
+              </div>
             </div>
-
-            {profileMissing && (
-              <Alert className="py-4">
-                <UserPlus className="h-4 w-4" />
-                <AlertDescription className="space-y-3 text-sm">
-                  <p>
-                    We could not find a profile for this phone number. You can create one now and continue to your profile.
-                  </p>
-                  <Button asChild size="sm" className="w-full">
-                    <Link href={`/register?phone=${encodeURIComponent(phoneNumber.trim())}`}>
-                      Create My Profile
-                    </Link>
-                  </Button>
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {error && (
-              <Alert variant="destructive" className="py-3">
-                <AlertDescription className="text-sm">{error}</AlertDescription>
-              </Alert>
-            )}
-
-            {!profileMissing && (
-              <Button type="submit" disabled={loading} className="w-full py-6 text-base shadow-sm mt-4">
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Signing In...
-                  </>
-                ) : (
-                  "Access My Profile"
-                )}
+            <div className="mt-4 space-y-2">
+              <Button asChild size="lg" className="w-full shadow-none">
+                <Link href={`/register?phone=${encodeURIComponent(phoneNumber.trim())}`}>
+                  Create my profile
+                  <ArrowRight />
+                </Link>
               </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full text-[var(--on-surface-variant)] shadow-none"
+                onClick={() => {
+                  setPhoneNumber("");
+                  resetFeedback();
+                }}
+              >
+                <RotateCcw />
+                Use a different number
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            type="submit"
+            size="lg"
+            disabled={loading || !phoneNumber.trim()}
+            className="w-full shadow-none"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="animate-spin" />
+                Checking your profile...
+              </>
+            ) : (
+              <>
+                Continue
+                <ArrowRight />
+              </>
             )}
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+          </Button>
+        )}
+
+        {error ? (
+          <Alert id="member-login-error" variant="destructive" role="alert" className="border-destructive/35 bg-[#fff5f4]">
+            <AlertCircle />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : null}
+      </form>
+    </AuthShell>
   );
 }

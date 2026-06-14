@@ -30,17 +30,9 @@ import {
   SidebarMenuSkeleton,
   SidebarRail,
 } from "@/components/ui/sidebar";
-
-type Permission =
-  | "dashboard.view"
-  | "members.view"
-  | "attendance.view"
-  | "birthdays.manage"
-  | "outreach.view"
-  | "units.view"
-  | "settings.manage"
-  | "admins.manage"
-  | "units.manage";
+import { PERMISSION, type Permission } from "@/lib/adminRoles";
+import { AUTH_ACTION } from "@/lib/authActions";
+import { SESSION_KIND, type SessionKind } from "@/lib/sessionKinds";
 
 type NavSection = "personal" | "operations" | "system";
 
@@ -60,7 +52,7 @@ const navSections: Array<{ key: NavSection; label: string }> = [
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [sessionKind, setSessionKind] = useState<"super_admin" | "member" | null>(null);
+  const [sessionKind, setSessionKind] = useState<SessionKind | null>(null);
   const [hasMemberProfile, setHasMemberProfile] = useState(false);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [memberUnitLeadership, setMemberUnitLeadership] = useState<Array<{ id: string; name: string; role: string }>>([]);
@@ -73,10 +65,10 @@ export function Sidebar() {
         if (res.ok) {
           const data = await res.json();
           if (data.user) {
-            setSessionKind("super_admin");
+            setSessionKind(SESSION_KIND.SUPER_ADMIN);
             setHasMemberProfile(Boolean(data.memberId));
           } else if (data.memberId || data.member) {
-            setSessionKind("member");
+            setSessionKind(SESSION_KIND.MEMBER);
             setHasMemberProfile(true);
           }
           setPermissions(data.permissions || data.user?.permissions || data.member?.permissions || []);
@@ -96,9 +88,9 @@ export function Sidebar() {
     await fetch("/api/auth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "logout" }),
+      body: JSON.stringify({ action: AUTH_ACTION.LOGOUT }),
     });
-    router.push(sessionKind === "super_admin" ? "/admin" : "/login");
+    router.push(sessionKind === SESSION_KIND.SUPER_ADMIN ? "/admin" : "/login");
     router.refresh();
   };
 
@@ -110,26 +102,26 @@ export function Sidebar() {
 
   const activeLinks: NavItem[] = [
     ...(hasMemberProfile ? [{ href: "/profile", label: "My Profile", icon: User, section: "personal" as const }] : []),
-    ...(can("dashboard.view") ? [{ href: "/", label: "Dashboard", icon: Home, section: "operations" as const }] : []),
-    ...(can("members.view") ? [{ href: "/members", label: "Members", icon: Users, section: "operations" as const }] : []),
-    ...(can("attendance.view")
+    ...(can(PERMISSION.DASHBOARD_VIEW) ? [{ href: "/", label: "Dashboard", icon: Home, section: "operations" as const }] : []),
+    ...(can(PERMISSION.MEMBERS_VIEW) ? [{ href: "/members", label: "Members", icon: Users, section: "operations" as const }] : []),
+    ...(can(PERMISSION.ATTENDANCE_VIEW)
       ? [{ href: "/attendance", label: "Attendance", icon: CalendarCheck, section: "operations" as const }]
       : []),
-    ...(can("units.view") || can("units.manage") || memberUnitLeadership.length > 0
+    ...(can(PERMISSION.UNITS_VIEW) || can(PERMISSION.UNITS_MANAGE) || memberUnitLeadership.length > 0
       ? [
           {
             href: "/units",
-            label: hasMemberProfile && !can("units.view") && !can("units.manage") ? "My Units" : "Units",
+            label: hasMemberProfile && !can(PERMISSION.UNITS_VIEW) && !can(PERMISSION.UNITS_MANAGE) ? "My Units" : "Units",
             icon: Building2,
             section: "operations" as const,
           },
         ]
       : []),
-    ...(can("outreach.view")
+    ...(can(PERMISSION.OUTREACH_VIEW)
       ? [{ href: "/outreach", label: "Outreach", icon: MessageCircle, section: "operations" as const }]
       : []),
-    ...(can("birthdays.manage") ? [{ href: "/designs", label: "Birthdays", icon: Palette, section: "operations" as const }] : []),
-    ...(can("settings.manage") || can("admins.manage")
+    ...(can(PERMISSION.BIRTHDAYS_MANAGE) ? [{ href: "/designs", label: "Birthdays", icon: Palette, section: "operations" as const }] : []),
+    ...(can(PERMISSION.SETTINGS_MANAGE) || can(PERMISSION.ADMINS_MANAGE)
       ? [{ href: "/settings", label: "Settings", icon: Settings, section: "system" as const }]
       : []),
   ];
@@ -164,10 +156,10 @@ export function Sidebar() {
  
         <div className="rounded-lg border border-sidebar-border bg-sidebar-accent px-3 py-2 group-data-[collapsible=icon]:hidden">
           <p className="font-mono text-[12px] font-medium uppercase leading-4 tracking-[0.05em] text-[var(--primary)]">
-            {sessionKind === "super_admin" ? "Super admin" : workspaceLabel}
+            {sessionKind === SESSION_KIND.SUPER_ADMIN ? "Super admin" : workspaceLabel}
           </p>
           <p className="mt-1 text-sm leading-5 text-sidebar-foreground/80">
-            {sessionKind === "super_admin"
+            {sessionKind === SESSION_KIND.SUPER_ADMIN
               ? "Restricted console"
               : hasAdminCapability
                 ? "Member access with assigned permissions"

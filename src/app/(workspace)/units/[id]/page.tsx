@@ -3,35 +3,29 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Eye, Search, UserPlus, Users } from "lucide-react";
+import { ArrowLeft, Plus, Search, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 
-import type { AdminRole, Permission } from "@/lib/adminRoles";
+import { PERMISSION, fullMemberDetailRoles, type AdminRole, type Permission } from "@/lib/adminRoles";
 import type { Member } from "@/lib/types";
 import { MemberDetailDialog } from "@/components/members/member-detail-dialog";
 import { PageHeader } from "@/components/page-header";
 import { UnitAddMemberModal } from "@/components/units/unit-add-member-modal";
-import { UnitLeaderCard } from "@/components/units/unit-leadership-summary";
-import { UnitRoleMenu } from "@/components/units/unit-role-menu";
+import { UnitWorkspaceStats } from "@/components/units/unit-workspace-stats";
+import { UnitRosterTable } from "@/components/units/unit-roster-table";
+import { MobileRosterList } from "@/components/units/mobile-roster-list";
 import type { ManagedUnit, UnitMember, UnitRole } from "@/components/units/types";
 import { unitRoleLabels } from "@/components/units/types";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
 
 type SortMode = "name-asc" | "name-desc" | "role";
 
 function getMemberName(member: UnitMember) {
   return [member.first_name, member.middle_name, member.last_name].filter(Boolean).join(" ");
-}
-
-function getInitials(member: UnitMember) {
-  return `${member.first_name?.[0] || ""}${member.last_name?.[0] || ""}` || "M";
 }
 
 export default function UnitDetailPage() {
@@ -75,7 +69,10 @@ export default function UnitDetailPage() {
       .then(res => res.json())
       .then(data => {
         const role = (data.user?.role || data.member?.role || null) as AdminRole | null;
-        const permissions = (data.permissions || data.user?.permissions || data.member?.permissions || []) as Permission[];
+        const permissions = (data.permissions ||
+          data.user?.permissions ||
+          data.member?.permissions ||
+          []) as Permission[];
         setViewer({ role, permissions });
       })
       .catch(() => setViewer({ role: null, permissions: [] }));
@@ -89,7 +86,7 @@ export default function UnitDetailPage() {
         getMemberName(member),
         member.phone_number,
         member.email,
-        member.member_type,
+        member.life_stage,
         unitRoleLabels[member.unit_role],
       ]
         .filter(Boolean)
@@ -101,8 +98,8 @@ export default function UnitDetailPage() {
     members.sort((a, b) => {
       if (sort === "name-desc") return getMemberName(b).localeCompare(getMemberName(a));
       if (sort === "role") {
-        const rank: Record<UnitRole, number> = { head: 0, assistant: 1, member: 2 };
-        return rank[a.unit_role] - rank[b.unit_role] || getMemberName(a).localeCompare(getMemberName(b));
+        const rank: Record<string, number> = { head: 0, assistant: 1, member: 2 };
+        return (rank[a.unit_role] ?? 2) - (rank[b.unit_role] ?? 2) || getMemberName(a).localeCompare(getMemberName(b));
       }
       return getMemberName(a).localeCompare(getMemberName(b));
     });
@@ -152,9 +149,9 @@ export default function UnitDetailPage() {
   };
 
   const canLoadFullMemberProfile =
-    ["super_admin", "pastor", "assistant_pastor"].includes(viewer.role || "") ||
-    viewer.permissions.includes("members.manage") ||
-    viewer.permissions.includes("admins.manage");
+    fullMemberDetailRoles.includes(viewer.role as any) ||
+    viewer.permissions.includes(PERMISSION.MEMBERS_MANAGE) ||
+    viewer.permissions.includes(PERMISSION.ADMINS_MANAGE);
 
   const openMemberDetail = async (member: UnitMember) => {
     setSelectedMember(member);
@@ -186,7 +183,7 @@ export default function UnitDetailPage() {
       <div className="flex-1 p-4 md:p-8">
         <Card className="border-[var(--outline-variant)] bg-white">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <h2 className="font-[var(--font-manrope)] text-2xl font-semibold text-[#0B1C30]">Unit unavailable</h2>
+            <h2 className="font-headline text-2xl font-semibold text-[#0B1C30]">Unit unavailable</h2>
             <p className="mt-2 max-w-md text-sm text-[var(--on-surface-variant)]">
               This unit could not be loaded or you do not have access to it.
             </p>
@@ -200,58 +197,80 @@ export default function UnitDetailPage() {
   }
 
   return (
-    <div className="flex-1 w-full">
-      <PageHeader
-        eyebrow="Unit workspace"
-        title={unit.name}
-        description={unit.description || "Manage this unit's members and leadership responsibilities."}
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Button asChild variant="outline" className="h-10 border-[var(--outline-variant)] bg-white">
-              <Link href="/units">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                All Units
-              </Link>
-            </Button>
-            {unit.access.can_manage_members ? (
-              <Button onClick={() => setAddOpen(true)} variant="secondary">
-                <UserPlus className="mr-2 h-4 w-4" />
-                Add Member
+    <div className="flex-1 w-full bg-[var(--background)] min-h-screen">
+      {/* Desktop Header */}
+      <div className="hidden md:block">
+        <PageHeader
+          eyebrow="Unit workspace"
+          title={unit.name}
+          description={unit.description || "Manage this unit's members and leadership responsibilities."}
+          actions={
+            <div className="flex items-center gap-3">
+              <Button asChild variant="outline" className="h-10 border-[var(--outline-variant)] bg-white font-semibold">
+                <Link href="/units">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  All Units
+                </Link>
               </Button>
-            ) : null}
-          </div>
-        }
-      />
+              {unit.access.can_manage_members && (
+                <Button
+                  onClick={() => setAddOpen(true)}
+                  className="h-10 bg-amber-500 text-white font-semibold hover:bg-amber-600 border border-transparent shadow-sm shadow-amber-200"
+                >
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Add Member
+                </Button>
+              )}
+            </div>
+          }
+        />
+      </div>
 
-      <div className="space-y-6 p-4 md:p-8">
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card className="border-[var(--outline-variant)] bg-white shadow-sm">
-            <CardContent className="flex items-center gap-4 p-5">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Users className="h-6 w-6" />
-              </div>
+      {/* Mobile Header */}
+      <header className="md:hidden bg-white border-b border-[var(--outline-variant)] sticky top-0 z-40 px-4 py-4 flex items-center justify-between">
+        <div className="flex flex-col">
+          <span className="text-[10px] uppercase tracking-widest text-primary font-bold">Unit Workspace</span>
+          <h1 className="text-2xl font-bold text-slate-900">{unit.name}</h1>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            asChild
+            variant="outline"
+            className="h-10 border-[var(--outline-variant)] bg-white font-semibold"
+            size="icon"
+          >
+            <Link href="/units">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+          </Button>
+          {unit.access.can_manage_members && (
+            <Button
+              onClick={() => setAddOpen(true)}
+              className="bg-amber-500 hover:bg-amber-600 text-white p-2 h-10 w-10 rounded-lg shadow-sm"
+              size="icon"
+            >
+              <UserPlus className="h-5 w-5" />
+            </Button>
+          )}
+        </div>
+      </header>
+
+      <main className="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6">
+        {/* Workspace Key Stats */}
+        <UnitWorkspaceStats unit={unit} />
+
+        {/* Roster Listing Card */}
+        <div className="overflow-hidden rounded-2xl md:rounded-xl border border-[var(--outline-variant)] bg-white shadow-sm">
+          {/* Card Header Toolbar */}
+          <div className="p-5 md:p-6 border-b border-[var(--outline-variant)] bg-white gap-5 flex flex-col">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-1">
               <div>
-                <p className="text-sm text-[var(--on-surface-variant)]">Total members</p>
-                <p className="font-[var(--font-manrope)] text-3xl font-semibold text-[#0B1C30]">
-                  {unit.stats.total_members}
+                <h2 className="font-headline text-xl font-bold text-[#0B1C30]">Unit Roster</h2>
+                <p className="text-xs text-[var(--on-surface-variant)] mt-0.5">
+                  {roster.length} of {unit.members.length} members shown
                 </p>
               </div>
-            </CardContent>
-          </Card>
-          <UnitLeaderCard members={unit.members} role="head" />
-          <UnitLeaderCard members={unit.members} role="assistant" />
-        </div>
-
-        <Card className="overflow-hidden border-[var(--outline-variant)] bg-white shadow-sm">
-          <CardHeader className="gap-5 border-b border-[var(--outline-variant)] bg-white pb-5">
-            <div className="flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
-              <div>
-                <CardTitle className="font-[var(--font-manrope)] text-xl text-[#0B1C30]">Unit Roster</CardTitle>
-                <CardDescription>
-                  {roster.length} of {unit.members.length} members shown
-                </CardDescription>
-              </div>
-              <p className="font-mono text-[12px] font-medium uppercase leading-4 tracking-[0.05em] text-[var(--outline)]">
+              <p className="font-mono text-[10px] font-bold uppercase leading-4 tracking-widest text-[var(--outline)]">
                 Operational roster
               </p>
             </div>
@@ -261,14 +280,14 @@ export default function UnitDetailPage() {
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--outline)]" />
                 <Input
                   type="search"
-                  placeholder="Search members"
+                  placeholder="Search members by name..."
                   value={search}
                   onChange={event => setSearch(event.target.value)}
                   className="h-11 border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] pl-10"
                 />
               </div>
               <Select value={sort} onValueChange={value => setSort(value as SortMode)}>
-                <SelectTrigger className="h-11 w-full border-[var(--outline-variant)] bg-white">
+                <SelectTrigger className="h-11 w-full border-[var(--outline-variant)] bg-white font-medium text-[#0B1C30]">
                   <SelectValue placeholder="Sort roster" />
                 </SelectTrigger>
                 <SelectContent className="border-[var(--outline-variant)]">
@@ -278,150 +297,60 @@ export default function UnitDetailPage() {
                 </SelectContent>
               </Select>
             </div>
-          </CardHeader>
+          </div>
 
+          {/* Roster Content */}
           <CardContent className="p-0">
             {roster.length === 0 ? (
               <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface-container-low)]">
-                  <Users className="h-8 w-8 text-[var(--on-surface-variant)]" />
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface-container-low)] text-[var(--on-surface-variant)]">
+                  <Users className="h-8 w-8" />
                 </div>
-                <h3 className="font-semibold text-[#0B1C30]">No members found</h3>
+                <h3 className="font-headline font-bold text-[#0B1C30]">No members found</h3>
                 <p className="mt-1 max-w-md text-sm text-[var(--on-surface-variant)]">
                   {search ? "Try another search term." : "Add members to build this unit roster."}
                 </p>
               </div>
             ) : (
               <>
-                <div className="hidden overflow-x-auto md:block">
-                  <Table className="min-w-[820px]">
-                    <TableHeader className="bg-[var(--surface-container-low)]">
-                      <TableRow className="border-[var(--outline-variant)]">
-                        <TableHead className="px-5 py-3 font-medium text-[#0B1C30]">Name</TableHead>
-                        <TableHead className="px-5 py-3 font-medium text-[#0B1C30]">Contact</TableHead>
-                        <TableHead className="px-5 py-3 font-medium text-[#0B1C30]">Type</TableHead>
-                        <TableHead className="px-5 py-3 font-medium text-[#0B1C30]">Role</TableHead>
-                        <TableHead className="px-5 py-3 text-right font-medium text-[#0B1C30]">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {roster.map(member => (
-                        <TableRow key={member.id} className="border-[var(--outline-variant)] hover:bg-[var(--surface-container-low)]">
-                          <TableCell className="px-5 py-4">
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-10 w-10 border border-[var(--outline-variant)] bg-[var(--surface-container-low)]">
-                                <AvatarImage src={member.photo_url || ""} />
-                                <AvatarFallback className="bg-primary/10 text-sm font-semibold text-primary">
-                                  {getInitials(member)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className="font-semibold text-[#0B1C30]">{getMemberName(member)}</p>
-                                <p className="text-xs text-[var(--on-surface-variant)]">{member.email || "No email"}</p>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="px-5 py-4 text-sm text-[#0B1C30]">
-                            {member.phone_number || "Not provided"}
-                          </TableCell>
-                          <TableCell className="px-5 py-4">
-                            <Badge className="rounded-full bg-[var(--surface-container)] font-normal capitalize text-[#0B1C30] hover:bg-[var(--surface-container)]">
-                              {(member.member_type || "member").replace(/_/g, " ")}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="px-5 py-4">
-                            <Badge className="rounded-full border border-[var(--outline-variant)] bg-white font-normal text-[var(--on-surface-variant)] hover:bg-white">
-                              {unitRoleLabels[member.unit_role]}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="px-5 py-4 text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openMemberDetail(member)}
-                                className="h-9 border-[var(--outline-variant)] bg-white text-primary hover:bg-[var(--surface-container)] hover:text-primary/90"
-                              >
-                                <Eye className="mr-2 h-4 w-4" />
-                                View
-                              </Button>
-                              {unit.access.can_manage_members ? (
-                                <UnitRoleMenu
-                                  currentRole={member.unit_role}
-                                  disabled={saving}
-                                  onChange={role => changeRole(member, role)}
-                                />
-                              ) : null}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                {/* Desktop View */}
+                <UnitRosterTable
+                  roster={roster}
+                  canManageMembers={unit.access.can_manage_members}
+                  saving={saving}
+                  onViewDetails={openMemberDetail}
+                  onChangeRole={changeRole}
+                />
 
-                <div className="divide-y divide-[var(--outline-variant)] md:hidden">
-                  {roster.map(member => (
-                    <div
-                      key={member.id}
-                      className="space-y-3 px-4 py-4"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => openMemberDetail(member)}
-                        className="flex w-full items-center gap-3 text-left"
-                      >
-                        <Avatar className="h-11 w-11 border border-[var(--outline-variant)] bg-[var(--surface-container-low)]">
-                          <AvatarImage src={member.photo_url || ""} />
-                          <AvatarFallback className="bg-primary/10 text-sm font-semibold text-primary">
-                            {getInitials(member)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-semibold text-[#0B1C30]">{getMemberName(member)}</p>
-                          <p className="truncate text-xs text-[var(--on-surface-variant)]">
-                            {member.phone_number || member.email || "No contact"}
-                          </p>
-                        </div>
-                        <Badge className="shrink-0 rounded-full border border-[var(--outline-variant)] bg-white font-normal text-[var(--on-surface-variant)] hover:bg-white">
-                          {unitRoleLabels[member.unit_role]}
-                        </Badge>
-                      </button>
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openMemberDetail(member)}
-                          className="h-9 border-[var(--outline-variant)] bg-white text-primary hover:bg-[var(--surface-container)] hover:text-primary/90"
-                        >
-                          <Eye className="mr-2 h-4 w-4" />
-                          View
-                        </Button>
-                        {unit.access.can_manage_members ? (
-                          <UnitRoleMenu
-                            currentRole={member.unit_role}
-                            disabled={saving}
-                            onChange={role => changeRole(member, role)}
-                          />
-                        ) : null}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {/* Mobile View */}
+                <MobileRosterList
+                  roster={roster}
+                  canManageMembers={unit.access.can_manage_members}
+                  saving={saving}
+                  onViewDetails={openMemberDetail}
+                  onChangeRole={changeRole}
+                />
               </>
             )}
           </CardContent>
-        </Card>
-      </div>
+        </div>
+      </main>
 
-      <UnitAddMemberModal
-        open={addOpen}
-        saving={saving}
-        onOpenChange={setAddOpen}
-        onSubmit={addMember}
-      />
+      {/* Mobile Floating Action Button (FAB) for adding member */}
+      {unit.access.can_manage_members && (
+        <button
+          onClick={() => setAddOpen(true)}
+          aria-label="Add Member"
+          className="md:hidden fixed right-6 bottom-24 w-14 h-14 bg-primary text-white rounded-full flex items-center justify-center shadow-lg shadow-primary/30 z-40 active:scale-95 transition-transform"
+        >
+          <Plus className="h-8 w-8 font-black" />
+        </button>
+      )}
+
+      {/* Add Member dialog */}
+      <UnitAddMemberModal open={addOpen} saving={saving} onOpenChange={setAddOpen} onSubmit={addMember} />
+
+      {/* Member Details Drawer */}
       <MemberDetailDialog
         member={selectedMember}
         viewer={viewer}
