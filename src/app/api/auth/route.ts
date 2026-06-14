@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/server";
 import { cookies } from "next/headers";
-import { getAdminContext } from "@/lib/adminPermissions";
+import { getAdminContext, getPermissionsForRole, isMissingTableError } from "@/lib/adminPermissions";
+import { ADMIN_ROLE, type Permission } from "@/lib/adminRoles";
+import { AUTH_ACTION } from "@/lib/authActions";
+import { LIFE_STAGE, MEMBERSHIP_STATUS, isAvailableMember, normalizeLifeStage, normalizeMembershipStatus } from "@/lib/memberLifecycle";
+import { UNIT_ROLE } from "@/lib/unitRoles";
+
+const isMissingMemberLifecycleColumn = (error: { code?: string; message?: string } | null | undefined) =>
+  error?.code === "PGRST204" ||
+  Boolean(error?.message?.toLowerCase().includes("membership_status"));
+
+const lifecycleMigrationError =
+  "Database migration required. Run the latest SUPABASE_SETUP.md migration so members.membership_status exists.";
 
 export async function GET(req: NextRequest) {
   try {
@@ -10,15 +21,56 @@ export async function GET(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     const adminContext = user ? await getAdminContext(cookieStore) : null;
 
-    const memberId = cookieStore.get("member_id")?.value;
+    let memberId = cookieStore.get("member_id")?.value || null;
+    let memberEmail: string | null = null;
+    let memberName: string | null = null;
+
+    if (!memberId && user?.email) {
+      const { data: member } = await supabase
+        .from("members")
+        .select("id, email, first_name, last_name")
+        .eq("email", user.email)
+        .maybeSingle();
+
+      memberId = member?.id || null;
+      memberEmail = member?.email || null;
+      memberName = member ? `${member.first_name} ${member.last_name}` : null;
+    }
+
+    if (memberId && !memberEmail) {
+      const { data: member } = await supabase
+        .from("members")
+        .select("email, first_name, last_name")
+        .eq("id", memberId)
+        .maybeSingle();
+
+      memberEmail = member?.email || null;
+      memberName = member ? `${member.first_name} ${member.last_name}` : null;
+    }
+
     let memberUnitLeadership: Array<{ id: string; name: string; role: string }> = [];
+    let memberRole: string | null = null;
+    let memberPermissions: Permission[] = [];
+
+    if (memberEmail) {
+      const { data: memberAdminProfile, error: memberAdminProfileError } = await supabase
+        .from("admin_profiles")
+        .select("role, is_active")
+        .eq("email", memberEmail)
+        .maybeSingle();
+
+      if (!memberAdminProfileError && memberAdminProfile?.is_active !== false && memberAdminProfile?.role) {
+        memberRole = memberAdminProfile.role;
+        memberPermissions = await getPermissionsForRole(supabase, memberRole);
+      }
+    }
 
     if (memberId) {
       const { data: unitRows } = await supabase
         .from("church_unit_members")
         .select("role, church_units(id, name)")
         .eq("member_id", memberId)
-        .in("role", ["head", "assistant"]);
+        .in("role", [UNIT_ROLE.HEAD, UNIT_ROLE.ASSISTANT]);
 
       memberUnitLeadership = (unitRows || []).reduce<Array<{ id: string; name: string; role: string }>>((leadership, row: any) => {
           const unit = Array.isArray(row.church_units) ? row.church_units[0] : row.church_units;
@@ -27,7 +79,7 @@ export async function GET(req: NextRequest) {
         }, []);
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       user: user && adminContext ? {
         email: user.email,
         role: adminContext.role,
@@ -35,8 +87,28 @@ export async function GET(req: NextRequest) {
         permissions: adminContext.permissions,
       } : null,
       memberId: memberId || null,
+      member: memberId ? {
+        id: memberId,
+        email: memberEmail,
+        name: memberName,
+        role: memberRole,
+        permissions: memberPermissions,
+      } : null,
+      permissions: adminContext?.permissions || memberPermissions,
       memberUnitLeadership,
     });
+
+    if (memberId && !cookieStore.get("member_id")?.value) {
+      response.cookies.set("member_id", memberId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7,
+        path: "/",
+      });
+    }
+
+    return response;
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch session" }, { status: 500 });
   }
@@ -50,7 +122,7 @@ export async function POST(req: NextRequest) {
   const supabase = createClient(cookieStore);
 
   // Sign out
-  if (action === "logout") {
+  if (action === AUTH_ACTION.LOGOUT) {
     await supabase.auth.signOut();
     const response = NextResponse.json({ success: true });
     response.cookies.delete("member_id");
@@ -58,7 +130,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Member Login
-  if (action === "member-login") {
+  if (action === AUTH_ACTION.MEMBER_LOGIN) {
     if (!phone_number) {
       return NextResponse.json({ error: "Phone number is required" }, { status: 400 });
     }
@@ -67,11 +139,14 @@ export async function POST(req: NextRequest) {
       const adminSupabase = createAdminClient();
       const { data: member, error } = await adminSupabase
         .from("members")
-        .select("id, first_name, last_name, is_active")
+        .select("id, first_name, last_name, membership_status, is_active")
         .eq("phone_number", phone_number.trim())
         .maybeSingle();
 
       if (error) {
+        if (isMissingMemberLifecycleColumn(error)) {
+          return NextResponse.json({ error: lifecycleMigrationError }, { status: 400 });
+        }
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
 
@@ -82,8 +157,8 @@ export async function POST(req: NextRequest) {
         }, { status: 404 });
       }
 
-      if (member.is_active === false) {
-        return NextResponse.json({ error: "This member profile is inactive" }, { status: 403 });
+      if (!isAvailableMember(member.membership_status, member.is_active)) {
+        return NextResponse.json({ error: "This member profile is not currently active. Please contact the church office if this looks wrong." }, { status: 403 });
       }
 
       const response = NextResponse.json({
@@ -107,13 +182,13 @@ export async function POST(req: NextRequest) {
   }
 
   // Member Self-Registration
-  if (action === "member-register") {
+  if (action === AUTH_ACTION.MEMBER_REGISTER) {
     const {
       first_name,
       middle_name,
       last_name,
       date_of_birth,
-      member_type = "member",
+      life_stage = LIFE_STAGE.OTHER,
     } = body;
 
     if (!first_name?.trim() || !last_name?.trim() || !phone_number?.trim() || !date_of_birth) {
@@ -128,15 +203,20 @@ export async function POST(req: NextRequest) {
 
       const { data: existing, error: lookupError } = await adminSupabase
         .from("members")
-        .select("id, first_name, last_name, is_active")
+        .select("id, first_name, last_name, membership_status, is_active")
         .eq("phone_number", normalizedPhone)
         .maybeSingle();
 
-      if (lookupError) return NextResponse.json({ error: lookupError.message }, { status: 500 });
+      if (lookupError) {
+        if (isMissingMemberLifecycleColumn(lookupError)) {
+          return NextResponse.json({ error: lifecycleMigrationError }, { status: 400 });
+        }
+        return NextResponse.json({ error: lookupError.message }, { status: 500 });
+      }
 
       if (existing) {
-        if (existing.is_active === false) {
-          return NextResponse.json({ error: "A profile already exists for this phone number but is inactive." }, { status: 403 });
+        if (!isAvailableMember(existing.membership_status, existing.is_active)) {
+          return NextResponse.json({ error: "A profile already exists for this phone number but is not currently active." }, { status: 403 });
         }
 
         const response = NextResponse.json({
@@ -167,13 +247,19 @@ export async function POST(req: NextRequest) {
           email: email?.trim() || null,
           date_of_birth,
           position: null,
-          member_type,
+          life_stage: normalizeLifeStage(life_stage),
+          membership_status: normalizeMembershipStatus(MEMBERSHIP_STATUS.ACTIVE),
           photo_url: null,
         })
         .select("id, first_name, last_name")
         .single();
 
-      if (createError) return NextResponse.json({ error: createError.message }, { status: 500 });
+      if (createError) {
+        if (isMissingMemberLifecycleColumn(createError)) {
+          return NextResponse.json({ error: lifecycleMigrationError }, { status: 400 });
+        }
+        return NextResponse.json({ error: createError.message }, { status: 500 });
+      }
 
       const response = NextResponse.json({
         success: true,
@@ -206,5 +292,55 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 401 });
   }
 
-  return NextResponse.json({ success: true, user: data.user?.email });
+  const signedInEmail = data.user?.email;
+  if (!signedInEmail) return NextResponse.json({ error: "Unable to resolve signed-in admin account" }, { status: 401 });
+
+  const adminSupabase = createAdminClient();
+  const { data: adminProfile, error: adminProfileError } = await adminSupabase
+    .from("admin_profiles")
+    .select("role, is_active")
+    .eq("email", signedInEmail)
+    .maybeSingle();
+
+  if (adminProfileError && !isMissingTableError(adminProfileError)) {
+    await supabase.auth.signOut();
+    return NextResponse.json({ error: adminProfileError.message }, { status: 500 });
+  }
+
+  if (adminProfile?.is_active === false) {
+    await supabase.auth.signOut();
+    return NextResponse.json({ error: "This admin account is inactive" }, { status: 403 });
+  }
+
+  const { data: memberProfile, error: memberProfileError } = await adminSupabase
+    .from("members")
+    .select("id")
+    .eq("email", signedInEmail)
+    .maybeSingle();
+
+  if (memberProfileError && !isMissingTableError(memberProfileError)) {
+    await supabase.auth.signOut();
+    return NextResponse.json({ error: memberProfileError.message }, { status: 500 });
+  }
+
+  const isLegacySuperAdmin = !adminProfile || adminProfile.role === ADMIN_ROLE.SUPER_ADMIN;
+  if (!isLegacySuperAdmin) {
+    await supabase.auth.signOut();
+    return NextResponse.json({
+      error: "Please sign in through the member login page. Only super admins use the admin sign-in route.",
+    }, { status: 403 });
+  }
+
+  const response = NextResponse.json({ success: true, user: signedInEmail, memberId: memberProfile?.id || null });
+  if (memberProfile?.id) {
+    response.cookies.set("member_id", memberProfile.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
+    });
+  }
+
+  return response;
 }

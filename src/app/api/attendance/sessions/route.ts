@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/server";
 import { cookies } from "next/headers";
 import { requirePermission } from "@/lib/adminPermissions";
+import { PERMISSION } from "@/lib/adminRoles";
+import { SERVICE_TYPE } from "@/lib/attendanceStatus";
 
 export async function GET() {
-  const { allowed } = await requirePermission("attendance.view");
+  const { allowed } = await requirePermission(PERMISSION.ATTENDANCE_VIEW);
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const cookieStore = await cookies();
@@ -21,7 +23,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { allowed } = await requirePermission("attendance.manage");
+  const { allowed } = await requirePermission(PERMISSION.ATTENDANCE_MANAGE);
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { title, service_type, session_date, notes } = await req.json();
@@ -37,7 +39,7 @@ export async function POST(req: NextRequest) {
     .from("attendance_sessions")
     .insert({
       title: title.trim(),
-      service_type: service_type?.trim() || "service",
+      service_type: service_type?.trim() || SERVICE_TYPE.SERVICE,
       session_date,
       notes: notes?.trim() || null,
     })

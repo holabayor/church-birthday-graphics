@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/adminPermissions";
+import { PERMISSION } from "@/lib/adminRoles";
 import { createClient } from "@/lib/server";
 import { cookies } from "next/headers";
 import { attachMemberUnits } from "@/lib/memberUnits";
+import { MEMBERSHIP_STATUS, normalizeLifeStage } from "@/lib/memberLifecycle";
+import { ATTENDANCE_STATUS, FOLLOW_UP_STATUS } from "@/lib/attendanceStatus";
+import { BIRTHDAY_RANGE, OUTREACH_TYPE } from "@/lib/outreachOptions";
 
 const isBirthdayInRange = (dateOfBirth: string, daysAhead: number) => {
   const today = new Date();
@@ -26,27 +30,27 @@ const formatMember = (member: any, extra: Record<string, unknown> = {}) => ({
   name: [member.first_name, member.middle_name, member.last_name].filter(Boolean).join(" "),
   phone_number: member.phone_number,
   email: member.email,
-  member_type: member.member_type || "member",
+  life_stage: normalizeLifeStage(member.life_stage),
   units: member.units || [],
   ...extra,
 });
 
 export async function GET(req: NextRequest) {
-  const { allowed } = await requirePermission("outreach.view");
+  const { allowed } = await requirePermission(PERMISSION.OUTREACH_VIEW);
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const type = req.nextUrl.searchParams.get("type") || "birthdays";
+  const type = req.nextUrl.searchParams.get("type") || OUTREACH_TYPE.BIRTHDAYS;
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  if (type === "birthdays") {
-    const range = req.nextUrl.searchParams.get("range") || "today";
-    const daysAhead = range === "week" ? 7 : range === "month" ? 31 : 0;
+  if (type === OUTREACH_TYPE.BIRTHDAYS) {
+    const range = req.nextUrl.searchParams.get("range") || BIRTHDAY_RANGE.TODAY;
+    const daysAhead = range === BIRTHDAY_RANGE.WEEK ? 7 : range === BIRTHDAY_RANGE.MONTH ? 31 : 0;
 
     const { data, error } = await supabase
       .from("members")
       .select("*")
-      .eq("is_active", true)
+      .eq("membership_status", MEMBERSHIP_STATUS.ACTIVE)
       .not("phone_number", "is", null);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -59,7 +63,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ data: rows });
   }
 
-  if (type === "absentees") {
+  if (type === OUTREACH_TYPE.ABSENTEES) {
     const sessionId = req.nextUrl.searchParams.get("session_id");
     if (!sessionId) return NextResponse.json({ error: "session_id is required" }, { status: 400 });
 
@@ -71,7 +75,7 @@ export async function GET(req: NextRequest) {
         absentee_followups(status, notes, assigned_to)
       `)
       .eq("session_id", sessionId)
-      .eq("status", "absent");
+      .eq("status", ATTENDANCE_STATUS.ABSENT);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -85,7 +89,7 @@ export async function GET(req: NextRequest) {
         { ...row.members, units: unitsByMember.get(row.members.id) || [] },
         {
           attendance_status: row.status,
-          follow_up_status: row.absentee_followups?.[0]?.status || "pending",
+          follow_up_status: row.absentee_followups?.[0]?.status || FOLLOW_UP_STATUS.PENDING,
           assigned_to: row.absentee_followups?.[0]?.assigned_to || null,
         }
       ));
@@ -93,7 +97,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ data: rows });
   }
 
-  if (type === "units") {
+  if (type === OUTREACH_TYPE.UNITS) {
     const unitId = req.nextUrl.searchParams.get("unit_id");
     if (!unitId) return NextResponse.json({ error: "unit_id is required" }, { status: 400 });
 

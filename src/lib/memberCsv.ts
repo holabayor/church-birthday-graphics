@@ -1,3 +1,5 @@
+import { normalizeUnitRole, UNIT_ROLE } from "@/lib/unitRoles";
+
 export const memberCsvColumns = [
   "first_name",
   "middle_name",
@@ -6,7 +8,8 @@ export const memberCsvColumns = [
   "email",
   "date_of_birth",
   "position",
-  "member_type",
+  "life_stage",
+  "membership_status",
   "institution",
   "department",
   "academic_level",
@@ -102,7 +105,7 @@ export const parseUnitsCsvValue = (value: string) =>
     .map(part => part.trim())
     .filter(Boolean)
     .map(part => {
-      const [name, role = "member"] = part.split(":").map(item => item.trim());
-      return { name, role: ["member", "assistant", "head"].includes(role) ? role : "member" };
+      const [name, role = UNIT_ROLE.MEMBER] = part.split(":").map(item => item.trim());
+      return { name, role: normalizeUnitRole(role) };
     })
     .filter(unit => unit.name);

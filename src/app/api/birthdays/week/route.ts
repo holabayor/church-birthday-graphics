@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/server";
 import { cookies } from "next/headers";
+import { MEMBERSHIP_STATUS } from "@/lib/memberLifecycle";
 
 export async function GET() {
   const today = new Date();
@@ -13,7 +14,7 @@ export async function GET() {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  const { data, error } = await supabase.from("members").select("*").eq("is_active", true);
+  const { data, error } = await supabase.from("members").select("*").eq("membership_status", MEMBERSHIP_STATUS.ACTIVE);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

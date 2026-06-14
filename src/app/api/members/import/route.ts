@@ -5,6 +5,8 @@ import { parseCsv, parseUnitsCsvValue } from "@/lib/memberCsv";
 import { saveMemberProfiles } from "@/lib/memberProfiles";
 import { saveMemberUnits } from "@/lib/memberUnits";
 import { requirePermission } from "@/lib/adminPermissions";
+import { PERMISSION } from "@/lib/adminRoles";
+import { normalizeLifeStage, normalizeMembershipStatus } from "@/lib/memberLifecycle";
 
 const coreFields = [
   "first_name",
@@ -14,7 +16,8 @@ const coreFields = [
   "email",
   "date_of_birth",
   "position",
-  "member_type",
+  "life_stage",
+  "membership_status",
 ];
 
 const profileFields = [
@@ -49,7 +52,7 @@ const normalizeDate = (value: unknown) => {
 };
 
 export async function POST(req: NextRequest) {
-  const { allowed } = await requirePermission("members.manage");
+  const { allowed } = await requirePermission(PERMISSION.MEMBERS_MANAGE);
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const formData = await req.formData();
@@ -116,8 +119,10 @@ export async function POST(req: NextRequest) {
         field,
         field === "date_of_birth"
           ? dateOfBirth
-          : field === "member_type"
-            ? cleanValue(row[field]) || "member"
+          : field === "life_stage"
+            ? normalizeLifeStage(cleanValue(row[field]))
+            : field === "membership_status"
+              ? normalizeMembershipStatus(cleanValue(row[field]))
             : cleanValue(row[field]),
       ])
     );
@@ -136,7 +141,7 @@ export async function POST(req: NextRequest) {
 
     const profilePayload = Object.fromEntries(profileFields.map(field => [field, cleanValue(row[field])]));
     const profileError = await saveMemberProfiles(supabase, member.id, {
-      member_type: memberPayload.member_type,
+      life_stage: memberPayload.life_stage,
       ...profilePayload,
     });
 

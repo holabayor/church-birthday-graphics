@@ -5,9 +5,10 @@ import { attachMemberProfiles } from "@/lib/memberProfiles";
 import { attachMemberUnits } from "@/lib/memberUnits";
 import { flattenMemberForCsv, stringifyCsv } from "@/lib/memberCsv";
 import { requirePermission } from "@/lib/adminPermissions";
+import { PERMISSION } from "@/lib/adminRoles";
 
 export async function GET() {
-  const { allowed } = await requirePermission("members.view");
+  const { allowed } = await requirePermission(PERMISSION.MEMBERS_VIEW);
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const cookieStore = await cookies();

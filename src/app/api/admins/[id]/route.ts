@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/server";
 import { cookies } from "next/headers";
 import { isMissingTableError, requirePermission } from "@/lib/adminPermissions";
+import { PERMISSION } from "@/lib/adminRoles";
 
 const missingAdminsTableMessage =
   "Database migration required. Run the latest SUPABASE_SETUP.md migration so admin_profiles exists.";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { allowed } = await requirePermission("admins.manage");
+  const { allowed } = await requirePermission(PERMISSION.ADMINS_MANAGE);
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
@@ -43,7 +44,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { allowed } = await requirePermission("admins.manage");
+  const { allowed } = await requirePermission(PERMISSION.ADMINS_MANAGE);
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;

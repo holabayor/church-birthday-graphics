@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/server";
 import { cookies } from "next/headers";
 import { requirePermission } from "@/lib/adminPermissions";
+import { PERMISSION } from "@/lib/adminRoles";
+import { attendanceStatusOptions } from "@/lib/attendanceStatus";
 
-const allowedStatuses = new Set(["present", "absent", "excused"]);
+const allowedStatuses = new Set(attendanceStatusOptions.map(option => option.value));
 
 export async function POST(req: NextRequest) {
-  const { allowed } = await requirePermission("attendance.manage");
+  const { allowed } = await requirePermission(PERMISSION.ATTENDANCE_MANAGE);
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { session_id, member_id, status } = await req.json();

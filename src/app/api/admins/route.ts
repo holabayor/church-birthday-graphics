@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/server";
 import { cookies } from "next/headers";
 import { isMissingTableError, requirePermission } from "@/lib/adminPermissions";
+import { PERMISSION } from "@/lib/adminRoles";
 
 const missingAdminsTableMessage =
   "Database migration required. Run the latest SUPABASE_SETUP.md migration so admin_profiles exists.";
 
 export async function GET() {
-  const { allowed } = await requirePermission("admins.manage");
+  const { allowed } = await requirePermission(PERMISSION.ADMINS_MANAGE);
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const cookieStore = await cookies();
@@ -28,7 +29,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { allowed } = await requirePermission("admins.manage");
+  const { allowed } = await requirePermission(PERMISSION.ADMINS_MANAGE);
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { email, full_name, role, is_active = true } = await req.json();

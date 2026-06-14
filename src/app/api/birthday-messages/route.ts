@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/server";
 import { cookies } from "next/headers";
 import { requirePermission } from "@/lib/adminPermissions";
+import { PERMISSION } from "@/lib/adminRoles";
+import { cacheKeys, getCached, invalidateCache } from "@/lib/serverCache";
 
 const FALLBACK_MESSAGES = [
   { id: "fallback-1", message: "May the Lord continue to bless you and keep you. May His face shine upon you and give you peace throughout this new year." },
@@ -11,24 +13,28 @@ const FALLBACK_MESSAGES = [
   { id: "fallback-5", message: "Happy Birthday! As you mark another year of God's faithfulness, may you continue to grow in grace and in the knowledge of our Lord Jesus Christ." }
 ];
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const { hit, value } = await getCached(cacheKeys.birthdayMessages, 300, async () => {
+      const cookieStore = await cookies();
+      const supabase = createClient(cookieStore);
 
-    const { data, error } = await supabase
-      .from("birthday_messages")
-      .select("*")
-      .order("created_at", { ascending: true });
+      const { data, error } = await supabase
+        .from("birthday_messages")
+        .select("*")
+        .order("created_at", { ascending: true });
 
-    if (error) {
-      if (error.code === "42P01" || error.message?.includes("relation")) {
-        return NextResponse.json({ data: FALLBACK_MESSAGES, isFallback: true });
+      if (error) {
+        if (error.code === "42P01" || error.message?.includes("relation")) {
+          return { data: FALLBACK_MESSAGES, isFallback: true };
+        }
+        throw new Error(error.message);
       }
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
 
-    return NextResponse.json({ data, isFallback: false });
+      return { data, isFallback: false };
+    });
+
+    return NextResponse.json(value, { headers: { "X-App-Cache": hit ? "HIT" : "MISS" } });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -36,7 +42,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { allowed } = await requirePermission("birthdays.manage");
+    const { allowed } = await requirePermission(PERMISSION.BIRTHDAYS_MANAGE);
     if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const body = await req.json();
@@ -64,6 +70,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    invalidateCache(cacheKeys.birthdayMessages);
     return NextResponse.json(data, { status: 201 });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

@@ -4,9 +4,19 @@ import { cookies } from "next/headers";
 import { attachMemberProfiles, saveMemberProfiles } from "@/lib/memberProfiles";
 import { attachMemberUnits, saveMemberUnits } from "@/lib/memberUnits";
 import { requirePermission } from "@/lib/adminPermissions";
+import { PERMISSION } from "@/lib/adminRoles";
+import { FILTER_VALUE } from "@/lib/filterOptions";
+import { cacheKeys, invalidateCache } from "@/lib/serverCache";
+import {
+  LIFE_STAGE,
+  MEMBERSHIP_STATUS,
+  normalizeLifeStage,
+  normalizeMembershipStatus,
+  workingLifeStages,
+} from "@/lib/memberLifecycle";
 
 export async function GET(req: NextRequest) {
-  const { allowed } = await requirePermission("members.view");
+  const { allowed } = await requirePermission(PERMISSION.MEMBERS_VIEW);
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const searchParams = req.nextUrl.searchParams;
@@ -16,6 +26,9 @@ export async function GET(req: NextRequest) {
   const sort = searchParams.get("sort") || "first_name";
   const order = searchParams.get("order") || "asc";
   const month = searchParams.get("month") || "";
+  const lifeStage = searchParams.get("life_stage") || "";
+  const unitId = searchParams.get("unit_id") || "";
+  
   const monthNumber = month ? parseInt(month, 10) : NaN;
   const hasMonthFilter = Number.isInteger(monthNumber) && monthNumber >= 1 && monthNumber <= 12;
 
@@ -28,8 +41,44 @@ export async function GET(req: NextRequest) {
   let query = supabase.from("members").select("*", { count: "exact" }).order(sort, { ascending: order === "asc" });
 
   if (search) {
-    query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,phone_number.ilike.%${search}%,position.ilike.%${search}%,member_type.ilike.%${search}%`);
+    query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,phone_number.ilike.%${search}%,position.ilike.%${search}%,life_stage.ilike.%${search}%`);
   }
+
+  if (lifeStage && lifeStage !== FILTER_VALUE.ALL) {
+    query = query.eq("life_stage", normalizeLifeStage(lifeStage));
+  }
+
+  if (unitId && unitId !== FILTER_VALUE.ALL) {
+    const { data: unitMembers } = await supabase
+      .from("church_unit_members")
+      .select("member_id")
+      .eq("unit_id", unitId);
+    const memberIds = (unitMembers || []).map((m: any) => m.member_id);
+    if (memberIds.length > 0) {
+      query = query.in("id", memberIds);
+    } else {
+      query = query.eq("id", "00000000-0000-0000-0000-000000000000");
+    }
+  }
+
+  const [
+    { count: totalCount },
+    { count: studentCount },
+    { count: workingCount },
+    { count: visitorCount }
+  ] = await Promise.all([
+    supabase.from("members").select("*", { count: "exact", head: true }),
+    supabase.from("members").select("*", { count: "exact", head: true }).eq("life_stage", LIFE_STAGE.STUDENT),
+    supabase.from("members").select("*", { count: "exact", head: true }).in("life_stage", workingLifeStages),
+    supabase.from("members").select("*", { count: "exact", head: true }).eq("life_stage", LIFE_STAGE.VISITOR)
+  ]);
+
+  const stats = {
+    total: totalCount || 0,
+    students: studentCount || 0,
+    working: workingCount || 0,
+    visitors: visitorCount || 0,
+  };
 
   if (hasMonthFilter) {
     const { data, error } = await query.range(0, 9999);
@@ -53,6 +102,7 @@ export async function GET(req: NextRequest) {
       total: filtered.length,
       page,
       limit,
+      stats,
     });
   }
 
@@ -64,11 +114,11 @@ export async function GET(req: NextRequest) {
   }
   const dataWithProfiles = await attachMemberProfiles(supabase, data || []);
   const dataWithUnits = await attachMemberUnits(supabase, dataWithProfiles);
-  return NextResponse.json({ data: dataWithUnits, total: count || 0, page, limit });
+  return NextResponse.json({ data: dataWithUnits, total: count || 0, page, limit, stats });
 }
 
 export async function POST(req: NextRequest) {
-  const { allowed } = await requirePermission("members.manage");
+  const { allowed } = await requirePermission(PERMISSION.MEMBERS_MANAGE);
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
@@ -80,7 +130,8 @@ export async function POST(req: NextRequest) {
     email,
     date_of_birth,
     position,
-    member_type,
+    life_stage,
+    membership_status,
     institution,
     department,
     academic_level,
@@ -117,24 +168,24 @@ export async function POST(req: NextRequest) {
       email: email || null,
       date_of_birth,
       position: position || null,
-      member_type: member_type || "member",
+      life_stage: normalizeLifeStage(life_stage),
+      membership_status: normalizeMembershipStatus(membership_status || MEMBERSHIP_STATUS.ACTIVE),
       photo_url: photo_url || null,
     })
     .select()
     .single();
 
-    console.log("Error creating member profile", error)
   if (error) {
     if (error.code === "PGRST204" || error.code === "PGRST205" || error.code === "42P01") {
       return NextResponse.json({
-        error: "Database migration required. Run the latest SUPABASE_SETUP.md migration so members.member_type and profile/unit tables exist.",
+        error: "Database migration required. Run the latest SUPABASE_SETUP.md migration so members.life_stage, members.membership_status, and profile/unit tables exist.",
       }, { status: 400 });
     }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
   const profileError = await saveMemberProfiles(supabase, data.id, {
-    member_type,
+    life_stage,
     institution,
     department,
     academic_level,
@@ -161,5 +212,8 @@ export async function POST(req: NextRequest) {
 
   const [memberWithProfiles] = await attachMemberProfiles(supabase, [data]);
   const [memberWithUnits] = await attachMemberUnits(supabase, [memberWithProfiles]);
+  invalidateCache(cacheKeys.units);
+  invalidateCache(cacheKeys.unitsManagement);
+  invalidateCache("unit");
   return NextResponse.json(memberWithUnits, { status: 201 });
 }

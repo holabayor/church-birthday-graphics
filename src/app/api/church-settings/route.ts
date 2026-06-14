@@ -2,23 +2,28 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/server";
 import { cookies } from "next/headers";
 import { requirePermission } from "@/lib/adminPermissions";
+import { PERMISSION } from "@/lib/adminRoles";
+import { cacheKeys, getCached, invalidateCache } from "@/lib/serverCache";
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
-  const { data, error } = await supabase.from("church_settings").select("*").limit(1).maybeSingle();
+  try {
+    const { hit, value } = await getCached(cacheKeys.churchSettings, 300, async () => {
+      const cookieStore = await cookies();
+      const supabase = createClient(cookieStore);
+      const { data, error } = await supabase.from("church_settings").select("*").limit(1).maybeSingle();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  
-  if (!data) {
-    return NextResponse.json({ church_name: "", church_address: "", logo_url: null });
+      if (error) throw new Error(error.message);
+      return data || { church_name: "", church_address: "", logo_url: null };
+    });
+
+    return NextResponse.json(value, { headers: { "X-App-Cache": hit ? "HIT" : "MISS" } });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
-  return NextResponse.json(data);
 }
 
 export async function PUT(req: NextRequest) {
-  const { allowed } = await requirePermission("settings.manage");
+  const { allowed } = await requirePermission(PERMISSION.SETTINGS_MANAGE);
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
@@ -44,6 +49,7 @@ export async function PUT(req: NextRequest) {
       console.log("Error from inserting data", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    invalidateCache(cacheKeys.churchSettings);
     return NextResponse.json(data);
   }
 
@@ -58,5 +64,6 @@ export async function PUT(req: NextRequest) {
     console.log("Error from updating data", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+  invalidateCache(cacheKeys.churchSettings);
   return NextResponse.json(data);
 }

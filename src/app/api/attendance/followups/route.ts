@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/server";
 import { cookies } from "next/headers";
 import { requirePermission } from "@/lib/adminPermissions";
+import { PERMISSION } from "@/lib/adminRoles";
+import { followUpStatusOptions } from "@/lib/attendanceStatus";
 
-const allowedStatuses = new Set(["pending", "contacted", "visited", "resolved", "no_response"]);
+const allowedStatuses = new Set(followUpStatusOptions.map(option => option.value));
 
 export async function POST(req: NextRequest) {
-  const { allowed } = await requirePermission("followups.manage");
+  const { allowed } = await requirePermission(PERMISSION.FOLLOWUPS_MANAGE);
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { session_id, member_id, status, notes, assigned_to } = await req.json();

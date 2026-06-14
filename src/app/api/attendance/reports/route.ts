@@ -2,9 +2,12 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/server";
 import { cookies } from "next/headers";
 import { requirePermission } from "@/lib/adminPermissions";
+import { PERMISSION } from "@/lib/adminRoles";
+import { ATTENDANCE_STATUS } from "@/lib/attendanceStatus";
+import { MEMBERSHIP_STATUS } from "@/lib/memberLifecycle";
 
 export async function GET() {
-  const { allowed } = await requirePermission("attendance.view");
+  const { allowed } = await requirePermission(PERMISSION.ATTENDANCE_VIEW);
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const cookieStore = await cookies();
@@ -19,7 +22,7 @@ export async function GET() {
     supabase
       .from("members")
       .select("id", { count: "exact", head: true })
-      .eq("is_active", true),
+      .eq("membership_status", MEMBERSHIP_STATUS.ACTIVE),
   ]);
 
   if (sessionsError) return NextResponse.json({ error: sessionsError.message }, { status: 500 });
@@ -50,9 +53,9 @@ export async function GET() {
 
   for (const record of records || []) {
     const counts = recordsBySession.get(record.session_id) || { present: 0, absent: 0, excused: 0 };
-    if (record.status === "present") counts.present += 1;
-    if (record.status === "absent") counts.absent += 1;
-    if (record.status === "excused") counts.excused += 1;
+    if (record.status === ATTENDANCE_STATUS.PRESENT) counts.present += 1;
+    if (record.status === ATTENDANCE_STATUS.ABSENT) counts.absent += 1;
+    if (record.status === ATTENDANCE_STATUS.EXCUSED) counts.excused += 1;
     recordsBySession.set(record.session_id, counts);
   }
 
