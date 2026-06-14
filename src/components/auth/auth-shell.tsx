@@ -59,22 +59,14 @@ export function AuthShell({ variant, eyebrow, title, description, children, foot
     <main className="min-h-dvh bg-[var(--surface)] lg:grid lg:grid-cols-[minmax(0,1.08fr)_minmax(440px,0.92fr)]">
       <section className="relative min-h-[210px] overflow-hidden bg-[var(--inverse-surface)] sm:min-h-[260px] lg:min-h-dvh">
         <Image
-          src="/teen.png"
-          alt="A young church member standing with the congregation"
+          src="/auth-bg.png"
+          alt="Two young church members in the congregation"
           fill
           priority
           sizes="(min-width: 1024px) 54vw, 100vw"
-          className={cn(
-            "object-cover object-[center_36%]",
-            isAdmin && "grayscale-[35%] object-center",
-          )}
+          className={cn("object-cover object-[center_36%]", isAdmin && "grayscale-[35%] object-center")}
         />
-        <div
-          className={cn(
-            "absolute inset-0",
-            isAdmin ? "bg-[#0b1c30]/82" : "bg-[#0b1c30]/58",
-          )}
-        />
+        <div className={cn("absolute inset-0", isAdmin ? "bg-[#0b1c30]/82" : "bg-[#0b1c30]/58")} />
 
         <div className="relative flex h-full min-h-[210px] flex-col justify-between px-4 py-5 text-white sm:min-h-[260px] sm:px-6 sm:py-6 lg:min-h-dvh lg:px-10 lg:py-9 xl:px-14 xl:py-12">
           <div className="flex items-center gap-3">
@@ -90,9 +82,7 @@ export function AuthShell({ variant, eyebrow, title, description, children, foot
               <p className="font-mono text-[11px] font-medium uppercase tracking-[0.05em] text-white/70">
                 {copy.label}
               </p>
-              <p className="truncate font-[var(--font-manrope)] text-lg font-semibold leading-6">
-                {churchName}
-              </p>
+              <p className="truncate font-[var(--font-manrope)] text-lg font-semibold leading-6">{churchName}</p>
             </div>
           </div>
 
@@ -146,4 +136,3 @@ export function AuthShell({ variant, eyebrow, title, description, children, foot
     </main>
   );
 }
-
