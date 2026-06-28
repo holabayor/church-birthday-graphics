@@ -8,7 +8,7 @@ interface MemberSearchAutocompleteProps {
   placeholder?: string;
   selectedMemberId: string | null;
   selectedMemberName: string;
-  onSelect: (memberId: string | null, fullName: string) => void;
+  onSelect: (memberId: string | null, fullName: string, photoUrl?: string | null) => void;
   id?: string;
 }
 
@@ -19,6 +19,7 @@ interface MemberOption {
   last_name: string;
   email?: string | null;
   phone_number?: string | null;
+  photo_url?: string | null;
 }
 
 export function MemberSearchAutocomplete({
@@ -85,7 +86,7 @@ export function MemberSearchAutocomplete({
     const fullName = [member.first_name, member.middle_name, member.last_name]
       .filter(Boolean)
       .join(" ");
-    onSelect(member.id, fullName);
+    onSelect(member.id, fullName, member.photo_url);
     setQuery(fullName);
     setIsOpen(false);
   };

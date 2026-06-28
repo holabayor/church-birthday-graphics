@@ -41,6 +41,7 @@ export const PERMISSION = {
   OUTREACH_VIEW: "outreach.view",
   SETTINGS_MANAGE: "settings.manage",
   ADMINS_MANAGE: "admins.manage",
+  POLLS_MANAGE: "polls.manage",
 } as const;
 
 export type Permission = (typeof PERMISSION)[keyof typeof PERMISSION];
@@ -75,6 +76,7 @@ export const permissionDefinitions: PermissionDefinition[] = [
   { key: PERMISSION.OUTREACH_VIEW, label: "View Outreach", description: "View outreach-ready lists and communication workflows.", group: "Communication" },
   { key: PERMISSION.SETTINGS_MANAGE, label: "Manage Settings", description: "Update church identity and system configuration.", group: "Settings" },
   { key: PERMISSION.ADMINS_MANAGE, label: "Manage Roles & Admins", description: "Assign admin profiles and configure role permissions.", group: "Settings" },
+  { key: PERMISSION.POLLS_MANAGE, label: "Manage Polls", description: "Create, edit, delete, and monitor member voting polls.", group: "Communication" },
 ];
 
 export const allPermissions = permissionDefinitions.map(permission => permission.key);
@@ -143,6 +145,15 @@ export const pageAccessDefinitions: PageAccessDefinition[] = [
     visibilityPermissions: [PERMISSION.SETTINGS_MANAGE, PERMISSION.ADMINS_MANAGE],
     enablePermission: PERMISSION.SETTINGS_MANAGE,
   },
+  {
+    key: "polls",
+    label: "Polls",
+    path: "/polls",
+    description: "Manage voting polls, candidate nominations, and real-time voter turnout.",
+    group: "Operations",
+    visibilityPermissions: [PERMISSION.POLLS_MANAGE],
+    enablePermission: PERMISSION.POLLS_MANAGE,
+  },
 ];
 
 export const roleLabels: Record<string, string> = {
@@ -179,6 +190,7 @@ export const rolePermissions: Record<BuiltInAdminRole, Permission[]> = {
     PERMISSION.OUTREACH_VIEW,
     PERMISSION.SETTINGS_MANAGE,
     PERMISSION.ADMINS_MANAGE,
+    PERMISSION.POLLS_MANAGE,
   ],
   [ADMIN_ROLE.PASTOR]: [
     PERMISSION.DASHBOARD_VIEW,
@@ -190,6 +202,7 @@ export const rolePermissions: Record<BuiltInAdminRole, Permission[]> = {
     PERMISSION.UNITS_MANAGE,
     PERMISSION.BIRTHDAYS_MANAGE,
     PERMISSION.OUTREACH_VIEW,
+    PERMISSION.POLLS_MANAGE,
   ],
   [ADMIN_ROLE.ASSISTANT_PASTOR]: [
     PERMISSION.DASHBOARD_VIEW,

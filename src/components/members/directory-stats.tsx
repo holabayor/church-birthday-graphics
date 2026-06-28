@@ -56,7 +56,7 @@ export function DirectoryStats({ total, students, working, visitors }: Directory
                 <Icon className="h-5 w-5" />
               </div>
               {card.badge && (
-                <span className="text-[10px] font-mono text-[var(--member-emerald)] uppercase bg-[var(--member-emerald)]/10 px-2 py-0.5 rounded-full font-semibold">
+                <span className="text-[12px] font-mono text-[var(--member-emerald)] uppercase bg-[var(--member-emerald)]/10 px-2 py-0.5 rounded-full font-semibold">
                   {card.badge}
                 </span>
               )}

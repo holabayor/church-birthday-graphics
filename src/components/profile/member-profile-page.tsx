@@ -25,6 +25,7 @@ import {
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 import { toast } from "sonner";
 
+import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -198,7 +199,7 @@ function DetailItem({ icon: Icon, label, value }: { icon: LucideIcon; label: str
     <div className="flex min-w-0 items-start gap-3">
       <Icon className="mt-0.5 size-4 shrink-0 text-primary" />
       <div className="min-w-0">
-        <p className="font-mono text-[10px] font-medium uppercase tracking-[0.05em] text-[var(--outline)]">{label}</p>
+        <p className="font-mono text-[12px] font-medium uppercase tracking-[0.05em] text-[var(--outline)]">{label}</p>
         <p className="mt-0.5 break-words text-sm font-semibold leading-5 text-foreground">{value}</p>
       </div>
     </div>
@@ -431,7 +432,7 @@ export function MemberProfilePage() {
 
   if (loading) {
     return (
-      <div className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
+      <div className="w-full space-y-6 p-4 md:p-8">
         <div className="space-y-2">
           <Skeleton className="h-4 w-28" />
           <Skeleton className="h-9 w-52" />
@@ -468,25 +469,19 @@ export function MemberProfilePage() {
   return (
     <div className="min-h-screen bg-[var(--surface)] pb-24 sm:pb-8">
       <form onSubmit={handleSubmit}>
-        <header className="border-b border-[var(--outline-variant)]/60 bg-white">
-          <div className="mx-auto flex w-full max-w-7xl items-end justify-between gap-4 px-4 py-5 sm:px-6 lg:px-8">
-            <div>
-              <p className="font-mono text-xs font-medium uppercase tracking-[0.05em] text-primary">Personal record</p>
-              <h1 className="mt-1 font-[var(--font-manrope)] text-2xl font-bold leading-8 text-foreground sm:text-3xl">
-                My profile
-              </h1>
-              <p className="mt-1 max-w-xl text-sm leading-5 text-[var(--on-surface-variant)] sm:text-base sm:leading-6">
-                Keep the details that help your church family know and support you up to date.
-              </p>
-            </div>
+        <PageHeader
+          eyebrow="Personal record"
+          title="My profile"
+          description="Keep the details that help your church family know and support you up to date."
+          actions={
             <Button type="submit" size="lg" disabled={saving || uploading} className="hidden shadow-none sm:flex">
               {saving ? <Loader2 className="animate-spin" /> : <Save />}
               {saving ? "Saving..." : "Save changes"}
             </Button>
-          </div>
-        </header>
+          }
+        />
 
-        <main className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
+        <main className="w-full space-y-6 p-4 md:p-8">
           <section className="overflow-hidden rounded-lg border border-[var(--outline-variant)]/60 bg-white">
             <div className="grid md:grid-cols-[minmax(250px,34%)_minmax(0,1fr)] lg:grid-cols-[360px_minmax(0,1fr)]">
               <button
@@ -570,7 +565,7 @@ export function MemberProfilePage() {
 
                 {showChurchGroupFields && assignedUnits.length > 0 ? (
                   <div className="mt-8 border-t border-[var(--outline-variant)]/50 pt-5">
-                    <p className="font-mono text-[10px] font-medium uppercase tracking-[0.05em] text-[var(--outline)]">
+                    <p className="font-mono text-[12px] font-medium uppercase tracking-[0.05em] text-[var(--outline)]">
                       Church units
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">

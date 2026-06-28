@@ -38,9 +38,16 @@ export async function middleware(request: NextRequest) {
 
   // Always allow: static assets, auth entry pages, public API endpoints
   const publicPages = ["/login", "/register", "/admin", "/admin/login"];
-  const publicApiPaths = ["/api/auth", "/api/church-settings", "/api/birthdays/send", "/api/generate"];
+  const publicApiPaths = [
+    "/api/auth", 
+    "/api/church-settings", 
+    "/api/birthdays/send", 
+    "/api/generate",
+    "/api/polls"
+  ];
   if (
     publicPages.includes(pathname) ||
+    pathname.startsWith("/polls/") ||
     publicApiPaths.some(p => pathname.startsWith(p)) ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon")
@@ -157,6 +164,12 @@ export async function middleware(request: NextRequest) {
       "/api/upload",
       "/api/units",
       "/api/birthday-messages",
+      ...(permissions.includes(PERMISSION.DASHBOARD_VIEW) ? [
+        "/api/birthdays/today",
+        "/api/birthdays/week",
+        "/api/birthdays/custom",
+        "/api/members",
+      ] : []),
       ...(permissions.includes(PERMISSION.MEMBERS_VIEW) || permissions.includes(PERMISSION.MEMBERS_MANAGE) ? ["/api/members"] : []),
       ...(permissions.includes(PERMISSION.ATTENDANCE_VIEW) || permissions.includes(PERMISSION.ATTENDANCE_MANAGE) ? ["/api/attendance"] : []),
       ...(permissions.includes(PERMISSION.OUTREACH_VIEW) ? ["/api/outreach"] : []),

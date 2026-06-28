@@ -12,6 +12,7 @@ import {
   Settings,
   User,
   Users,
+  Vote,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -55,7 +56,9 @@ export function Sidebar() {
   const [sessionKind, setSessionKind] = useState<SessionKind | null>(null);
   const [hasMemberProfile, setHasMemberProfile] = useState(false);
   const [permissions, setPermissions] = useState<Permission[]>([]);
-  const [memberUnitLeadership, setMemberUnitLeadership] = useState<Array<{ id: string; name: string; role: string }>>([]);
+  const [memberUnitLeadership, setMemberUnitLeadership] = useState<Array<{ id: string; name: string; role: string }>>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -102,8 +105,12 @@ export function Sidebar() {
 
   const activeLinks: NavItem[] = [
     ...(hasMemberProfile ? [{ href: "/profile", label: "My Profile", icon: User, section: "personal" as const }] : []),
-    ...(can(PERMISSION.DASHBOARD_VIEW) ? [{ href: "/", label: "Dashboard", icon: Home, section: "operations" as const }] : []),
-    ...(can(PERMISSION.MEMBERS_VIEW) ? [{ href: "/members", label: "Members", icon: Users, section: "operations" as const }] : []),
+    ...(can(PERMISSION.DASHBOARD_VIEW)
+      ? [{ href: "/", label: "Dashboard", icon: Home, section: "operations" as const }]
+      : []),
+    ...(can(PERMISSION.MEMBERS_VIEW)
+      ? [{ href: "/members", label: "Members", icon: Users, section: "operations" as const }]
+      : []),
     ...(can(PERMISSION.ATTENDANCE_VIEW)
       ? [{ href: "/attendance", label: "Attendance", icon: CalendarCheck, section: "operations" as const }]
       : []),
@@ -111,7 +118,8 @@ export function Sidebar() {
       ? [
           {
             href: "/units",
-            label: hasMemberProfile && !can(PERMISSION.UNITS_VIEW) && !can(PERMISSION.UNITS_MANAGE) ? "My Units" : "Units",
+            label:
+              hasMemberProfile && !can(PERMISSION.UNITS_VIEW) && !can(PERMISSION.UNITS_MANAGE) ? "My Units" : "Units",
             icon: Building2,
             section: "operations" as const,
           },
@@ -120,17 +128,19 @@ export function Sidebar() {
     ...(can(PERMISSION.OUTREACH_VIEW)
       ? [{ href: "/outreach", label: "Outreach", icon: MessageCircle, section: "operations" as const }]
       : []),
-    ...(can(PERMISSION.BIRTHDAYS_MANAGE) ? [{ href: "/designs", label: "Birthdays", icon: Palette, section: "operations" as const }] : []),
+    ...(can(PERMISSION.BIRTHDAYS_MANAGE)
+      ? [{ href: "/designs", label: "Birthdays", icon: Palette, section: "operations" as const }]
+      : []),
+    ...(can(PERMISSION.POLLS_MANAGE)
+      ? [{ href: "/polls", label: "Polls", icon: Vote, section: "operations" as const }]
+      : []),
     ...(can(PERMISSION.SETTINGS_MANAGE) || can(PERMISSION.ADMINS_MANAGE)
       ? [{ href: "/settings", label: "Settings", icon: Settings, section: "system" as const }]
       : []),
   ];
 
   return (
-    <ShadcnSidebar
-      collapsible="icon"
-      className="border-sidebar-border bg-sidebar text-sidebar-foreground"
-    >
+    <ShadcnSidebar collapsible="icon" className="border-sidebar-border bg-sidebar text-sidebar-foreground">
       <SidebarHeader className="border-b border-sidebar-border p-3">
         <SidebarMenu>
           <SidebarMenuItem>
@@ -153,7 +163,7 @@ export function Sidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
- 
+
         <div className="rounded-lg border border-sidebar-border bg-sidebar-accent px-3 py-2 group-data-[collapsible=icon]:hidden">
           <p className="font-mono text-[12px] font-medium uppercase leading-4 tracking-[0.05em] text-[var(--primary)]">
             {sessionKind === SESSION_KIND.SUPER_ADMIN ? "Super admin" : workspaceLabel}
@@ -167,7 +177,7 @@ export function Sidebar() {
           </p>
         </div>
       </SidebarHeader>
- 
+
       <SidebarContent className="gap-1 px-1 py-3">
         {loading ? (
           <SidebarGroup>
@@ -180,10 +190,10 @@ export function Sidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         ) : (
-          navSections.map((section) => {
-            const links = activeLinks.filter((link) => link.section === section.key);
+          navSections.map(section => {
+            const links = activeLinks.filter(link => link.section === section.key);
             if (links.length === 0) return null;
- 
+
             return (
               <SidebarGroup key={section.key} className="py-1">
                 <SidebarGroupLabel className="font-mono text-[12px] font-medium uppercase tracking-[0.05em] text-sidebar-foreground/50">
@@ -193,11 +203,11 @@ export function Sidebar() {
                   <SidebarMenu>
                     {links.map(({ href, label, icon: Icon }) => {
                       const active = isActive(href);
- 
+
                       return (
                         <SidebarMenuItem key={href} className="relative">
                           {active && (
-                            <div className="absolute left-[-4px] top-[10px] bottom-[10px] w-1 rounded-r bg-[var(--primary)]" />
+                            <div className="absolute left-[-4px] top-[12px] bottom-[12px] w-1 rounded-r bg-[var(--primary)]" />
                           )}
                           <SidebarMenuButton
                             asChild
@@ -220,7 +230,7 @@ export function Sidebar() {
           })
         )}
       </SidebarContent>
- 
+
       <SidebarFooter className="border-t border-sidebar-border p-3">
         <SidebarMenu>
           <SidebarMenuItem>

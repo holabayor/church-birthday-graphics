@@ -16,13 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { ManagedUnit } from "@/components/units/types";
 import { UNIT_ROLE } from "@/lib/unitRoles";
 import { getUnitLeader, getUnitMemberName } from "./unit-leadership-summary";
@@ -120,20 +114,26 @@ export function UnitFormModal({ open, unit, saving, onOpenChange, onSubmit }: Un
             {/* Basic Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="unitName" className="font-mono text-[10px] uppercase tracking-wider text-[var(--on-surface-variant)] font-semibold">
+                <Label
+                  htmlFor="unitName"
+                  className="font-mono text-[12px] uppercase tracking-wider text-[var(--on-surface-variant)] font-semibold"
+                >
                   Unit Name
                 </Label>
                 <Input
                   id="unitName"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={e => setName(e.target.value)}
                   placeholder="e.g., Sanctuary Choir"
                   className="h-11 border-[var(--outline-variant)] bg-white"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="unitCategory" className="font-mono text-[10px] uppercase tracking-wider text-[var(--on-surface-variant)] font-semibold">
+                <Label
+                  htmlFor="unitCategory"
+                  className="font-mono text-[12px] uppercase tracking-wider text-[var(--on-surface-variant)] font-semibold"
+                >
                   Unit Category
                 </Label>
                 <Select value={category} onValueChange={setCategory}>
@@ -151,13 +151,16 @@ export function UnitFormModal({ open, unit, saving, onOpenChange, onSubmit }: Un
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description" className="font-mono text-[10px] uppercase tracking-wider text-[var(--on-surface-variant)] font-semibold">
+              <Label
+                htmlFor="description"
+                className="font-mono text-[12px] uppercase tracking-wider text-[var(--on-surface-variant)] font-semibold"
+              >
                 Description
               </Label>
               <Textarea
                 id="description"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={e => setDescription(e.target.value)}
                 placeholder="Define the primary purpose and scope of this unit..."
                 className="min-h-24 border-[var(--outline-variant)] bg-white resize-none"
               />
@@ -171,7 +174,10 @@ export function UnitFormModal({ open, unit, saving, onOpenChange, onSubmit }: Un
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="hod" className="font-mono text-[10px] uppercase tracking-wider text-[var(--on-surface-variant)] font-semibold">
+                  <Label
+                    htmlFor="hod"
+                    className="font-mono text-[12px] uppercase tracking-wider text-[var(--on-surface-variant)] font-semibold"
+                  >
                     Primary Leadership (HOD)
                   </Label>
                   <MemberSearchAutocomplete
@@ -186,7 +192,10 @@ export function UnitFormModal({ open, unit, saving, onOpenChange, onSubmit }: Un
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="assistant" className="font-mono text-[10px] uppercase tracking-wider text-[var(--on-surface-variant)] font-semibold">
+                  <Label
+                    htmlFor="assistant"
+                    className="font-mono text-[12px] uppercase tracking-wider text-[var(--on-surface-variant)] font-semibold"
+                  >
                     Assistant Leadership
                   </Label>
                   <MemberSearchAutocomplete
@@ -212,11 +221,7 @@ export function UnitFormModal({ open, unit, saving, onOpenChange, onSubmit }: Un
                     Allow all members to see this unit in the portal.
                   </p>
                 </div>
-                <Switch
-                  checked={isPublic}
-                  onCheckedChange={setIsPublic}
-                  aria-label="Toggle public visibility"
-                />
+                <Switch checked={isPublic} onCheckedChange={setIsPublic} aria-label="Toggle public visibility" />
               </div>
             </div>
           </div>

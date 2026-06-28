@@ -229,7 +229,7 @@ export default function UnitDetailPage() {
       {/* Mobile Header */}
       <header className="md:hidden bg-white border-b border-[var(--outline-variant)] sticky top-0 z-40 px-4 py-4 flex items-center justify-between">
         <div className="flex flex-col">
-          <span className="text-[10px] uppercase tracking-widest text-primary font-bold">Unit Workspace</span>
+          <span className="text-[12px] uppercase tracking-widest text-primary font-bold">Unit Workspace</span>
           <h1 className="text-2xl font-bold text-slate-900">{unit.name}</h1>
         </div>
         <div className="flex gap-2">
@@ -270,7 +270,7 @@ export default function UnitDetailPage() {
                   {roster.length} of {unit.members.length} members shown
                 </p>
               </div>
-              <p className="font-mono text-[10px] font-bold uppercase leading-4 tracking-widest text-[var(--outline)]">
+              <p className="font-mono text-[12px] font-bold uppercase leading-4 tracking-widest text-[var(--outline)]">
                 Operational roster
               </p>
             </div>

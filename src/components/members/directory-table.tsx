@@ -40,28 +40,34 @@ function getUnitRoleLabel(member: Member) {
   return `${primaryUnit.name} / ${roleLabel}`;
 }
 
-export function DirectoryTable({
-  members,
-  onView,
-  onEdit,
-  onDelete,
-  canManageMembers,
-}: DirectoryTableProps) {
+export function DirectoryTable({ members, onView, onEdit, onDelete, canManageMembers }: DirectoryTableProps) {
   return (
     <div className="hidden md:block w-full overflow-x-auto">
       <Table className="min-w-[800px] w-full text-left border-collapse">
         <TableHeader className="bg-[var(--surface-container-low)]">
           <TableRow className="border-b border-[var(--outline-variant)] hover:bg-[var(--surface-container-low)]">
-            <TableHead className="px-6 py-4 text-xs font-mono uppercase tracking-wider text-[var(--outline)] font-medium">Name</TableHead>
-            <TableHead className="px-6 py-4 text-xs font-mono uppercase tracking-wider text-[var(--outline)] font-medium">Phone Number</TableHead>
-            <TableHead className="px-6 py-4 text-xs font-mono uppercase tracking-wider text-[var(--outline)] font-medium">Life Stage</TableHead>
-            <TableHead className="px-6 py-4 text-xs font-mono uppercase tracking-wider text-[var(--outline)] font-medium">Unit/Role</TableHead>
-            <TableHead className="px-6 py-4 text-xs font-mono uppercase tracking-wider text-[var(--outline)] font-medium">Status</TableHead>
-            <th className="px-6 py-4 text-xs font-mono uppercase tracking-wider text-[var(--outline)] text-right font-medium">Actions</th>
+            <TableHead className="px-6 py-4 text-xs font-mono uppercase tracking-wider text-[var(--outline)] font-medium">
+              Name
+            </TableHead>
+            <TableHead className="px-6 py-4 text-xs font-mono uppercase tracking-wider text-[var(--outline)] font-medium">
+              Phone Number
+            </TableHead>
+            <TableHead className="px-6 py-4 text-xs font-mono uppercase tracking-wider text-[var(--outline)] font-medium">
+              Life Stage
+            </TableHead>
+            <TableHead className="px-6 py-4 text-xs font-mono uppercase tracking-wider text-[var(--outline)] font-medium">
+              Unit/Role
+            </TableHead>
+            <TableHead className="px-6 py-4 text-xs font-mono uppercase tracking-wider text-[var(--outline)] font-medium">
+              Status
+            </TableHead>
+            <th className="px-6 py-4 text-xs font-mono uppercase tracking-wider text-[var(--outline)] text-right font-medium">
+              Actions
+            </th>
           </TableRow>
         </TableHeader>
         <TableBody className="divide-y divide-[var(--outline-variant)]/40 bg-[var(--surface-container-lowest)]">
-          {members.map((m) => {
+          {members.map(m => {
             // Life Stage Badge Style Logic
             let badgeStyle = "bg-[var(--surface-container)] text-foreground border border-[var(--outline-variant)]/30";
             const lifeStage = normalizeLifeStage(m.life_stage);
@@ -72,7 +78,8 @@ export function DirectoryTable({
             } else if (usesNyscProfile(lifeStage)) {
               badgeStyle = "bg-secondary/15 text-[var(--secondary-foreground)] border border-secondary/20";
             } else if (lifeStage === LIFE_STAGE.VISITOR) {
-              badgeStyle = "bg-[var(--member-emerald)]/10 text-[var(--member-emerald)] border border-[var(--member-emerald)]/20";
+              badgeStyle =
+                "bg-[var(--member-emerald)]/10 text-[var(--member-emerald)] border border-[var(--member-emerald)]/20";
             }
 
             const isActive = isAvailableMember(m.membership_status, m.is_active);
@@ -84,7 +91,7 @@ export function DirectoryTable({
                 className="hover:bg-[var(--surface-container-low)]/50 transition-colors cursor-pointer group border-b border-[var(--outline-variant)]/30"
               >
                 {/* Name */}
-                <TableCell className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                <TableCell className="px-6 py-4" onClick={e => e.stopPropagation()}>
                   <div className="flex items-center gap-3" onClick={() => onView(m)}>
                     <Avatar className="w-9 h-9 border border-[var(--outline-variant)]/40 shadow-xs">
                       <AvatarImage src={m.photo_url || ""} className="object-cover" />
@@ -107,7 +114,9 @@ export function DirectoryTable({
 
                 {/* Type */}
                 <TableCell className="px-6 py-4">
-                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${badgeStyle}`}>
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-[12px] font-bold uppercase tracking-wider ${badgeStyle}`}
+                  >
                     {getLifeStageLabel(lifeStage)}
                   </span>
                 </TableCell>
@@ -121,17 +130,19 @@ export function DirectoryTable({
                 <TableCell className="px-6 py-4">
                   {isActive ? (
                     <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--member-emerald)]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--member-emerald)] animate-pulse"></span> {getMembershipStatusLabel(m.membership_status, m.is_active)}
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--member-emerald)] animate-pulse"></span>{" "}
+                      {getMembershipStatusLabel(m.membership_status, m.is_active)}
                     </span>
                   ) : (
                     <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--outline)]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--outline)]"></span> {getMembershipStatusLabel(m.membership_status, m.is_active)}
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--outline)]"></span>{" "}
+                      {getMembershipStatusLabel(m.membership_status, m.is_active)}
                     </span>
                   )}
                 </TableCell>
 
                 {/* Actions */}
-                <TableCell className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                <TableCell className="px-6 py-4 text-right" onClick={e => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-1">
                     <Button
                       variant="ghost"
@@ -153,18 +164,12 @@ export function DirectoryTable({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="border-[var(--outline-variant)]">
-                        <DropdownMenuItem
-                          onClick={() => onView(m)}
-                          className="gap-2 cursor-pointer text-sm"
-                        >
+                        <DropdownMenuItem onClick={() => onView(m)} className="gap-2 cursor-pointer text-sm">
                           <Eye className="h-4 w-4 text-[var(--outline)]" />
                           View Profile
                         </DropdownMenuItem>
                         {canManageMembers && (
-                          <DropdownMenuItem
-                            onClick={() => onEdit(m)}
-                            className="gap-2 cursor-pointer text-sm"
-                          >
+                          <DropdownMenuItem onClick={() => onEdit(m)} className="gap-2 cursor-pointer text-sm">
                             <Edit2 className="h-4 w-4 text-[var(--outline)]" />
                             Edit Details
                           </DropdownMenuItem>

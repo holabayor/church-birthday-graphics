@@ -330,14 +330,14 @@ export function MemberDetailDialog({ member, viewer, unitName, actions, onOpenCh
                   <CollapsibleSection title="Personal Information" icon={User} defaultOpen={true}>
                     <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-y-5 gap-x-6 text-sm">
                       <div>
-                        <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
+                        <p className="font-mono text-[12px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
                           Phone Number
                         </p>
                         <p className="font-semibold text-foreground">{member.phone_number || "Not provided"}</p>
                       </div>
                       {canSeeOperational && (
                         <div>
-                          <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
+                          <p className="font-mono text-[12px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
                             Email Address
                           </p>
                           <p className="font-semibold text-foreground break-all">{member.email || "Not provided"}</p>
@@ -345,7 +345,7 @@ export function MemberDetailDialog({ member, viewer, unitName, actions, onOpenCh
                       )}
                       {canSeeOperational && (
                         <div>
-                          <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
+                          <p className="font-mono text-[12px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
                             Date of Birth
                           </p>
                           <p className="font-semibold text-foreground">{formatBirthdayAndAge(member.date_of_birth)}</p>
@@ -353,7 +353,7 @@ export function MemberDetailDialog({ member, viewer, unitName, actions, onOpenCh
                       )}
                       {canSeeFull && (
                         <div className="sm:col-span-2">
-                          <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
+                          <p className="font-mono text-[12px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
                             Home Address
                           </p>
                           <p className="font-semibold text-foreground">{member.residence || "Not provided"}</p>
@@ -361,7 +361,7 @@ export function MemberDetailDialog({ member, viewer, unitName, actions, onOpenCh
                       )}
                       {canSeeFull && (
                         <div>
-                          <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
+                          <p className="font-mono text-[12px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
                             Cell Group
                           </p>
                           <p className="font-semibold text-foreground">{member.cell_group || "Not provided"}</p>
@@ -369,7 +369,7 @@ export function MemberDetailDialog({ member, viewer, unitName, actions, onOpenCh
                       )}
                       {canSeeFull && (
                         <div>
-                          <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
+                          <p className="font-mono text-[12px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
                             Emergency Contact
                           </p>
                           <p className="font-semibold text-foreground">
@@ -386,13 +386,13 @@ export function MemberDetailDialog({ member, viewer, unitName, actions, onOpenCh
                     <CollapsibleSection title="Student Profile" icon={GraduationCap} iconColorClass="text-secondary">
                       <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-y-5 gap-x-6 text-sm">
                         <div>
-                          <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
+                          <p className="font-mono text-[12px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
                             Institution
                           </p>
                           <p className="font-semibold text-foreground">{member.institution || "Not provided"}</p>
                         </div>
                         <div>
-                          <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
+                          <p className="font-mono text-[12px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
                             Department & Level
                           </p>
                           <p className="font-semibold text-foreground">
@@ -402,7 +402,7 @@ export function MemberDetailDialog({ member, viewer, unitName, actions, onOpenCh
                           </p>
                         </div>
                         <div>
-                          <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
+                          <p className="font-mono text-[12px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
                             Student Status
                           </p>
                           <p className="font-semibold text-foreground">
@@ -418,13 +418,13 @@ export function MemberDetailDialog({ member, viewer, unitName, actions, onOpenCh
                     <CollapsibleSection title="NYSC Profile" icon={MapPin} iconColorClass="text-secondary">
                       <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-y-5 gap-x-6 text-sm">
                         <div>
-                          <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
+                          <p className="font-mono text-[12px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
                             NYSC State
                           </p>
                           <p className="font-semibold text-foreground">{member.nysc_state || "Not provided"}</p>
                         </div>
                         <div>
-                          <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
+                          <p className="font-mono text-[12px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
                             Primary Place of Assignment (PPA)
                           </p>
                           <p className="font-semibold text-foreground">{member.nysc_ppa || "Not provided"}</p>
@@ -442,7 +442,7 @@ export function MemberDetailDialog({ member, viewer, unitName, actions, onOpenCh
                     >
                       <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-y-5 gap-x-6 text-sm">
                         <div>
-                          <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
+                          <p className="font-mono text-[12px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
                             Employment Details
                           </p>
                           <p className="font-semibold text-foreground">
@@ -464,7 +464,7 @@ export function MemberDetailDialog({ member, viewer, unitName, actions, onOpenCh
                               <div className="absolute -left-[31px] bg-[var(--surface-container-lowest)] rounded-full p-1 border-2 border-[var(--surface-dim)]">
                                 <div className={`w-2.5 h-2.5 rounded-full ${item.iconColor}`} />
                               </div>
-                              <p className="font-mono text-[10px] text-[var(--outline)] mb-0.5 uppercase tracking-wider">
+                              <p className="font-mono text-[12px] text-[var(--outline)] mb-0.5 uppercase tracking-wider">
                                 {item.date}
                               </p>
                               <p className="font-semibold text-foreground text-sm">{item.title}</p>
@@ -485,13 +485,13 @@ export function MemberDetailDialog({ member, viewer, unitName, actions, onOpenCh
                     >
                       <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-y-5 gap-x-6 text-sm">
                         <div>
-                          <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
+                          <p className="font-mono text-[12px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
                             Account Created
                           </p>
                           <p className="font-semibold text-foreground">{formatDateTime(member.created_at)}</p>
                         </div>
                         <div>
-                          <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
+                          <p className="font-mono text-[12px] uppercase tracking-wider text-[var(--outline)] mb-0.5">
                             Last Updated
                           </p>
                           <p className="font-semibold text-foreground">{formatDateTime(member.updated_at)}</p>

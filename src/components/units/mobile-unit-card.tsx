@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Building2, ChevronRight } from "lucide-react";
 import type { ManagedUnit } from "./types";
 import { UNIT_ROLE } from "@/lib/unitRoles";
-import { getUnitLeader, getUnitMemberName } from "./unit-leadership-summary";
+import { getUnitLeader } from "./unit-leadership-summary";
 
 interface MobileUnitCardProps {
   unit: ManagedUnit;
@@ -26,11 +26,11 @@ export function MobileUnitCard({ unit }: MobileUnitCardProps) {
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="font-bold text-[#0B1C30] truncate">{unit.name}</h3>
             {hod ? (
-              <span className="bg-primary text-[10px] text-white px-2 py-0.5 rounded font-bold uppercase tracking-wider truncate max-w-[150px]">
+              <span className="bg-primary text-[12px] text-white px-2 py-0.5 rounded font-bold uppercase tracking-wider truncate max-w-[150px]">
                 HOD: {hod.first_name} {hod.last_name?.[0]}.
               </span>
             ) : (
-              <span className="bg-gray-400 text-[10px] text-white px-2 py-0.5 rounded font-bold uppercase tracking-wider">
+              <span className="bg-gray-400 text-[12px] text-white px-2 py-0.5 rounded font-bold uppercase tracking-wider">
                 No HOD
               </span>
             )}

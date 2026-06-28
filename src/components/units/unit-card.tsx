@@ -21,7 +21,7 @@ export function UnitCard({ unit, onEdit, onDelete }: UnitCardProps) {
       {unit.access.can_manage_details && (
         <div className="absolute top-3 right-3 flex items-center gap-2.5 opacity-0 transition-opacity group-hover:opacity-100">
           <button
-            onClick={(e) => {
+            onClick={e => {
               e.preventDefault();
               e.stopPropagation();
               onEdit(unit);
@@ -32,7 +32,7 @@ export function UnitCard({ unit, onEdit, onDelete }: UnitCardProps) {
             <Edit2 className="h-3.5 w-3.5" />
           </button>
           <button
-            onClick={(e) => {
+            onClick={e => {
               e.preventDefault();
               e.stopPropagation();
               onDelete(unit);
@@ -60,14 +60,14 @@ export function UnitCard({ unit, onEdit, onDelete }: UnitCardProps) {
             <Users className="h-3.5 w-3.5" />
             <span className="font-mono text-xs font-semibold">{unit.stats.total_members}</span>
           </div>
-          <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--outline)] font-medium">
+          <span className="font-mono text-[12px] uppercase tracking-wider text-[var(--outline)] font-medium">
             Members
           </span>
         </div>
 
         <div className="border-t border-[var(--outline-variant)] pt-3 flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <span className="font-mono text-[10px] text-[var(--outline)] uppercase font-semibold">HOD</span>
+            <span className="font-mono text-[12px] text-[var(--outline)] uppercase font-semibold">HOD</span>
             {hod ? (
               <div className="flex items-center gap-1.5 rounded-full bg-[var(--surface-variant)] text-[var(--on-surface-variant)] px-2.5 py-0.5">
                 <span className="font-body text-xs font-medium">{getUnitMemberName(hod)}</span>
@@ -78,7 +78,7 @@ export function UnitCard({ unit, onEdit, onDelete }: UnitCardProps) {
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="font-mono text-[10px] text-[var(--outline)] uppercase font-semibold">Asst.</span>
+            <span className="font-mono text-[12px] text-[var(--outline)] uppercase font-semibold">Asst.</span>
             {assistant ? (
               <div className="flex items-center gap-1.5 rounded-full border border-[var(--outline-variant)] bg-[var(--surface-container-low)] text-[var(--on-surface-variant)] px-2.5 py-0.5">
                 <span className="font-body text-xs font-medium">{getUnitMemberName(assistant)}</span>

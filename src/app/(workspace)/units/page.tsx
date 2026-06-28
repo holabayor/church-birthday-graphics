@@ -21,6 +21,7 @@ import type { ManagedUnit, UnitMember } from "@/components/units/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PERMISSION, type Permission } from "@/lib/adminRoles";
 import { UnitDirectoryTable } from "@/components/units/unit-directory-table";
 import { MobileUnitCard } from "@/components/units/mobile-unit-card";
@@ -282,37 +283,39 @@ export default function UnitsPage() {
           <div className="hidden md:flex p-6 border-b border-slate-100 items-center space-x-4 bg-slate-50/50">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
+              <Input
+                type="search"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search by unit name..."
-                className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="pl-9 bg-white w-full border-slate-200"
               />
             </div>
 
             <div className="flex items-center space-x-2">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Filter By:</span>
-              <select
-                value={selectedCategory}
-                onChange={e => setSelectedCategory(e.target.value)}
-                className="text-sm border-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 py-2 bg-white"
-              >
-                <option value="all">All Departments</option>
-                <option value="worship">Worship</option>
-                <option value="technical">Technical</option>
-                <option value="service">Service</option>
-              </select>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mr-2">Filter By:</span>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-[180px] bg-white border-slate-200 text-sm">
+                  <SelectValue placeholder="All Departments" />
+                </SelectTrigger>
+                <SelectContent className="border-slate-200">
+                  <SelectItem value="all">All Departments</SelectItem>
+                  <SelectItem value="worship">Worship</SelectItem>
+                  <SelectItem value="technical">Technical</SelectItem>
+                  <SelectItem value="service">Service</SelectItem>
+                </SelectContent>
+              </Select>
 
-              <select
-                value={selectedStatus}
-                onChange={e => setSelectedStatus(e.target.value)}
-                className="text-sm border-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 py-2 bg-white"
-              >
-                <option value="all">Status: All</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="w-[140px] bg-white border-slate-200 text-sm">
+                  <SelectValue placeholder="Status: All" />
+                </SelectTrigger>
+                <SelectContent className="border-slate-200">
+                  <SelectItem value="all">Status: All</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <button
@@ -454,7 +457,7 @@ export default function UnitsPage() {
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-3">Total Units</p>
+              <p className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mt-3">Total Units</p>
               <p className="text-3xl font-bold text-slate-900 mt-1">{totalUnitsCount}</p>
             </div>
           </div>
@@ -467,7 +470,7 @@ export default function UnitsPage() {
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-3">Active Members</p>
+              <p className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mt-3">Active Members</p>
               <p className="text-3xl font-bold text-slate-900 mt-1">{activeMembersSum}</p>
             </div>
           </div>
@@ -480,7 +483,7 @@ export default function UnitsPage() {
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-3">Leadership Filled</p>
+              <p className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mt-3">Leadership Filled</p>
               <p className="text-3xl font-bold text-slate-900 mt-1">{leadershipFilledPercent}%</p>
             </div>
           </div>
@@ -493,7 +496,7 @@ export default function UnitsPage() {
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-3">Vacant Positions</p>
+              <p className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mt-3">Vacant Positions</p>
               <p className="text-3xl font-bold text-slate-900 mt-1">{vacantLeadershipPositions}</p>
             </div>
           </div>

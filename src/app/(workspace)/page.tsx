@@ -6,6 +6,8 @@ import { designs, defaultMessages } from "@/lib/designs";
 import { toast } from "sonner";
 import { Gift, Users, Send, Image as ImageIcon, Download, Sparkles, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { ADMIN_ROLE, PERMISSION, type AdminRole, type Permission } from "@/lib/adminRoles";
+import { MemberDetailDialog } from "@/components/members/member-detail-dialog";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -26,6 +28,25 @@ export default function Dashboard() {
   const [designIndex, setDesignIndex] = useState<number>(0);
   const [message, setMessage] = useState<string>("");
   const [messages, setMessages] = useState<string[]>([]);
+  const [viewingMember, setViewingMember] = useState<Member | null>(null);
+  const [viewer, setViewer] = useState<{ role: AdminRole | null; permissions: Permission[] }>({
+    role: null,
+    permissions: [],
+  });
+
+  useEffect(() => {
+    fetch("/api/auth")
+      .then(res => res.json())
+      .then(data => {
+        const role = (data.user?.role || data.member?.role || null) as AdminRole | null;
+        const permissions = (data.permissions ||
+          data.user?.permissions ||
+          data.member?.permissions ||
+          []) as Permission[];
+        setViewer({ role, permissions });
+      })
+      .catch(() => setViewer({ role: null, permissions: [] }));
+  }, []);
 
   useEffect(() => {
     Promise.all([
@@ -224,6 +245,7 @@ export default function Dashboard() {
                           member={member} 
                           generating={generating} 
                           generatePreview={generatePreview} 
+                          onViewProfile={setViewingMember}
                         />
                       ))}
                     </div>
@@ -250,6 +272,7 @@ export default function Dashboard() {
                           member={member} 
                           generating={generating} 
                           generatePreview={generatePreview} 
+                          onViewProfile={setViewingMember}
                         />
                       ))}
                     </div>
@@ -359,6 +382,29 @@ export default function Dashboard() {
         </div>
       </div>
       </div>
+
+      <MemberDetailDialog
+        member={viewingMember}
+        viewer={viewer}
+        onOpenChange={(open) => {
+          if (!open) setViewingMember(null);
+        }}
+        actions={
+          viewingMember && getWhatsAppHref(viewingMember.phone_number) ? (
+            <Button
+              asChild
+              variant="outline"
+              aria-label="Open WhatsApp"
+              className="border-[var(--outline-variant)] text-[#007D55] hover:bg-[var(--surface-container)] hover:text-[#006242]"
+            >
+              <a href={getWhatsAppHref(viewingMember.phone_number, getWhatsAppMessage(viewingMember)) || "#"} target="_blank" rel="noreferrer">
+                <WhatsAppIcon className="h-4 w-4 mr-2" />
+                WhatsApp
+              </a>
+            </Button>
+          ) : null
+        }
+      />
     </div>
   );
 }
@@ -366,11 +412,13 @@ export default function Dashboard() {
 function BirthdayCard({ 
   member, 
   generating, 
-  generatePreview 
+  generatePreview,
+  onViewProfile,
 }: { 
   member: Member; 
   generating: string | null; 
   generatePreview: (m: Member) => void;
+  onViewProfile: (m: Member) => void;
 }) {
   return (
     <div className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border bg-card hover:bg-accent/40 transition-colors">
@@ -398,21 +446,51 @@ function BirthdayCard({
           </div>
         </div>
       </div>
-      <Button
-        variant={generating === member.id ? "secondary" : "outline"}
-        onClick={() => generatePreview(member)}
-        disabled={generating === member.id}
-        className="w-full sm:w-auto shadow-sm"
-      >
-        {generating === member.id ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Generating
-          </>
-        ) : (
-          "Preview Graphic"
-        )}
-      </Button>
+      <div className="flex items-center gap-2 w-full sm:w-auto">
+        <Button
+          variant="outline"
+          onClick={() => onViewProfile(member)}
+          className="flex-1 sm:flex-initial shadow-sm"
+        >
+          View Profile
+        </Button>
+        <Button
+          variant={generating === member.id ? "secondary" : "outline"}
+          onClick={() => generatePreview(member)}
+          disabled={generating === member.id}
+          className="flex-1 sm:flex-initial shadow-sm"
+        >
+          {generating === member.id ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Generating
+            </>
+          ) : (
+            "Preview Graphic"
+          )}
+        </Button>
+      </div>
     </div>
+  );
+}
+
+function getWhatsAppHref(phone?: string | null, text?: string) {
+  const digits = (phone || "").replace(/\D/g, "");
+  if (!digits) return null;
+  const international = digits.startsWith("0") ? `234${digits.slice(1)}` : digits;
+  const base = `https://wa.me/${international}`;
+  return text ? `${base}?text=${encodeURIComponent(text)}` : base;
+}
+
+function getWhatsAppMessage(member: Member) {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  return `Hello ${member.first_name}, please review and update your profile details on the church portal here: ${origin}/profile`;
+}
+
+function WhatsAppIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className} fill="currentColor">
+      <path d="M19.05 4.91A9.82 9.82 0 0 0 12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91a9.86 9.86 0 0 0-2.91-7.01ZM12.05 20.15h-.01a8.25 8.25 0 0 1-4.21-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.55 3.7-8.25 8.26-8.25 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.42 5.83c0 4.55-3.7 8.24-8.23 8.24Zm4.52-6.17c-.25-.13-1.47-.73-1.7-.81-.23-.08-.39-.13-.56.13-.16.25-.64.81-.78.98-.14.16-.29.18-.54.06-.25-.13-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.13-.14.16-.25.25-.42.08-.16.04-.31-.02-.43-.06-.13-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.43h-.48c-.16 0-.43.06-.66.31-.23.25-.86.84-.86 2.05s.88 2.38 1 2.54c.13.16 1.73 2.64 4.19 3.7.59.25 1.04.4 1.4.52.59.19 1.12.16 1.54.1.47-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.1-.22-.16-.47-.28Z" />
+    </svg>
   );
 }
