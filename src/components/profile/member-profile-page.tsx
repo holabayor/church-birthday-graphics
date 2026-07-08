@@ -955,7 +955,7 @@ export function MemberProfilePage() {
                         <div className="rounded-lg border border-dashed border-(--outline-variant) p-4 text-center text-sm text-(--on-surface-variant)">
                           No units selected yet.
                         </div>
-                      )}}
+                      )}
                     </div>
                   </div>
                 </section>

@@ -264,7 +264,7 @@ export default function PublicPollPage() {
           <Card className="border-slate-200/80 shadow-md overflow-hidden">
             <CardHeader className="bg-slate-50/50 border-b border-slate-100">
               <div className="flex justify-between items-center mb-2">
-                <Badge variant={poll.status === "active" ? "success" : "secondary"}>
+                <Badge variant={poll.status === "active" ? "outline" : "secondary"} className={poll.status === "active" ? "border-emerald-500 bg-emerald-50 text-emerald-700 hover:bg-emerald-50" : ""}>
                   {poll.status === "active" ? "ACTIVE" : "CLOSED"}
                 </Badge>
                 <span className="text-xs text-slate-400 flex items-center gap-1">

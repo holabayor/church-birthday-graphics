@@ -27,6 +27,8 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 import { DirectoryFilters } from "@/components/members/directory-filters";
 import { DirectoryTable } from "@/components/members/directory-table";
@@ -571,136 +573,134 @@ export default function MembersPage() {
         </Card>
 
         {/* Add/Edit Modal */}
-        {showForm && (
-          <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:items-center">
-            <div
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
-              onClick={() => setShowForm(false)}
-            />
-            <Card className="my-4 w-full max-w-lg z-50 max-h-[calc(100dvh-2rem)] overflow-y-auto shadow-2xl animate-in fade-in zoom-in-95 duration-200 border-border">
-              <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
-                <div>
-                  <CardTitle>{editing ? "Edit Member Details" : "Add New Member"}</CardTitle>
-                  <CardDescription>
-                    {editing
-                      ? "Update the information for this directory member."
-                      : "Enter the details to add a new member to the directory."}
-                  </CardDescription>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowForm(false)}
-                  className="h-8 w-8 rounded-full -mt-2 -mr-2"
-                >
-                  <X className="h-4 w-4" />
-                  <span className="sr-only">Close</span>
-                </Button>
-              </CardHeader>
-              <CardContent className="p-6">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Photo Upload */}
-                  <div className="flex items-center gap-5">
-                    <Avatar className="h-20 w-20 border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
-                      {photoPreview ? (
-                        <AvatarImage src={photoPreview} className="object-cover" />
-                      ) : (
-                        <AvatarFallback className="bg-transparent">
-                          <User className="h-8 w-8 text-muted-foreground/50" />
-                        </AvatarFallback>
-                      )}
-                    </Avatar>
-                    <div className="space-y-1.5">
-                      <input
-                        ref={photoInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handlePhotoSelect}
-                        className="hidden"
-                      />
-                      <Button type="button" variant="outline" size="sm" onClick={() => photoInputRef.current?.click()}>
-                        <Upload className="mr-2 h-4 w-4" />
-                        {photoPreview ? "Change Photo" : "Upload Photo"}
-                      </Button>
-                      <p className="text-xs text-muted-foreground">PNG, JPG or WEBP up to 5MB.</p>
-                    </div>
-                  </div>
+        <Dialog open={showForm} onOpenChange={setShowForm}>
+          <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-hidden border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-0 sm:max-w-3xl flex flex-col">
+            <DialogHeader className="border-b border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-8 py-6 text-left">
+              <DialogTitle className="font-headline text-2xl font-bold text-[#0B1C30]">
+                {editing ? "Edit Member Details" : "Add New Member"}
+              </DialogTitle>
+              <DialogDescription className="text-sm text-[var(--on-surface-variant)] mt-1">
+                {editing
+                  ? "Modify this member's contact info, cell affiliation, and lifecycle details."
+                  : "Enter details to register a new member in the Kinship community directory."}
+              </DialogDescription>
+            </DialogHeader>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="flex max-h-[calc(100dvh-10rem)] min-h-0 flex-col overflow-hidden">
+              <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-8 py-6">
+                {/* Photo Upload Section */}
+                <div className="flex items-center gap-5 pb-4 border-b border-[var(--outline-variant)]/60">
+                  <Avatar className="h-20 w-20 border-2 border-dashed border-[var(--outline-variant)]/60 flex items-center justify-center bg-white shadow-sm shrink-0">
+                    {photoPreview ? (
+                      <AvatarImage src={photoPreview} className="object-cover" />
+                    ) : (
+                      <AvatarFallback className="bg-transparent">
+                        <User className="h-8 w-8 text-slate-400" />
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  <div className="space-y-1.5">
+                    <input
+                      ref={photoInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoSelect}
+                      className="hidden"
+                    />
+                    <Button type="button" variant="outline" size="sm" onClick={() => photoInputRef.current?.click()} className="border-[var(--outline-variant)] bg-white">
+                      <Upload className="mr-2 h-4 w-4 text-[var(--outline)]" />
+                      {photoPreview ? "Change Photo" : "Upload Photo"}
+                    </Button>
+                    <p className="text-[10px] text-[var(--outline)] font-medium">PNG, JPG or WEBP (auto-compressed).</p>
+                  </div>
+                </div>
+
+                {/* Personal Details */}
+                <div className="space-y-4">
+                  <h4 className="font-mono text-[10px] uppercase tracking-wider text-[var(--secondary)] font-bold">Personal Profile</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        First Name *
-                      </label>
+                      <Label htmlFor="first_name" className="text-xs font-semibold text-slate-700">First Name <span className="text-red-500">*</span></Label>
                       <Input
+                        id="first_name"
                         required
                         value={form.first_name}
                         onChange={e => setForm({ ...form, first_name: e.target.value })}
                         placeholder="e.g. John"
+                        className="h-11 border-[var(--outline-variant)] bg-white"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        Last Name *
-                      </label>
+                      <Label htmlFor="last_name" className="text-xs font-semibold text-slate-700">Last Name <span className="text-red-500">*</span></Label>
                       <Input
+                        id="last_name"
                         required
                         value={form.last_name}
                         onChange={e => setForm({ ...form, last_name: e.target.value })}
                         placeholder="e.g. Doe"
+                        className="h-11 border-[var(--outline-variant)] bg-white"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        Middle Name
-                      </label>
+                      <Label htmlFor="middle_name" className="text-xs font-semibold text-slate-700">Middle Name</Label>
                       <Input
+                        id="middle_name"
                         value={form.middle_name}
                         onChange={e => setForm({ ...form, middle_name: e.target.value })}
                         placeholder="Optional"
+                        className="h-11 border-[var(--outline-variant)] bg-white"
                       />
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        Date of Birth *
-                      </label>
+                      <Label htmlFor="date_of_birth" className="text-xs font-semibold text-slate-700">Date of Birth <span className="text-red-500">*</span></Label>
                       <Input
+                        id="date_of_birth"
                         required
                         type="date"
                         value={form.date_of_birth}
                         onChange={e => setForm({ ...form, date_of_birth: e.target.value })}
+                        className="h-11 border-[var(--outline-variant)] bg-white"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        Phone Number
-                      </label>
+                      <Label htmlFor="phone_number" className="text-xs font-semibold text-slate-700">Phone Number</Label>
                       <Input
+                        id="phone_number"
                         type="tel"
-                        placeholder="+1 234 567 8900"
+                        placeholder="e.g. 0803 123 4567"
                         value={form.phone_number}
                         onChange={e => setForm({ ...form, phone_number: e.target.value })}
+                        className="h-11 border-[var(--outline-variant)] bg-white"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        Email Address
-                      </label>
+                      <Label htmlFor="email" className="text-xs font-semibold text-slate-700">Email Address</Label>
                       <Input
+                        id="email"
                         type="email"
                         placeholder="member@example.com"
                         value={form.email}
                         onChange={e => setForm({ ...form, email: e.target.value })}
+                        className="h-11 border-[var(--outline-variant)] bg-white"
                       />
                     </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        Life Stage
-                      </label>
+                  </div>
+                </div>
+
+                {/* Church life Details */}
+                <div className="space-y-4 pt-4 border-t border-[var(--outline-variant)]">
+                  <h4 className="font-mono text-[10px] uppercase tracking-wider text-[var(--secondary)] font-bold">Church life & Role</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="life_stage" className="text-xs font-semibold text-slate-700">Life Stage</Label>
                       <Select value={form.life_stage} onValueChange={value => setForm({ ...form, life_stage: value as LifeStage })}>
-                        <SelectTrigger>
+                        <SelectTrigger id="life_stage" className="h-11 bg-white border-[var(--outline-variant)]">
                           <SelectValue placeholder="Select life stage" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="border-[var(--outline-variant)]">
                           {lifeStageOptions.map(option => (
                             <SelectItem key={option.value} value={option.value}>
                               {option.label}
@@ -709,18 +709,16 @@ export default function MembersPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        Membership Status
-                      </label>
+                    <div className="space-y-2">
+                      <Label htmlFor="membership_status" className="text-xs font-semibold text-slate-700">Membership Status</Label>
                       <Select
                         value={form.membership_status}
                         onValueChange={value => setForm({ ...form, membership_status: value as MembershipStatus })}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select membership status" />
+                        <SelectTrigger id="membership_status" className="h-11 bg-white border-[var(--outline-variant)]">
+                          <SelectValue placeholder="Select status" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="border-[var(--outline-variant)]">
                           {membershipStatusOptions.map(option => (
                             <SelectItem key={option.value} value={option.value}>
                               {option.label}
@@ -729,321 +727,345 @@ export default function MembersPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        Position/Role
-                      </label>
+                    <div className="space-y-2">
+                      <Label htmlFor="position" className="text-xs font-semibold text-slate-700">Position / Role</Label>
                       <Input
-                        placeholder="e.g. Choir Leader, Deacon, Member"
+                        id="position"
+                        placeholder="e.g. Deacon, Usher, Member"
                         value={form.position}
                         onChange={e => setForm({ ...form, position: e.target.value })}
+                        className="h-11 border-[var(--outline-variant)] bg-white"
                       />
                     </div>
-                    {showStudentFields && (
-                      <>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                            Institution
-                          </label>
-                          <Input
-                            placeholder="e.g. University of Lagos"
-                            value={form.institution}
-                            onChange={e => setForm({ ...form, institution: e.target.value })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                            Department / Course
-                          </label>
-                          <Input
-                            placeholder="e.g. Computer Science"
-                            value={form.department}
-                            onChange={e => setForm({ ...form, department: e.target.value })}
-                          />
-                        </div>
-                        {form.life_stage === LIFE_STAGE.STUDENT && (
-                          <>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                Academic Level
-                              </label>
-                              <Input
-                                placeholder="e.g. 200L, Final Year"
-                                value={form.academic_level}
-                                onChange={e => setForm({ ...form, academic_level: e.target.value })}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                Student Status
-                              </label>
-                              <Select
-                                value={form.student_status}
-                                onValueChange={value => setForm({ ...form, student_status: value as StudentStatus })}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {studentStatusOptions.map(option => (
-                                    <SelectItem key={option.value} value={option.value}>
-                                      {option.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </>
-                        )}
-                        {form.life_stage === LIFE_STAGE.GRADUATE && (
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                              Graduation Year
-                            </label>
-                            <Input
-                              placeholder="e.g. 2026"
-                              value={form.graduation_year}
-                              onChange={e => setForm({ ...form, graduation_year: e.target.value })}
-                            />
-                          </div>
-                        )}
-                      </>
-                    )}
-                    {usesResidenceProfile(form.life_stage) && (
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                          Residence / Hostel
-                        </label>
-                        <Input
-                          placeholder="e.g. Moremi Hall, off-campus lodge"
-                          value={form.residence}
-                          onChange={e => setForm({ ...form, residence: e.target.value })}
-                        />
-                      </div>
-                    )}
-                    {showNyscFields && (
-                      <>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                            NYSC State
-                          </label>
-                          <Input
-                            placeholder="e.g. Lagos"
-                            value={form.nysc_state}
-                            onChange={e => setForm({ ...form, nysc_state: e.target.value })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                            Place of Primary Assignment
-                          </label>
-                          <Input
-                            placeholder="e.g. Government College"
-                            value={form.nysc_ppa}
-                            onChange={e => setForm({ ...form, nysc_ppa: e.target.value })}
-                          />
-                        </div>
-                      </>
-                    )}
-                    {showWorkFields && (
-                      <>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                            Employer
-                          </label>
-                          <Input
-                            placeholder="e.g. Acme Ltd"
-                            value={form.employer}
-                            onChange={e => setForm({ ...form, employer: e.target.value })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                            Job Title
-                          </label>
-                          <Input
-                            placeholder="e.g. Product Designer"
-                            value={form.job_title}
-                            onChange={e => setForm({ ...form, job_title: e.target.value })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                            Work Location
-                          </label>
-                          <Input
-                            placeholder="e.g. Yaba, Lagos"
-                            value={form.work_location}
-                            onChange={e => setForm({ ...form, work_location: e.target.value })}
-                          />
-                        </div>
-                      </>
-                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        Cell / Small Group
-                      </label>
+                      <Label htmlFor="cell_group" className="text-xs font-semibold text-slate-700">Cell / Small Group</Label>
                       <Input
+                        id="cell_group"
                         placeholder="e.g. Akoka Cell"
                         value={form.cell_group}
                         onChange={e => setForm({ ...form, cell_group: e.target.value })}
+                        className="h-11 border-[var(--outline-variant)] bg-white"
                       />
                     </div>
-                    {showGuardianFields && (
-                      <>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                            Guardian Name
-                          </label>
-                          <Input
-                            placeholder="Optional"
-                            value={form.guardian_name}
-                            onChange={e => setForm({ ...form, guardian_name: e.target.value })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                            Guardian Phone
-                          </label>
-                          <Input
-                            type="tel"
-                            placeholder="Optional"
-                            value={form.guardian_phone}
-                            onChange={e => setForm({ ...form, guardian_phone: e.target.value })}
-                          />
-                        </div>
-                      </>
-                    )}
-                    <div className="space-y-2 md:col-span-2">
-                      <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        Skills / Interests
-                      </label>
+                    <div className="space-y-2">
+                      <Label htmlFor="skills_interests" className="text-xs font-semibold text-slate-700">Skills & Interests</Label>
                       <Input
-                        placeholder="e.g. media, music, ushering, teaching"
+                        id="skills_interests"
+                        placeholder="e.g. media, ushering, teaching"
                         value={form.skills_interests}
                         onChange={e => setForm({ ...form, skills_interests: e.target.value })}
+                        className="h-11 border-[var(--outline-variant)] bg-white"
                       />
                     </div>
-                    <div className="space-y-3 md:col-span-2 rounded-lg border border-zinc-200 bg-zinc-50/50 p-4">
-                      <div>
-                        <h4 className="text-sm font-semibold text-zinc-900">Church Units</h4>
-                        <p className="text-xs text-muted-foreground">
-                          Assign this member to ministry/service units and set their responsibility.
-                        </p>
-                      </div>
-                      {units.length > 0 ? (
-                        <div className="space-y-4">
-                          {availableUnits.length > 0 ? (
-                            <div className="flex flex-col gap-2 sm:flex-row">
-                              <Select value={selectedUnitId || undefined} onValueChange={setSelectedUnitId}>
-                                <SelectTrigger className="bg-white sm:flex-1">
-                                  <SelectValue placeholder="Choose a unit to add" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {availableUnits.map(unit => (
-                                    <SelectItem key={unit.id} value={unit.id}>
-                                      {unit.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={handleAddUnit}
-                                disabled={!selectedUnitId}
-                                className="sm:w-auto"
-                              >
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add Unit
-                              </Button>
-                            </div>
-                          ) : (
-                            <div className="rounded-md border border-dashed border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700">
-                              All available units have been selected.
-                            </div>
-                          )}
+                  </div>
+                </div>
 
-                          {assignedUnits.length > 0 ? (
-                            <div className="space-y-2">
-                              {assignedUnits.map(unit => (
-                                <div
-                                  key={unit.id}
-                                  className="flex flex-col gap-2 rounded-md border border-zinc-200 bg-white p-3 sm:flex-row sm:items-center"
+                {/* Lifecycle-Specific Profiles (Conditional) */}
+                {(showStudentFields || showNyscFields || showWorkFields || showGuardianFields || usesResidenceProfile(form.life_stage)) && (
+                  <div className="space-y-4 pt-4 border-t border-[var(--outline-variant)]">
+                    <h4 className="font-mono text-[10px] uppercase tracking-wider text-[var(--secondary)] font-bold">Lifecycle Specific Profile</h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {showStudentFields && (
+                        <>
+                          <div className="space-y-2">
+                            <Label htmlFor="institution" className="text-xs font-semibold text-slate-700">Institution</Label>
+                            <Input
+                              id="institution"
+                              placeholder="e.g. University of Lagos"
+                              value={form.institution}
+                              onChange={e => setForm({ ...form, institution: e.target.value })}
+                              className="h-11 border-[var(--outline-variant)] bg-white"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="department" className="text-xs font-semibold text-slate-700">Department / Course</Label>
+                            <Input
+                              id="department"
+                              placeholder="e.g. Computer Science"
+                              value={form.department}
+                              onChange={e => setForm({ ...form, department: e.target.value })}
+                              className="h-11 border-[var(--outline-variant)] bg-white"
+                            />
+                          </div>
+                          {form.life_stage === LIFE_STAGE.STUDENT && (
+                            <>
+                              <div className="space-y-2">
+                                <Label htmlFor="academic_level" className="text-xs font-semibold text-slate-700">Academic Level</Label>
+                                <Input
+                                  id="academic_level"
+                                  placeholder="e.g. 300L, Final Year"
+                                  value={form.academic_level}
+                                  onChange={e => setForm({ ...form, academic_level: e.target.value })}
+                                  className="h-11 border-[var(--outline-variant)] bg-white"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="student_status" className="text-xs font-semibold text-slate-700">Student Status</Label>
+                                <Select
+                                  value={form.student_status}
+                                  onValueChange={value => setForm({ ...form, student_status: value as StudentStatus })}
                                 >
-                                  <div className="min-w-0 flex-1">
-                                    <p className="truncate text-sm font-medium text-zinc-900">{unit.name}</p>
-                                    {unit.description && (
-                                      <p className="truncate text-xs text-muted-foreground">{unit.description}</p>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Select
-                                      value={unitAssignments[unit.id] || UNIT_ROLE.MEMBER}
-                                      onValueChange={value =>
-                                        setUnitAssignments(assignments => ({
-                                          ...assignments,
-                                          [unit.id]: value as UnitAssignmentChoice,
-                                        }))
-                                      }
-                                    >
-                                      <SelectTrigger className="w-[150px] bg-white">
-                                        <SelectValue placeholder="Role" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {unitRoleOptions.map(option => (
-                                          <SelectItem key={option.value} value={option.value}>
-                                            {option.label}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="icon"
-                                      className="shrink-0 text-muted-foreground hover:text-destructive"
-                                      onClick={() =>
-                                        setUnitAssignments(assignments => ({
-                                          ...assignments,
-                                          [unit.id]: FILTER_VALUE.NONE,
-                                        }))
-                                      }
-                                    >
-                                      <X className="h-4 w-4" />
-                                      <span className="sr-only">Remove {unit.name}</span>
-                                    </Button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="rounded-md border border-dashed border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700">
-                              No units selected yet.
+                                  <SelectTrigger id="student_status" className="h-11 bg-white border-[var(--outline-variant)]">
+                                    <SelectValue placeholder="Select status" />
+                                  </SelectTrigger>
+                                  <SelectContent className="border-[var(--outline-variant)]">
+                                    {studentStatusOptions.map(option => (
+                                      <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </>
+                          )}
+                          {form.life_stage === LIFE_STAGE.GRADUATE && (
+                            <div className="space-y-2">
+                              <Label htmlFor="graduation_year" className="text-xs font-semibold text-slate-700">Graduation Year</Label>
+                              <Input
+                                id="graduation_year"
+                                placeholder="e.g. 2026"
+                                value={form.graduation_year}
+                                onChange={e => setForm({ ...form, graduation_year: e.target.value })}
+                                className="h-11 border-[var(--outline-variant)] bg-white"
+                              />
                             </div>
                           )}
+                        </>
+                      )}
+
+                      {usesResidenceProfile(form.life_stage) && (
+                        <div className="space-y-2">
+                          <Label htmlFor="residence" className="text-xs font-semibold text-slate-700">Residence / Hostel</Label>
+                          <Input
+                            id="residence"
+                            placeholder="e.g. off-campus lodge"
+                            value={form.residence}
+                            onChange={e => setForm({ ...form, residence: e.target.value })}
+                            className="h-11 border-[var(--outline-variant)] bg-white"
+                          />
                         </div>
-                      ) : (
-                        <div className="rounded-md border border-dashed border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700">
-                          No church units have been created yet.
-                        </div>
+                      )}
+
+                      {showNyscFields && (
+                        <>
+                          <div className="space-y-2">
+                            <Label htmlFor="nysc_state" className="text-xs font-semibold text-slate-700">NYSC State</Label>
+                            <Input
+                              id="nysc_state"
+                              placeholder="e.g. Lagos"
+                              value={form.nysc_state}
+                              onChange={e => setForm({ ...form, nysc_state: e.target.value })}
+                              className="h-11 border-[var(--outline-variant)] bg-white"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="nysc_ppa" className="text-xs font-semibold text-slate-700">Place of Primary Assignment</Label>
+                            <Input
+                              id="nysc_ppa"
+                              placeholder="e.g. Government Secondary School"
+                              value={form.nysc_ppa}
+                              onChange={e => setForm({ ...form, nysc_ppa: e.target.value })}
+                              className="h-11 border-[var(--outline-variant)] bg-white"
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {showWorkFields && (
+                        <>
+                          <div className="space-y-2">
+                            <Label htmlFor="employer" className="text-xs font-semibold text-slate-700">Employer</Label>
+                            <Input
+                              id="employer"
+                              placeholder="e.g. Acme Inc."
+                              value={form.employer}
+                              onChange={e => setForm({ ...form, employer: e.target.value })}
+                              className="h-11 border-[var(--outline-variant)] bg-white"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="job_title" className="text-xs font-semibold text-slate-700">Job Title</Label>
+                            <Input
+                              id="job_title"
+                              placeholder="e.g. Software Engineer"
+                              value={form.job_title}
+                              onChange={e => setForm({ ...form, job_title: e.target.value })}
+                              className="h-11 border-[var(--outline-variant)] bg-white"
+                            />
+                          </div>
+                          <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="work_location" className="text-xs font-semibold text-slate-700">Work Location</Label>
+                            <Input
+                              id="work_location"
+                              placeholder="e.g. Ikeja, Lagos"
+                              value={form.work_location}
+                              onChange={e => setForm({ ...form, work_location: e.target.value })}
+                              className="h-11 border-[var(--outline-variant)] bg-white"
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {showGuardianFields && (
+                        <>
+                          <div className="space-y-2">
+                            <Label htmlFor="guardian_name" className="text-xs font-semibold text-slate-700">Guardian Name</Label>
+                            <Input
+                              id="guardian_name"
+                              placeholder="Guardian Full Name"
+                              value={form.guardian_name}
+                              onChange={e => setForm({ ...form, guardian_name: e.target.value })}
+                              className="h-11 border-[var(--outline-variant)] bg-white"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="guardian_phone" className="text-xs font-semibold text-slate-700">Guardian Phone</Label>
+                            <Input
+                              id="guardian_phone"
+                              type="tel"
+                              placeholder="Guardian Contact"
+                              value={form.guardian_phone}
+                              onChange={e => setForm({ ...form, guardian_phone: e.target.value })}
+                              className="h-11 border-[var(--outline-variant)] bg-white"
+                            />
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
+                )}
 
-                  <div className="flex items-center justify-end gap-3 pt-4 border-t mt-6">
-                    <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={saving}>
-                      {saving ? "Saving..." : editing ? "Save Changes" : "Add Member"}
-                    </Button>
+                {/* Church Units Assignments */}
+                <div className="space-y-4 pt-4 border-t border-[var(--outline-variant)]">
+                  <h4 className="font-mono text-[10px] uppercase tracking-wider text-[var(--secondary)] font-bold">Ministry Unit Assignments</h4>
+                  
+                  <div className="space-y-4 p-5 border border-[var(--outline-variant)] rounded-xl bg-white/50">
+                    {units.length > 0 ? (
+                      <div className="space-y-4">
+                        {availableUnits.length > 0 ? (
+                          <div className="flex flex-col gap-2 sm:flex-row">
+                            <Select value={selectedUnitId || undefined} onValueChange={setSelectedUnitId}>
+                              <SelectTrigger className="bg-white border-[var(--outline-variant)] sm:flex-1 h-11">
+                                <SelectValue placeholder="Choose a unit to assign" />
+                              </SelectTrigger>
+                              <SelectContent className="border-[var(--outline-variant)]">
+                                {availableUnits.map(unit => (
+                                  <SelectItem key={unit.id} value={unit.id}>
+                                    {unit.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={handleAddUnit}
+                              disabled={!selectedUnitId}
+                              className="h-11 sm:w-auto border-[var(--outline-variant)] bg-white"
+                            >
+                              <Plus className="mr-2 h-4 w-4 text-[var(--outline)]" />
+                              Add Assignment
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="rounded-xl border border-dashed border-[var(--outline-variant)] bg-white/80 p-4 text-center text-sm text-[var(--on-surface-variant)]">
+                            All available church units have been selected.
+                          </div>
+                        )}
+
+                        {assignedUnits.length > 0 ? (
+                          <div className="grid grid-cols-1 gap-3 max-h-[220px] overflow-y-auto pr-1">
+                            {assignedUnits.map(unit => (
+                              <div
+                                key={unit.id}
+                                className="flex flex-col gap-3 rounded-xl border border-[var(--outline-variant)]/60 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-semibold text-[#0B1C30] truncate">{unit.name}</p>
+                                  {unit.description && (
+                                    <p className="text-xs text-[var(--on-surface-variant)] truncate mt-0.5">{unit.description}</p>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <Select
+                                    value={unitAssignments[unit.id] || UNIT_ROLE.MEMBER}
+                                    onValueChange={value =>
+                                      setUnitAssignments(assignments => ({
+                                        ...assignments,
+                                        [unit.id]: value as UnitAssignmentChoice,
+                                      }))
+                                    }
+                                  >
+                                    <SelectTrigger className="w-[150px] bg-white border-[var(--outline-variant)] h-9 text-xs">
+                                      <SelectValue placeholder="Role" />
+                                    </SelectTrigger>
+                                    <SelectContent className="border-[var(--outline-variant)]">
+                                      {unitRoleOptions.map(option => (
+                                        <SelectItem key={option.value} value={option.value} className="text-xs">
+                                          {option.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                    onClick={() =>
+                                      setUnitAssignments(assignments => ({
+                                        ...assignments,
+                                        [unit.id]: FILTER_VALUE.NONE,
+                                      }))
+                                    }
+                                  >
+                                    <X className="h-4 w-4" />
+                                    <span className="sr-only">Remove {unit.name}</span>
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="rounded-xl border border-dashed border-[var(--outline-variant)] bg-white/80 p-4 text-center text-sm text-[var(--on-surface-variant)]">
+                            No unit assignments yet.
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-[var(--outline-variant)] bg-white/80 p-4 text-center text-sm text-[var(--on-surface-variant)]">
+                        No units available in this church community.
+                      </div>
+                    )}
                   </div>
-                </form>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+                </div>
+              </div>
+
+              <DialogFooter className="border-t border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-8 py-6">
+                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={saving}>
+                  {saving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : editing ? (
+                    "Save Changes"
+                  ) : (
+                    "Add Member"
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
 
         <MemberDetailDialog
           member={viewing}

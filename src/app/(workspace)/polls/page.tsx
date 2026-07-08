@@ -542,7 +542,7 @@ export default function PollsAdminPage() {
                   >
                     Who Can Vote?
                   </Label>
-                  <Select value={voterType} onValueChange={(val: string) => setVoterType(val)}>
+                  <Select value={voterType} onValueChange={(val) => setVoterType(val as "anyone" | "members" | "workers" | "selected_groups")}>
                     <SelectTrigger id="voter_type" className="h-11 bg-white border-(--outline-variant)">
                       <SelectValue placeholder="Select Voter Segment" />
                     </SelectTrigger>
