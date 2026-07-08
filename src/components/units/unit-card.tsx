@@ -17,7 +17,7 @@ export function UnitCard({ unit, onEdit, onDelete }: UnitCardProps) {
   const assistant = getUnitLeader(unit.members, UNIT_ROLE.ASSISTANT);
 
   return (
-    <div className="group relative flex flex-col gap-4 rounded-xl border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-4 shadow-sm transition-all hover:shadow-md">
+    <div className="group relative flex flex-col gap-4 rounded-xl border border-(--outline-variant) bg-(--surface-container-lowest) p-4 shadow-sm transition-all hover:shadow-md">
       {unit.access.can_manage_details && (
         <div className="absolute top-3 right-3 flex items-center gap-2.5 opacity-0 transition-opacity group-hover:opacity-100">
           <button
@@ -26,7 +26,7 @@ export function UnitCard({ unit, onEdit, onDelete }: UnitCardProps) {
               e.stopPropagation();
               onEdit(unit);
             }}
-            className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--surface-container-low)] text-[var(--outline)] transition-colors hover:bg-[var(--surface-container-highest)] hover:text-primary"
+            className="flex h-7 w-7 items-center justify-center rounded-lg bg-(--surface-container-low) text-(--outline) transition-colors hover:bg-(--surface-container-highest) hover:text-primary"
             title="Edit Unit"
           >
             <Edit2 className="h-3.5 w-3.5" />
@@ -37,7 +37,7 @@ export function UnitCard({ unit, onEdit, onDelete }: UnitCardProps) {
               e.stopPropagation();
               onDelete(unit);
             }}
-            className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--surface-container-low)] text-[var(--outline)] transition-colors hover:bg-red-50 hover:text-red-600"
+            className="flex h-7 w-7 items-center justify-center rounded-lg bg-(--surface-container-low) text-(--outline) transition-colors hover:bg-red-50 hover:text-red-600"
             title="Delete Unit"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -50,41 +50,41 @@ export function UnitCard({ unit, onEdit, onDelete }: UnitCardProps) {
           <h3 className="font-headline text-lg font-bold text-[#0B1C30] leading-tight group-hover:text-primary transition-colors">
             {unit.name}
           </h3>
-          <p className="mt-1.5 font-body text-xs text-[var(--on-surface-variant)] line-clamp-2">
+          <p className="mt-1.5 font-body text-xs text-(--on-surface-variant) line-clamp-2">
             {unit.description || "No description provided."}
           </p>
         </div>
 
         <div className="mt-auto flex items-center gap-2">
-          <div className="flex items-center gap-1 rounded bg-[var(--surface-container)] px-2 py-1 text-primary">
+          <div className="flex items-center gap-1 rounded bg-(--surface-container) px-2 py-1 text-primary">
             <Users className="h-3.5 w-3.5" />
             <span className="font-mono text-xs font-semibold">{unit.stats.total_members}</span>
           </div>
-          <span className="font-mono text-[12px] uppercase tracking-wider text-[var(--outline)] font-medium">
+          <span className="font-mono text-[12px] uppercase tracking-wider text-(--outline) font-medium">
             Members
           </span>
         </div>
 
-        <div className="border-t border-[var(--outline-variant)] pt-3 flex flex-col gap-2">
+        <div className="border-t border-(--outline-variant) pt-3 flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <span className="font-mono text-[12px] text-[var(--outline)] uppercase font-semibold">HOD</span>
+            <span className="font-mono text-[12px] text-(--outline) uppercase font-semibold">HOD</span>
             {hod ? (
-              <div className="flex items-center gap-1.5 rounded-full bg-[var(--surface-variant)] text-[var(--on-surface-variant)] px-2.5 py-0.5">
+              <div className="flex items-center gap-1.5 rounded-full bg-(--surface-variant) text-(--on-surface-variant) px-2.5 py-0.5">
                 <span className="font-body text-xs font-medium">{getUnitMemberName(hod)}</span>
               </div>
             ) : (
-              <span className="font-body text-xs italic text-[var(--outline)]">Unassigned</span>
+              <span className="font-body text-xs italic text-(--outline)">Unassigned</span>
             )}
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="font-mono text-[12px] text-[var(--outline)] uppercase font-semibold">Asst.</span>
+            <span className="font-mono text-[12px] text-(--outline) uppercase font-semibold">Asst.</span>
             {assistant ? (
-              <div className="flex items-center gap-1.5 rounded-full border border-[var(--outline-variant)] bg-[var(--surface-container-low)] text-[var(--on-surface-variant)] px-2.5 py-0.5">
+              <div className="flex items-center gap-1.5 rounded-full border border-(--outline-variant) bg-(--surface-container-low) text-(--on-surface-variant) px-2.5 py-0.5">
                 <span className="font-body text-xs font-medium">{getUnitMemberName(assistant)}</span>
               </div>
             ) : (
-              <span className="font-body text-xs italic text-[var(--outline)]">Unassigned</span>
+              <span className="font-body text-xs italic text-(--outline)">Unassigned</span>
             )}
           </div>
         </div>

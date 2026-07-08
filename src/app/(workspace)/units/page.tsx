@@ -260,7 +260,7 @@ export default function UnitsPage() {
             <Button
               onClick={handleExportCSV}
               variant="outline"
-              className="hidden h-10 border-[var(--outline-variant)] bg-white text-primary hover:bg-[var(--surface-container)] hover:text-primary/90"
+              className="hidden h-10 border-(--outline-variant) bg-white text-primary hover:bg-(--surface-container) hover:text-primary/90"
             >
               <Download className="w-4 h-4 mr-2" />
               Export CSV
@@ -342,7 +342,7 @@ export default function UnitsPage() {
             </div>
 
             {/* Mobile Chips */}
-            <div className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               <button
                 onClick={() => setSelectedCategory("all")}
                 className={`px-6 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${

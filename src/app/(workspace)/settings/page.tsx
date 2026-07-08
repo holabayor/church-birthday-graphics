@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { AdminProfile, ChurchSettings } from "@/lib/types";
 import type { AdminRole } from "@/lib/adminRoles";
+import { compressImage } from "@/lib/utils";
 
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -146,8 +147,9 @@ export default function SettingsPage() {
 
     setUploading(true);
     try {
+      const compressedFile = await compressImage(file);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", compressedFile);
       formData.append("bucket", "church-assets");
       formData.append("folder", "logos");
 

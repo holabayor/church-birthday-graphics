@@ -181,10 +181,10 @@ export default function UnitDetailPage() {
   if (!unit) {
     return (
       <div className="flex-1 p-4 md:p-8">
-        <Card className="border-[var(--outline-variant)] bg-white">
+        <Card className="border-(--outline-variant) bg-white">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <h2 className="font-headline text-2xl font-semibold text-[#0B1C30]">Unit unavailable</h2>
-            <p className="mt-2 max-w-md text-sm text-[var(--on-surface-variant)]">
+            <p className="mt-2 max-w-md text-sm text-(--on-surface-variant)">
               This unit could not be loaded or you do not have access to it.
             </p>
             <Button asChild variant="secondary" className="mt-5">
@@ -197,7 +197,7 @@ export default function UnitDetailPage() {
   }
 
   return (
-    <div className="flex-1 w-full bg-[var(--background)] min-h-screen">
+    <div className="flex-1 w-full bg-background min-h-screen">
       {/* Desktop Header */}
       <div className="hidden md:block">
         <PageHeader
@@ -206,7 +206,7 @@ export default function UnitDetailPage() {
           description={unit.description || "Manage this unit's members and leadership responsibilities."}
           actions={
             <div className="flex items-center gap-3">
-              <Button asChild variant="outline" className="h-10 border-[var(--outline-variant)] bg-white font-semibold">
+              <Button asChild variant="outline" className="h-10 border-(--outline-variant) bg-white font-semibold">
                 <Link href="/units">
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   All Units
@@ -227,7 +227,7 @@ export default function UnitDetailPage() {
       </div>
 
       {/* Mobile Header */}
-      <header className="md:hidden bg-white border-b border-[var(--outline-variant)] sticky top-0 z-40 px-4 py-4 flex items-center justify-between">
+      <header className="md:hidden bg-white border-b border-(--outline-variant) sticky top-0 z-40 px-4 py-4 flex items-center justify-between">
         <div className="flex flex-col">
           <span className="text-[12px] uppercase tracking-widest text-primary font-bold">Unit Workspace</span>
           <h1 className="text-2xl font-bold text-slate-900">{unit.name}</h1>
@@ -236,7 +236,7 @@ export default function UnitDetailPage() {
           <Button
             asChild
             variant="outline"
-            className="h-10 border-[var(--outline-variant)] bg-white font-semibold"
+            className="h-10 border-(--outline-variant) bg-white font-semibold"
             size="icon"
           >
             <Link href="/units">
@@ -260,37 +260,37 @@ export default function UnitDetailPage() {
         <UnitWorkspaceStats unit={unit} />
 
         {/* Roster Listing Card */}
-        <div className="overflow-hidden rounded-2xl md:rounded-xl border border-[var(--outline-variant)] bg-white shadow-sm">
+        <div className="overflow-hidden rounded-2xl md:rounded-xl border border-(--outline-variant) bg-white shadow-sm">
           {/* Card Header Toolbar */}
-          <div className="p-5 md:p-6 border-b border-[var(--outline-variant)] bg-white gap-5 flex flex-col">
+          <div className="p-5 md:p-6 border-b border-(--outline-variant) bg-white gap-5 flex flex-col">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-1">
               <div>
                 <h2 className="font-headline text-xl font-bold text-[#0B1C30]">Unit Roster</h2>
-                <p className="text-xs text-[var(--on-surface-variant)] mt-0.5">
+                <p className="text-xs text-(--on-surface-variant) mt-0.5">
                   {roster.length} of {unit.members.length} members shown
                 </p>
               </div>
-              <p className="font-mono text-[12px] font-bold uppercase leading-4 tracking-widest text-[var(--outline)]">
+              <p className="font-mono text-[12px] font-bold uppercase leading-4 tracking-widest text-(--outline)">
                 Operational roster
               </p>
             </div>
 
             <div className="grid gap-3 md:grid-cols-[minmax(260px,1fr)_220px]">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--outline)]" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-(--outline)" />
                 <Input
                   type="search"
                   placeholder="Search members by name..."
                   value={search}
                   onChange={event => setSearch(event.target.value)}
-                  className="h-11 border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] pl-10"
+                  className="h-11 border-(--outline-variant) bg-(--surface-container-lowest) pl-10"
                 />
               </div>
               <Select value={sort} onValueChange={value => setSort(value as SortMode)}>
-                <SelectTrigger className="h-11 w-full border-[var(--outline-variant)] bg-white font-medium text-[#0B1C30]">
+                <SelectTrigger className="h-11 w-full border-(--outline-variant) bg-white font-medium text-[#0B1C30]">
                   <SelectValue placeholder="Sort roster" />
                 </SelectTrigger>
-                <SelectContent className="border-[var(--outline-variant)]">
+                <SelectContent className="border-(--outline-variant)">
                   <SelectItem value="name-asc">Name, A-Z</SelectItem>
                   <SelectItem value="name-desc">Name, Z-A</SelectItem>
                   <SelectItem value="role">Leadership first</SelectItem>
@@ -303,11 +303,11 @@ export default function UnitDetailPage() {
           <CardContent className="p-0">
             {roster.length === 0 ? (
               <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface-container-low)] text-[var(--on-surface-variant)]">
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-(--surface-container-low) text-(--on-surface-variant)">
                   <Users className="h-8 w-8" />
                 </div>
                 <h3 className="font-headline font-bold text-[#0B1C30]">No members found</h3>
-                <p className="mt-1 max-w-md text-sm text-[var(--on-surface-variant)]">
+                <p className="mt-1 max-w-md text-sm text-(--on-surface-variant)">
                   {search ? "Try another search term." : "Add members to build this unit roster."}
                 </p>
               </div>

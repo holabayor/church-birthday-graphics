@@ -50,6 +50,7 @@ import {
 } from "@/lib/memberLifecycle";
 import { UNIT_ROLE, unitRoleOptions, type UnitRole } from "@/lib/unitRoles";
 import { STUDENT_STATUS, studentStatusOptions, type StudentStatus } from "@/lib/studentStatus";
+import { compressImage } from "@/lib/utils";
 
 type UnitAssignmentChoice = typeof FILTER_VALUE.NONE | UnitRole;
 
@@ -290,8 +291,9 @@ export default function MembersPage() {
   };
 
   const uploadPhoto = async (file: File): Promise<string | null> => {
+    const compressedFile = await compressImage(file);
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", compressedFile);
     formData.append("bucket", "church-assets");
     formData.append("folder", "members");
     const res = await fetch("/api/upload", { method: "POST", body: formData });

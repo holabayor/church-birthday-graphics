@@ -447,8 +447,8 @@ export default function PollsAdminPage() {
 
       {/* Create Poll Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-hidden border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-0 sm:max-w-2xl">
-          <DialogHeader className="border-b border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-8 py-6 text-left">
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-hidden border-(--outline-variant) bg-(--surface-container-lowest) p-0 sm:max-w-2xl">
+          <DialogHeader className="border-b border-(--outline-variant) bg-(--surface-container-lowest) px-8 py-6 text-left">
             <DialogTitle className="font-headline text-2xl font-bold text-[#0B1C30]">Create New Poll</DialogTitle>
             <DialogDescription className="text-sm text-(--on-surface-variant)">
               Initialize a new dynamic voting poll, define voter access criteria, and nominate candidates.
@@ -542,7 +542,7 @@ export default function PollsAdminPage() {
                   >
                     Who Can Vote?
                   </Label>
-                  <Select value={voterType} onValueChange={(val: any) => setVoterType(val)}>
+                  <Select value={voterType} onValueChange={(val: string) => setVoterType(val)}>
                     <SelectTrigger id="voter_type" className="h-11 bg-white border-(--outline-variant)">
                       <SelectValue placeholder="Select Voter Segment" />
                     </SelectTrigger>
@@ -706,7 +706,7 @@ export default function PollsAdminPage() {
       <Dialog open={resultsOpen} onOpenChange={setResultsOpen}>
         <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-hidden border-(--outline-variant) bg-(--surface)] p-0 sm:max-w-md flex flex-col">
           <DialogHeader className="border-b border-(--outline-variant) bg-white px-5 py-4 text-left">
-            <p className="font-mono text-[12px] font-medium uppercase leading-4 tracking-[0.05em] text-(--secondary)]">
+            <p className="font-mono text-[12px] font-medium uppercase leading-4 tracking-wider text-(--secondary)]">
               Tally & Analytics
             </p>
             <DialogTitle className="font-(--font-manrope)] text-xl font-semibold text-[#0B1C30]">
@@ -759,7 +759,7 @@ export default function PollsAdminPage() {
                         </div>
                         <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-100">
                           <div
-                            className="h-full bg-gradient-to-r from-primary to-blue-500 rounded-full transition-all duration-500"
+                            className="h-full bg-linear-to-r from-primary to-blue-500 rounded-full transition-all duration-500"
                             style={{ width: `${pct}%` }}
                           />
                         </div>
