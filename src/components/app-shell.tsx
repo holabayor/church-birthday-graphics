@@ -3,14 +3,54 @@
 import { Sidebar } from "@/components/sidebar";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { usePathname } from "next/navigation";
-import type { CSSProperties, ReactNode } from "react";
+import { CSSProperties, ReactNode, useEffect, useState } from "react";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAuth = () => {
+      fetch("/api/auth")
+        .then((res) => {
+          if (res.ok) return res.json();
+          throw new Error();
+        })
+        .then((data) => {
+          setIsAuthenticated(!!data.member || !!data.user);
+        })
+        .catch(() => {
+          setIsAuthenticated(false);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    };
+
+    checkAuth();
+
+    // Listen for custom authentication change events
+    window.addEventListener("auth-change", checkAuth);
+    return () => {
+      window.removeEventListener("auth-change", checkAuth);
+    };
+  }, [pathname]);
+
   const isAuthPage = pathname === "/login" || pathname === "/register" || pathname === "/admin" || pathname === "/admin/login";
+  const isPublicPollRoute = pathname.startsWith("/polls") && !pathname.startsWith("/polls-manage");
 
   if (isAuthPage) {
     return <>{children}</>;
+  }
+
+  if (isPublicPollRoute) {
+    if (loading) {
+      return <>{children}</>;
+    }
+    if (!isAuthenticated) {
+      return <>{children}</>;
+    }
   }
 
   return (

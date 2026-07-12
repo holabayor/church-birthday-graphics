@@ -112,6 +112,7 @@ export default function PublicPollsDirectory() {
       if (res.ok) {
         toast.success(`Welcome back, ${data.name}!`);
         setPhoneNumber("");
+        window.dispatchEvent(new Event("auth-change"));
         checkAuthAndLoad();
       } else {
         setAuthError(data.error || "We could not find a member profile matching that phone number.");
@@ -133,6 +134,7 @@ export default function PublicPollsDirectory() {
       if (res.ok) {
         toast.success("Signed out successfully");
         setMember(null);
+        window.dispatchEvent(new Event("auth-change"));
         checkAuthAndLoad();
       }
     } catch {

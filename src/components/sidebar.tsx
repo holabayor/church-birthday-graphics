@@ -132,7 +132,7 @@ export function Sidebar() {
       ? [{ href: "/designs", label: "Birthdays", icon: Palette, section: "operations" as const }]
       : []),
     ...(can(PERMISSION.POLLS_MANAGE)
-      ? [{ href: "/polls/manage", label: "Polls", icon: Vote, section: "operations" as const }]
+      ? [{ href: "/polls-manage", label: "Polls", icon: Vote, section: "operations" as const }]
       : []),
     ...(can(PERMISSION.SETTINGS_MANAGE) || can(PERMISSION.ADMINS_MANAGE)
       ? [{ href: "/settings", label: "Settings", icon: Settings, section: "system" as const }]

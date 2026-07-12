@@ -160,6 +160,7 @@ export default function PublicPollPage() {
       if (res.ok) {
         toast.success("Authenticated successfully!");
         setRequiresAuth(false);
+        window.dispatchEvent(new Event("auth-change"));
         loadPollDetails();
       } else {
         setAuthError(data.error || "We could not find a member profile matching that phone number.");
