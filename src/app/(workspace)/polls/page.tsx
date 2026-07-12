@@ -707,7 +707,7 @@ export default function PollsAdminPage() {
 
       {/* Results View Dialog */}
       <Dialog open={resultsOpen} onOpenChange={setResultsOpen}>
-        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-hidden border-(--outline-variant) bg-(--surface)] p-0 sm:max-w-md flex flex-col">
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-hidden border-(--outline-variant) bg-white p-0 sm:max-w-md flex flex-col">
           <DialogHeader className="border-b border-(--outline-variant) bg-white px-5 py-4 text-left">
             <p className="font-mono text-[12px] font-medium uppercase leading-4 tracking-wider text-(--secondary)]">
               Tally & Analytics
