@@ -25,6 +25,14 @@ export const cacheKeys = {
   units: "units",
   unit: (id: string) => `unit:${id}`,
   unitsManagement: "units-management",
+  memberStats: "member-stats",
+  attendanceReports: "attendance-reports",
+  attendanceSessions: "attendance-sessions",
+  attendanceSession: (id: string) => `attendance-session:${id}`,
+  birthdaysToday: "birthdays-today",
+  birthdaysWeek: "birthdays-week",
+  birthdaysCustom: (start: string, end: string) => `birthdays-custom:${start}:${end}`,
+  pollsRaw: "polls-raw",
 };
 
 export async function getCached<T>(

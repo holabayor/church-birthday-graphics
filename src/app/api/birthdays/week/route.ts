@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/server";
 import { cookies } from "next/headers";
 import { MEMBERSHIP_STATUS } from "@/lib/memberLifecycle";
+import { cacheKeys, getCached } from "@/lib/serverCache";
 
 export async function GET() {
   const today = new Date();
@@ -14,35 +15,47 @@ export async function GET() {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  const { data, error } = await supabase.from("members").select("*").eq("membership_status", MEMBERSHIP_STATUS.ACTIVE);
+  const cacheResult = await getCached(cacheKeys.birthdaysWeek, 60, async () => {
+    const currentMonth = today.getMonth() + 1;
+    const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    const { data, error } = await supabase
+      .from("members")
+      .select("*")
+      .eq("membership_status", MEMBERSHIP_STATUS.ACTIVE)
+      .in("birth_month", [currentMonth, nextMonth]);
 
-  const weekMembers = (data || []).filter(m => {
-    const dob = new Date(m.date_of_birth);
-    // Determine the birthday date for the current year
-    const birthdayThisYear = new Date(today.getFullYear(), dob.getMonth(), dob.getDate());
-    
-    // If the birthday this year has already passed, check next year
-    if (birthdayThisYear < today) {
-      birthdayThisYear.setFullYear(today.getFullYear() + 1);
-    }
-    
-    return birthdayThisYear >= today && birthdayThisYear <= endOfWeek;
+    if (error) throw new Error(error.message);
+
+    const weekMembers = (data || []).filter(m => {
+      const dob = new Date(m.date_of_birth);
+      const birthdayThisYear = new Date(today.getFullYear(), dob.getMonth(), dob.getDate());
+      
+      if (birthdayThisYear < today) {
+        birthdayThisYear.setFullYear(today.getFullYear() + 1);
+      }
+      
+      return birthdayThisYear >= today && birthdayThisYear <= endOfWeek;
+    });
+
+    weekMembers.sort((a, b) => {
+      const dobA = new Date(a.date_of_birth);
+      const dobB = new Date(b.date_of_birth);
+      const bdayA = new Date(today.getFullYear(), dobA.getMonth(), dobA.getDate());
+      const bdayB = new Date(today.getFullYear(), dobB.getMonth(), dobB.getDate());
+      
+      if (bdayA < today) bdayA.setFullYear(today.getFullYear() + 1);
+      if (bdayB < today) bdayB.setFullYear(today.getFullYear() + 1);
+      
+      return bdayA.getTime() - bdayB.getTime();
+    });
+
+    return weekMembers;
   });
 
-  // Sort them so the closest birthday is first
-  weekMembers.sort((a, b) => {
-    const dobA = new Date(a.date_of_birth);
-    const dobB = new Date(b.date_of_birth);
-    const bdayA = new Date(today.getFullYear(), dobA.getMonth(), dobA.getDate());
-    const bdayB = new Date(today.getFullYear(), dobB.getMonth(), dobB.getDate());
-    
-    if (bdayA < today) bdayA.setFullYear(today.getFullYear() + 1);
-    if (bdayB < today) bdayB.setFullYear(today.getFullYear() + 1);
-    
-    return bdayA.getTime() - bdayB.getTime();
-  });
+  if (!cacheResult.hit && (cacheResult.value as any)?.error) {
+    return NextResponse.json({ error: (cacheResult.value as any).error }, { status: 500 });
+  }
 
-  return NextResponse.json(weekMembers);
+  return NextResponse.json(cacheResult.value);
 }

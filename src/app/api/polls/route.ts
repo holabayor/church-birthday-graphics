@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { requirePermission } from "@/lib/adminPermissions";
 import { PERMISSION } from "@/lib/adminRoles";
 import { slugify } from "@/lib/utils";
+import { cacheKeys, getCached, invalidateCache } from "@/lib/serverCache";
 
 export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
@@ -12,36 +13,35 @@ export async function GET(req: NextRequest) {
   // Check if user has poll management permission
   const { allowed } = await requirePermission(PERMISSION.POLLS_MANAGE);
 
-  let query = supabase.from("polls").select("*, poll_candidates(*)");
+  const cacheResult = await getCached(cacheKeys.pollsRaw, 30, async () => {
+    const { data, error } = await supabase
+      .from("polls")
+      .select("*, poll_candidates(*)")
+      .order("created_at", { ascending: false });
 
-  if (!allowed) {
-    // Guests or non-admin members can ONLY see active polls
-    query = query.eq("status", "active");
+    if (error) throw new Error(error.message);
+    return data || [];
+  });
+
+  if (!cacheResult.hit && (cacheResult.value as any)?.error) {
+    return NextResponse.json({ error: (cacheResult.value as any).error }, { status: 500 });
   }
 
-  const { data, error } = await query.order("created_at", { ascending: false });
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  const rawPolls = cacheResult.value as any[] || [];
 
   // If admin, return all polls directly
   if (allowed) {
-    return NextResponse.json({ data });
+    return NextResponse.json({ data: rawPolls });
   }
 
-  // Resolve member auth session details
-  let memberId: string | null = null;
-  try {
-    const authRes = await fetch(`${req.nextUrl.origin}/api/auth`, {
-      headers: { cookie: req.headers.get("cookie") || "" },
-    });
-    if (authRes.ok) {
-      const authJson = await authRes.json();
-      memberId = authJson.member?.id || authJson.user?.id || null;
-    }
-  } catch (e) {
-    console.error("Auth fetch failed in polls GET endpoint", e);
+  // Guest or non-admin member sees only active polls
+  const activePolls = rawPolls.filter(poll => poll.status === "active");
+
+  // Resolve member auth session details directly from cookies (bypassing loopback HTTP fetch)
+  let memberId = cookieStore.get("member_id")?.value || null;
+  if (!memberId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    memberId = user?.id || null;
   }
 
   // Get member unit assignments if logged in
@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
     votedPollIds = (anonymousVotes || []).map((v: any) => v.poll_id);
   }
 
-  const pollsWithEligibility = (data || []).map((poll: any) => {
+  const pollsWithEligibility = activePolls.map((poll: any) => {
     let isEligible = false;
     if (poll.voter_type === "anyone") {
       isEligible = true;
@@ -174,6 +174,8 @@ export async function POST(req: NextRequest) {
     if (finalError) {
       return NextResponse.json({ error: finalError.message }, { status: 500 });
     }
+
+    invalidateCache(cacheKeys.pollsRaw);
 
     return NextResponse.json(finalPoll, { status: 201 });
   } catch (err: any) {

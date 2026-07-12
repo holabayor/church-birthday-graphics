@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/server";
 import { cookies } from "next/headers";
+import { normalizePhoneNumber } from "@/lib/phone";
+import { cacheKeys, invalidateCache } from "@/lib/serverCache";
 import { getAdminContext, getPermissionsForRole, isMissingTableError } from "@/lib/adminPermissions";
 import { ADMIN_ROLE, type Permission } from "@/lib/adminRoles";
 import { AUTH_ACTION } from "@/lib/authActions";
@@ -131,8 +133,9 @@ export async function POST(req: NextRequest) {
 
   // Member Login
   if (action === AUTH_ACTION.MEMBER_LOGIN) {
-    if (!phone_number) {
-      return NextResponse.json({ error: "Phone number is required" }, { status: 400 });
+    const normalizedPhone = normalizePhoneNumber(phone_number);
+    if (!normalizedPhone) {
+      return NextResponse.json({ error: "A valid phone number is required" }, { status: 400 });
     }
 
     try {
@@ -140,7 +143,7 @@ export async function POST(req: NextRequest) {
       const { data: member, error } = await adminSupabase
         .from("members")
         .select("id, first_name, last_name, membership_status, is_active")
-        .eq("phone_number", phone_number.trim())
+        .eq("phone_number", normalizedPhone)
         .maybeSingle();
 
       if (error) {
@@ -199,7 +202,10 @@ export async function POST(req: NextRequest) {
 
     try {
       const adminSupabase = createAdminClient();
-      const normalizedPhone = phone_number.trim();
+      const normalizedPhone = normalizePhoneNumber(phone_number);
+      if (!normalizedPhone) {
+        return NextResponse.json({ error: "A valid phone number is required" }, { status: 400 });
+      }
 
       const { data: existing, error: lookupError } = await adminSupabase
         .from("members")
@@ -274,6 +280,8 @@ export async function POST(req: NextRequest) {
         maxAge: 60 * 60 * 24 * 7,
         path: "/",
       });
+
+      invalidateCache(cacheKeys.memberStats);
 
       return response;
     } catch (err: any) {

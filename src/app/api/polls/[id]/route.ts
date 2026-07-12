@@ -3,6 +3,7 @@ import { createClient } from "@/lib/server";
 import { cookies } from "next/headers";
 import { requirePermission } from "@/lib/adminPermissions";
 import { PERMISSION } from "@/lib/adminRoles";
+import { cacheKeys, invalidateCache } from "@/lib/serverCache";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: pollId } = await params;
@@ -43,24 +44,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   // Check if current user is an admin
   const { allowed: isAdmin } = await requirePermission(PERMISSION.POLLS_MANAGE);
 
+  // Resolve member authentication from session cookies directly (bypassing loopback fetches)
+  let memberId = cookieStore.get("member_id")?.value || null;
+  if (!memberId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    memberId = user?.id || null;
+  }
+
   // If not admin, validate status and access rights
   if (!isAdmin) {
     if (poll.status === "draft") {
       return NextResponse.json({ error: "Poll not found" }, { status: 404 });
-    }
-
-    // Resolve member authentication
-    let memberId: string | null = null;
-    try {
-      const authRes = await fetch(`${req.nextUrl.origin}/api/auth`, {
-        headers: { cookie: req.headers.get("cookie") || "" },
-      });
-      if (authRes.ok) {
-        const authJson = await authRes.json();
-        memberId = authJson.member?.id || authJson.user?.id || null;
-      }
-    } catch (e) {
-      console.error("Auth fetch failed in polls GET endpoint", e);
     }
 
     if (!memberId) {
@@ -114,20 +108,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   // 4. Determine if the current visitor has already voted in this poll
   let hasVoted = false;
   let votedCandidateId: string | null = null;
-  let memberId: string | null = null;
-
-  // Resolve member authentication from session cookies
-  try {
-    const authRes = await fetch(`${req.nextUrl.origin}/api/auth`, {
-      headers: { cookie: req.headers.get("cookie") || "" },
-    });
-    if (authRes.ok) {
-      const authJson = await authRes.json();
-      memberId = authJson.member?.id || authJson.user?.id || null;
-    }
-  } catch (e) {
-    console.error("Auth fetch failed in polls GET endpoint", e);
-  }
 
   if (memberId) {
     // Authenticated member check
@@ -234,6 +214,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
     }
 
+    invalidateCache(cacheKeys.pollsRaw);
+
     return NextResponse.json({ message: "Poll updated successfully" });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Invalid payload" }, { status: 400 });
@@ -272,6 +254,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  invalidateCache(cacheKeys.pollsRaw);
 
   return NextResponse.json({ message: "Poll deleted successfully" });
 }

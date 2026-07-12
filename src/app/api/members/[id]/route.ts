@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/server";
 import { cookies } from "next/headers";
+import { normalizePhoneNumber } from "@/lib/phone";
 import { attachMemberProfiles, saveMemberProfiles } from "@/lib/memberProfiles";
 import { attachMemberUnits, saveMemberUnits } from "@/lib/memberUnits";
 import { requirePermission } from "@/lib/adminPermissions";
@@ -87,7 +88,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       first_name,
       middle_name: middle_name || null,
       last_name,
-      phone_number: phone_number || null,
+      phone_number: phone_number ? normalizePhoneNumber(phone_number) : null,
       email: email || null,
       date_of_birth,
       position: canAssignPosition ? position || null : undefined,
@@ -133,6 +134,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   invalidateCache(cacheKeys.units);
   invalidateCache(cacheKeys.unitsManagement);
   invalidateCache("unit");
+  invalidateCache(cacheKeys.memberStats);
   return NextResponse.json(memberWithUnits);
 }
 
@@ -148,5 +150,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   invalidateCache(cacheKeys.units);
   invalidateCache(cacheKeys.unitsManagement);
   invalidateCache("unit");
+  invalidateCache(cacheKeys.memberStats);
   return NextResponse.json({ success: true });
 }

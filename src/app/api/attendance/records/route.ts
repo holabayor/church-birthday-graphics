@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { requirePermission } from "@/lib/adminPermissions";
 import { PERMISSION } from "@/lib/adminRoles";
 import { attendanceStatusOptions } from "@/lib/attendanceStatus";
+import { cacheKeys, invalidateCache } from "@/lib/serverCache";
 
 const allowedStatuses = new Set(attendanceStatusOptions.map(option => option.value));
 
@@ -32,5 +33,9 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  invalidateCache(cacheKeys.attendanceReports);
+  invalidateCache(cacheKeys.attendanceSession(session_id));
+
   return NextResponse.json(data);
 }
