@@ -98,7 +98,7 @@ function formatBirthdayAndAge(dobString?: string | null) {
   try {
     const dob = new Date(dobString);
     if (isNaN(dob.getTime())) return dobString;
-    const formatted = dob.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+    const formatted = dob.toLocaleDateString("en-US", { month: "long", day: "numeric" });
     const today = new Date();
     let age = today.getFullYear() - dob.getFullYear();
     const m = today.getMonth() - dob.getMonth();
@@ -478,11 +478,7 @@ export function MemberDetailDialog({ member, viewer, unitName, actions, onOpenCh
 
                   {/* System Audit Details Collapsible */}
                   {canSeeFull && (
-                    <CollapsibleSection
-                      title="System Audit Details"
-                      icon={Clock3}
-                      iconColorClass="text-(--outline)"
-                    >
+                    <CollapsibleSection title="System Audit Details" icon={Clock3} iconColorClass="text-(--outline)">
                       <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-y-5 gap-x-6 text-sm">
                         <div>
                           <p className="font-mono text-[12px] uppercase tracking-wider text-(--outline) mb-0.5">

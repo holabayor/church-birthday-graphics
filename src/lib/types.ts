@@ -7,6 +7,7 @@ export interface Member {
   middle_name: string | null;
   last_name: string;
   phone_number?: string | null;
+  alternate_phone?: string | null;
   email?: string | null;
   date_of_birth: string;
   position: string | null;

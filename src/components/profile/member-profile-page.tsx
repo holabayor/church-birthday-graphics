@@ -60,6 +60,7 @@ type ProfileForm = {
   middle_name: string;
   last_name: string;
   phone_number: string;
+  alternate_phone: string;
   email: string;
   date_of_birth: string;
   life_stage: string;
@@ -83,6 +84,7 @@ const emptyForm: ProfileForm = {
   middle_name: "",
   last_name: "",
   phone_number: "",
+  alternate_phone: "",
   email: "",
   date_of_birth: "",
   life_stage: LIFE_STAGE.OTHER,
@@ -214,7 +216,6 @@ export function MemberProfilePage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState<ProfileForm>(emptyForm);
-  const [altPhone, setAltPhone] = useState("");
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -280,6 +281,7 @@ export function MemberProfilePage() {
           middle_name: profile.middle_name || "",
           last_name: profile.last_name || "",
           phone_number: profile.phone_number || "",
+          alternate_phone: profile.alternate_phone || "",
           email: profile.email || "",
           date_of_birth: profile.date_of_birth || "",
           life_stage: normalizeLifeStage(profile.life_stage),
@@ -298,8 +300,7 @@ export function MemberProfilePage() {
           skills_interests: profile.skills_interests || "",
         });
 
-        const storedAltPhone = localStorage.getItem(`alt_phone_${session.memberId}`);
-        if (storedAltPhone) setAltPhone(storedAltPhone);
+
 
         if (messagesResponse?.ok) {
           const messageData = await messagesResponse.json();
@@ -385,8 +386,7 @@ export function MemberProfilePage() {
     setSaving(true);
 
     try {
-      if (altPhone) localStorage.setItem(`alt_phone_${memberId}`, altPhone);
-      else localStorage.removeItem(`alt_phone_${memberId}`);
+
 
       const payload = {
         ...form,
@@ -641,13 +641,13 @@ export function MemberProfilePage() {
                     className={cn(inputClassName, "pl-10")}
                   />
                 </ProfileField>
-                <ProfileField id="alt_phone" label="Alternate phone" icon={Smartphone} optional>
+                <ProfileField id="alternate_phone" label="Alternate phone" icon={Smartphone} optional>
                   <Input
-                    id="alt_phone"
+                    id="alternate_phone"
                     type="tel"
                     inputMode="tel"
-                    value={altPhone}
-                    onChange={event => setAltPhone(event.target.value)}
+                    value={form.alternate_phone}
+                    onChange={event => updateField("alternate_phone", event.target.value)}
                     className={cn(inputClassName, "pl-10")}
                   />
                 </ProfileField>

@@ -695,7 +695,7 @@ alter table polls add column if not exists slug text unique;
 
 ## Migration: Performance Optimization (Generated Columns & Indexes)
 
-If you are updating an existing database, run the following SQL commands in your Supabase SQL Editor to improve list sorting, birth month filtering, and search performance at scale:
+If you are updating an existing database, run the following SQL commands in your Supabase SQL Editor to improve list sorting, birth month/day filtering, and search performance at scale:
 
 ```sql
 -- 1. Add generated column for birth month and index it
@@ -703,9 +703,22 @@ alter table members add column if not exists birth_month smallint
   generated always as (extract(month from date_of_birth)::smallint) stored;
 create index if not exists idx_members_birth_month on members (birth_month);
 
--- 2. Enable pg_trgm and add GIN index for search query optimization
+-- 2. Add generated column for birth day and index it
+alter table members add column if not exists birth_day smallint
+  generated always as (extract(day from date_of_birth)::smallint) stored;
+create index if not exists idx_members_birth_day on members (birth_day);
+
+-- 3. Enable pg_trgm and add GIN index for search query optimization
 create extension if not exists pg_trgm;
 create index if not exists idx_members_search_trgm on members
   using gin ((first_name || ' ' || coalesce(middle_name,'') || ' ' || last_name || ' ' || coalesce(phone_number,'')) gin_trgm_ops);
+```
+
+## Migration: Add Alternate Phone Number Support
+
+If you are updating an existing database, run the following SQL command in your Supabase SQL Editor to add the `alternate_phone` column:
+
+```sql
+alter table members add column if not exists alternate_phone text;
 ```
 
