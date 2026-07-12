@@ -71,9 +71,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
   }
 
-  // 2. Fetch the votes data if admin or if the poll is closed and results are viewable
+  // 2. Fetch the votes data if admin or if the results are configured as viewable
   let votesData: any[] = [];
-  const showResults = isAdmin || (poll.status === "closed" && poll.allow_view_results);
+  const showResults = isAdmin || poll.allow_view_results;
 
   if (showResults) {
     const { data: votes, error: votesError } = await supabase

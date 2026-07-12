@@ -179,12 +179,16 @@ export default function PollsAdminPage() {
     setDescription(poll.description || "");
     setVoterType(poll.voter_type);
     setAllowedGroups(poll.allowed_groups || []);
-    
-    const localStart = new Date(new Date(poll.starts_at).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-    const localEnd = new Date(new Date(poll.ends_at).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+
+    const localStart = new Date(new Date(poll.starts_at).getTime() - new Date().getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
+    const localEnd = new Date(new Date(poll.ends_at).getTime() - new Date().getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
     setStartsAt(localStart);
     setEndsAt(localEnd);
-    
+
     setAllowViewResults(poll.allow_view_results);
     setCandidates(poll.poll_candidates || []);
     setCreateOpen(true);
@@ -514,8 +518,16 @@ export default function PollsAdminPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            const localStart = new Date(new Date(poll.starts_at).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-                            const localEnd = new Date(new Date(poll.ends_at).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                            const localStart = new Date(
+                              new Date(poll.starts_at).getTime() - new Date().getTimezoneOffset() * 60000,
+                            )
+                              .toISOString()
+                              .slice(0, 16);
+                            const localEnd = new Date(
+                              new Date(poll.ends_at).getTime() - new Date().getTimezoneOffset() * 60000,
+                            )
+                              .toISOString()
+                              .slice(0, 16);
                             setEditingPoll(poll);
                             setEditStartsAt(localStart);
                             setEditEndsAt(localEnd);
@@ -532,9 +544,10 @@ export default function PollsAdminPage() {
                         size="sm"
                         disabled={poll.status === "active"}
                         onClick={() => handleDeletePoll(poll.id)}
-                        className={poll.status === "active"
-                          ? "text-slate-300 border-slate-100 cursor-not-allowed"
-                          : "text-red-500 border-red-100 hover:bg-red-50 hover:text-red-600"
+                        className={
+                          poll.status === "active"
+                            ? "text-slate-300 border-slate-100 cursor-not-allowed"
+                            : "text-red-500 border-red-100 hover:bg-red-50 hover:text-red-600"
                         }
                       >
                         <Trash2 className="h-4 w-4" />
@@ -549,10 +562,18 @@ export default function PollsAdminPage() {
       </main>
 
       {/* Create Poll Dialog */}
-      <Dialog open={createOpen} onOpenChange={(open) => { setCreateOpen(open); if(!open) resetForm(); }}>
+      <Dialog
+        open={createOpen}
+        onOpenChange={open => {
+          setCreateOpen(open);
+          if (!open) resetForm();
+        }}
+      >
         <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-hidden border-(--outline-variant) bg-(--surface-container-lowest) p-0 sm:max-w-2xl">
           <DialogHeader className="border-b border-(--outline-variant) bg-(--surface-container-lowest) px-8 py-6 text-left">
-            <DialogTitle className="font-headline text-2xl font-bold text-[#0B1C30]">{editingPoll ? "Edit Poll" : "Create New Poll"}</DialogTitle>
+            <DialogTitle className="font-headline text-2xl font-bold text-[#0B1C30]">
+              {editingPoll ? "Edit Poll" : "Create New Poll"}
+            </DialogTitle>
             <DialogDescription className="text-sm text-(--on-surface-variant)">
               {editingPoll
                 ? `Modify the details, nominees, and metadata for "${editingPoll.title}".`
@@ -765,7 +786,12 @@ export default function PollsAdminPage() {
                             <Avatar className="h-8 w-8 border border-slate-100 shadow-xs shrink-0 bg-white">
                               <AvatarImage src={cand.photo_url || ""} alt={cand.display_name} />
                               <AvatarFallback className="bg-primary/5 text-primary font-bold text-xs">
-                                {cand.display_name.split(" ").map(s => s[0]).join("").substring(0, 2).toUpperCase()}
+                                {cand.display_name
+                                  .split(" ")
+                                  .map(s => s[0])
+                                  .join("")
+                                  .substring(0, 2)
+                                  .toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                             <span className="font-semibold text-slate-800 text-sm truncate max-w-[120px]">
@@ -846,7 +872,7 @@ export default function PollsAdminPage() {
             <div className="flex-1 overflow-y-auto px-5 py-5 max-h-[60vh] space-y-6 bg-white">
               <div className="grid grid-cols-2 gap-4 p-4 rounded-xl border border-(--outline-variant) bg-slate-50/50 text-center">
                 <div>
-                  <span className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Total Ballots</span>
+                  <span className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Total Votes</span>
                   <p className="text-3xl font-bold text-[#0B1C30] mt-1">{pollResults.totalVotes}</p>
                 </div>
                 <div>
@@ -872,7 +898,12 @@ export default function PollsAdminPage() {
                             <Avatar className="h-8 w-8 border border-slate-100 shadow-xs shrink-0 bg-white">
                               <AvatarImage src={cand.photo_url || ""} alt={cand.display_name} />
                               <AvatarFallback className="bg-primary/5 text-primary font-bold text-xs">
-                                {cand.display_name.split(" ").map(s => s[0]).join("").substring(0, 2).toUpperCase()}
+                                {cand.display_name
+                                  .split(" ")
+                                  .map(s => s[0])
+                                  .join("")
+                                  .substring(0, 2)
+                                  .toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                             <span>{cand.display_name}</span>
@@ -933,7 +964,9 @@ export default function PollsAdminPage() {
           <form onSubmit={handleUpdatePeriod} className="p-8 space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="edit_starts_at" className="text-xs font-semibold text-slate-700">Starts At</Label>
+                <Label htmlFor="edit_starts_at" className="text-xs font-semibold text-slate-700">
+                  Starts At
+                </Label>
                 <Input
                   id="edit_starts_at"
                   type="datetime-local"
@@ -944,7 +977,9 @@ export default function PollsAdminPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit_ends_at" className="text-xs font-semibold text-slate-700">Ends At</Label>
+                <Label htmlFor="edit_ends_at" className="text-xs font-semibold text-slate-700">
+                  Ends At
+                </Label>
                 <Input
                   id="edit_ends_at"
                   type="datetime-local"
@@ -962,7 +997,10 @@ export default function PollsAdminPage() {
                   onChange={e => setEditAllowViewResults(e.target.checked)}
                   className="rounded border-(--outline-variant) text-primary focus:ring-primary h-4.5 w-4.5"
                 />
-                <Label htmlFor="edit_allow_view_results" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                <Label
+                  htmlFor="edit_allow_view_results"
+                  className="text-xs font-semibold text-slate-700 cursor-pointer"
+                >
                   Allow voters to view results while voting is ongoing / closed
                 </Label>
               </div>

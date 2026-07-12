@@ -126,7 +126,7 @@ export default function PublicPollPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-sm text-slate-500 font-semibold tracking-wide">Resolving ballot details...</p>
+        <p className="text-sm text-slate-500 font-semibold tracking-wide">Resolving vote details...</p>
       </div>
     );
   }
@@ -164,7 +164,7 @@ export default function PublicPollPage() {
   return (
     <div className="min-h-screen bg-(--surface) pb-24 sm:pb-8">
       <PageHeader
-        eyebrow="Decision Ballot"
+        eyebrow="Decision Vote"
         title={poll.title}
         description={poll.description || undefined}
         actions={
@@ -222,14 +222,14 @@ export default function PublicPollPage() {
                     <CheckCircle2 className="h-6 w-6" />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-slate-800 text-base">Your Ballot is Cast</h3>
+                    <h3 className="font-extrabold text-slate-800 text-base">Your Vote is Cast</h3>
                     <p className="text-xs text-slate-400 font-medium mt-0.5">
                       Thank you! Your selection is cryptographically registered.
                     </p>
                   </div>
                 </div>
                 <span className="text-xs font-bold text-slate-500 font-mono bg-slate-100 border border-slate-200/60 px-3 py-1.5 rounded-xl">
-                  Total Ballots: {totalVotes}
+                  Total Votes: {totalVotes}
                 </span>
               </div>
 
@@ -336,7 +336,7 @@ export default function PublicPollPage() {
               </div>
             </div>
           ) : isPollExpired ? (
-            /* Closed Ballot View */
+            /* Closed Vote View */
             <div className="bg-white border border-(--outline-variant)/60 rounded-2xl shadow-xs p-8 text-center space-y-4">
               <div className="h-16 w-16 bg-slate-50 border border-dashed rounded-full flex items-center justify-center mx-auto border-slate-200">
                 <AlertCircle className="h-8 w-8 text-slate-400" />
@@ -453,7 +453,7 @@ export default function PublicPollPage() {
               <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-t border-slate-200/80 px-6 py-4 flex flex-col sm:flex-row justify-between items-center max-w-4xl mx-auto rounded-t-3xl shadow-lg md:bottom-4 md:rounded-3xl md:left-4 md:right-4 md:border">
                 <div className="hidden sm:block text-left min-w-0 pr-4">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                    Active Ballot Selection
+                    Active Vote Selection
                   </span>
                   <p className="text-sm font-extrabold text-slate-800 truncate max-w-[240px] mt-0.5">
                     {selectedCandidate
@@ -469,7 +469,7 @@ export default function PublicPollPage() {
                   {submitting ? (
                     <>
                       <Loader2 className="mr-2 h-4.5 w-4.5 animate-spin" />
-                      Casting ballot...
+                      Casting vote...
                     </>
                   ) : (
                     "Submit Vote"

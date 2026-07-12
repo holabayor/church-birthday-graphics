@@ -136,7 +136,7 @@ export default function PublicPollsDirectory() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-xs text-slate-500 font-semibold tracking-wide">Resolving ballot directory...</p>
+        <p className="text-xs text-slate-500 font-semibold tracking-wide">Resolving polls directory...</p>
       </div>
     );
   }
