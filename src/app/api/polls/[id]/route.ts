@@ -10,12 +10,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  // 1. Fetch the poll details and nominees
-  const { data: poll, error: pollError } = await supabase
-    .from("polls")
-    .select("*, poll_candidates(*)")
-    .eq("id", pollId)
-    .single();
+  // 1. Fetch the poll details and nominees (supporting slug or UUID lookup)
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pollId);
+  let pollQuery = supabase.from("polls").select("*, poll_candidates(*)").eq(isUuid ? "id" : "slug", pollId);
+  const { data: poll, error: pollError } = await pollQuery.maybeSingle();
 
   if (pollError || !poll) {
     return NextResponse.json({ error: "Poll not found" }, { status: 404 });
@@ -149,10 +147,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (ends_at !== undefined) updateData.ends_at = ends_at;
     if (allow_view_results !== undefined) updateData.allow_view_results = allow_view_results;
 
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pollId);
     const { error: pollError } = await supabase
       .from("polls")
       .update(updateData)
-      .eq("id", pollId);
+      .eq(isUuid ? "id" : "slug", pollId);
 
     if (pollError) {
       return NextResponse.json({ error: pollError.message }, { status: 500 });
@@ -192,7 +191,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  const { error } = await supabase.from("polls").delete().eq("id", pollId);
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pollId);
+  const { error } = await supabase.from("polls").delete().eq(isUuid ? "id" : "slug", pollId);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

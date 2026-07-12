@@ -16,12 +16,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
 
-    // 1. Fetch poll details
+    // 1. Fetch poll details (supporting slug or UUID lookup)
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pollId);
     const { data: poll, error: pollError } = await supabase
       .from("polls")
       .select("*")
-      .eq("id", pollId)
-      .single();
+      .eq(isUuid ? "id" : "slug", pollId)
+      .maybeSingle();
 
     if (pollError || !poll) {
       return NextResponse.json({ error: "Poll not found" }, { status: 404 });

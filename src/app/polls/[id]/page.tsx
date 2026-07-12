@@ -23,6 +23,7 @@ type Candidate = {
 type Poll = {
   id: string;
   title: string;
+  slug?: string | null;
   description: string | null;
   voter_type: "anyone" | "members" | "workers" | "selected_groups";
   allowed_groups: string[];
@@ -311,13 +312,21 @@ export default function PublicPollPage() {
                           return (
                             <div key={cand.id} className="space-y-1.5">
                               <div className="flex justify-between items-center text-sm font-semibold">
-                                <span className="flex items-center gap-1.5 text-slate-800">
-                                  {cand.display_name}
-                                  {isUserVote && (
-                                    <Badge variant="outline" className="text-[9px] font-normal text-emerald-600 border-emerald-200 bg-emerald-50">
-                                      Your Selection
-                                    </Badge>
-                                  )}
+                                <span className="flex items-center gap-2 text-slate-800">
+                                  <Avatar className="h-8 w-8 border border-slate-100 shadow-xs shrink-0 bg-white">
+                                    <AvatarImage src={cand.photo_url || ""} alt={cand.display_name} />
+                                    <AvatarFallback className="bg-primary/5 text-primary font-bold text-xs">
+                                      {cand.display_name.split(" ").map(s => s[0]).join("").substring(0, 2).toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span className="flex items-center gap-1.5">
+                                    {cand.display_name}
+                                    {isUserVote && (
+                                      <Badge variant="outline" className="text-[9px] font-normal text-emerald-600 border-emerald-200 bg-emerald-50">
+                                        Your Selection
+                                      </Badge>
+                                    )}
+                                  </span>
                                 </span>
                                 <span className="text-slate-500 font-medium">{pct}%</span>
                               </div>

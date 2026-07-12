@@ -22,6 +22,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MemberSearchAutocomplete } from "@/components/units/member-search-autocomplete";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 type Candidate = {
   id?: string;
@@ -35,6 +36,7 @@ type Candidate = {
 type Poll = {
   id: string;
   title: string;
+  slug?: string | null;
   description: string | null;
   voter_type: "anyone" | "members" | "workers" | "selected_groups";
   allowed_groups: string[];
@@ -57,6 +59,13 @@ export default function PollsAdminPage() {
   const [activePoll, setActivePoll] = useState<Poll | null>(null);
   const [pollResults, setPollResults] = useState<{ poll: Poll; totalVotes: number } | null>(null);
   const [loadingResults, setLoadingResults] = useState(false);
+
+  // Edit Period states
+  const [editPeriodOpen, setEditPeriodOpen] = useState(false);
+  const [editingPoll, setEditingPoll] = useState<Poll | null>(null);
+  const [editStartsAt, setEditStartsAt] = useState("");
+  const [editEndsAt, setEditEndsAt] = useState("");
+  const [updatingPeriod, setUpdatingPeriod] = useState(false);
 
   // Form states
   const [title, setTitle] = useState("");
@@ -154,6 +163,34 @@ export default function PollsAdminPage() {
     }
   };
 
+  const handleUpdatePeriod = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPoll) return;
+    setUpdatingPeriod(true);
+    try {
+      const res = await fetch(`/api/polls/${editingPoll.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          starts_at: new Date(editStartsAt).toISOString(),
+          ends_at: new Date(editEndsAt).toISOString(),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("Voting period updated successfully");
+        setEditPeriodOpen(false);
+        fetchPolls();
+      } else {
+        toast.error(data.error || "Failed to update voting period");
+      }
+    } catch {
+      toast.error("Failed to update voting period");
+    } finally {
+      setUpdatingPeriod(false);
+    }
+  };
+
   const togglePollStatus = async (poll: Poll, newStatus: "active" | "closed") => {
     try {
       const res = await fetch(`/api/polls/${poll.id}`, {
@@ -211,9 +248,9 @@ export default function PollsAdminPage() {
     }
   };
 
-  const handleShareLink = (id: string) => {
+  const handleShareLink = (identifier: string) => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const url = `${origin}/polls/${id}`;
+    const url = `${origin}/polls/${identifier}`;
     navigator.clipboard.writeText(url);
     toast.success("Voter link copied to clipboard!");
   };
@@ -397,7 +434,7 @@ export default function PollsAdminPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleShareLink(poll.id)}
+                        onClick={() => handleShareLink(poll.slug || poll.id)}
                         className="w-full border-(--outline-variant) bg-white text-slate-700 hover:bg-(--surface-container)]"
                       >
                         <Share2 className="h-3.5 w-3.5 mr-1" />
@@ -428,6 +465,21 @@ export default function PollsAdminPage() {
                           Close Poll
                         </Button>
                       )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const localStart = new Date(new Date(poll.starts_at).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                          const localEnd = new Date(new Date(poll.ends_at).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                          setEditingPoll(poll);
+                          setEditStartsAt(localStart);
+                          setEditEndsAt(localEnd);
+                          setEditPeriodOpen(true);
+                        }}
+                        className={`border-(--outline-variant) bg-white text-slate-700 hover:bg-(--surface-container) text-xs ${poll.status === "closed" ? "flex-1" : ""}`}
+                      >
+                        Edit Period
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
@@ -656,9 +708,17 @@ export default function PollsAdminPage() {
                         className="flex flex-col gap-2 p-4 border border-(--outline-variant) bg-white rounded-xl shadow-xs"
                       >
                         <div className="flex justify-between items-center">
-                          <span className="font-semibold text-slate-800 text-sm truncate max-w-[150px]">
-                            {cand.display_name}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-8 w-8 border border-slate-100 shadow-xs shrink-0 bg-white">
+                              <AvatarImage src={cand.photo_url || ""} alt={cand.display_name} />
+                              <AvatarFallback className="bg-primary/5 text-primary font-bold text-xs">
+                                {cand.display_name.split(" ").map(s => s[0]).join("").substring(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-semibold text-slate-800 text-sm truncate max-w-[120px]">
+                              {cand.display_name}
+                            </span>
+                          </div>
                           <div className="flex items-center gap-1 shrink-0">
                             {cand.member_id && (
                               <Badge
@@ -755,7 +815,15 @@ export default function PollsAdminPage() {
                     return (
                       <div key={cand.id} className="space-y-1.5">
                         <div className="flex justify-between items-center text-sm font-semibold text-slate-800">
-                          <span>{cand.display_name}</span>
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-8 w-8 border border-slate-100 shadow-xs shrink-0 bg-white">
+                              <AvatarImage src={cand.photo_url || ""} alt={cand.display_name} />
+                              <AvatarFallback className="bg-primary/5 text-primary font-bold text-xs">
+                                {cand.display_name.split(" ").map(s => s[0]).join("").substring(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span>{cand.display_name}</span>
+                          </div>
                           <span className="text-slate-500 font-mono font-medium">
                             {votes} vote{votes !== 1 && "s"} ({pct}%)
                           </span>
@@ -796,6 +864,54 @@ export default function PollsAdminPage() {
               Close Results
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Voting Period Dialog */}
+      <Dialog open={editPeriodOpen} onOpenChange={setEditPeriodOpen}>
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-hidden border-(--outline-variant) bg-(--surface-container-lowest) p-0 sm:max-w-md">
+          <DialogHeader className="border-b border-(--outline-variant) bg-(--surface-container-lowest) px-8 py-6 text-left">
+            <DialogTitle className="font-headline text-2xl font-bold text-[#0B1C30]">Edit Voting Period</DialogTitle>
+            <DialogDescription className="text-sm text-(--on-surface-variant) mt-1">
+              Update the start and end date/time for <strong>{editingPoll?.title}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleUpdatePeriod} className="p-8 space-y-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit_starts_at" className="text-xs font-semibold text-slate-700">Starts At</Label>
+                <Input
+                  id="edit_starts_at"
+                  type="datetime-local"
+                  value={editStartsAt}
+                  onChange={e => setEditStartsAt(e.target.value)}
+                  required
+                  className="h-11 border-(--outline-variant) bg-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit_ends_at" className="text-xs font-semibold text-slate-700">Ends At</Label>
+                <Input
+                  id="edit_ends_at"
+                  type="datetime-local"
+                  value={editEndsAt}
+                  onChange={e => setEditEndsAt(e.target.value)}
+                  required
+                  className="h-11 border-(--outline-variant) bg-white"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="pt-4 border-t border-(--outline-variant) mt-6 flex justify-end gap-3">
+              <Button type="button" variant="outline" onClick={() => setEditPeriodOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updatingPeriod}>
+                {updatingPeriod ? "Saving..." : "Save Changes"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

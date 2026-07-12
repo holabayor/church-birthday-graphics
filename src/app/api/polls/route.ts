@@ -3,6 +3,7 @@ import { createClient } from "@/lib/server";
 import { cookies } from "next/headers";
 import { requirePermission } from "@/lib/adminPermissions";
 import { PERMISSION } from "@/lib/adminRoles";
+import { slugify } from "@/lib/utils";
 
 export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest) {
   let query = supabase.from("polls").select("*, poll_candidates(*)");
 
   if (!allowed) {
-    // Guests or non-admin members can only see active polls
+    // Guests or non-admin members can ONLY see active polls
     query = query.eq("status", "active");
   }
 
@@ -24,7 +25,78 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ data });
+  // If admin, return all polls directly
+  if (allowed) {
+    return NextResponse.json({ data });
+  }
+
+  // Resolve member auth session details
+  let memberId: string | null = null;
+  try {
+    const authRes = await fetch(`${req.nextUrl.origin}/api/auth`, {
+      headers: { cookie: req.headers.get("cookie") || "" },
+    });
+    if (authRes.ok) {
+      const authJson = await authRes.json();
+      memberId = authJson.member?.id || authJson.user?.id || null;
+    }
+  } catch (e) {
+    console.error("Auth fetch failed in polls GET endpoint", e);
+  }
+
+  // Get member unit assignments if logged in
+  let unitIds: string[] = [];
+  if (memberId) {
+    const { data: memberUnits } = await supabase
+      .from("church_unit_members")
+      .select("unit_id")
+      .eq("member_id", memberId);
+    unitIds = (memberUnits || []).map((mu: any) => mu.unit_id);
+  }
+
+  // Check user vote cast history
+  let votedPollIds: string[] = [];
+  if (memberId) {
+    const { data: userVotes } = await supabase
+      .from("poll_votes")
+      .select("poll_id")
+      .eq("voter_member_id", memberId);
+    votedPollIds = (userVotes || []).map((v: any) => v.poll_id);
+  } else {
+    // Anonymous anti-cheat check
+    const ip = req.headers.get("x-forwarded-for") || "unknown";
+    const fingerprint = req.nextUrl.searchParams.get("fingerprint") || "";
+    let anonymousVotesQuery = supabase.from("poll_votes").select("poll_id");
+    if (fingerprint) {
+      anonymousVotesQuery = anonymousVotesQuery.or(`voter_ip.eq.${ip},voter_fingerprint.eq.${fingerprint}`);
+    } else {
+      anonymousVotesQuery = anonymousVotesQuery.eq("voter_ip", ip);
+    }
+    const { data: anonymousVotes } = await anonymousVotesQuery;
+    votedPollIds = (anonymousVotes || []).map((v: any) => v.poll_id);
+  }
+
+  const pollsWithEligibility = (data || []).map((poll: any) => {
+    let isEligible = false;
+    if (poll.voter_type === "anyone") {
+      isEligible = true;
+    } else if (memberId) {
+      if (poll.voter_type === "members") {
+        isEligible = true;
+      } else if (poll.voter_type === "workers") {
+        isEligible = unitIds.length > 0;
+      } else if (poll.voter_type === "selected_groups") {
+        isEligible = Array.isArray(poll.allowed_groups) && poll.allowed_groups.some((g: string) => unitIds.includes(g));
+      }
+    }
+    return {
+      ...poll,
+      is_eligible: isEligible,
+      has_voted: votedPollIds.includes(poll.id),
+    };
+  });
+
+  return NextResponse.json({ data: pollsWithEligibility });
 }
 
 export async function POST(req: NextRequest) {
@@ -53,11 +125,12 @@ export async function POST(req: NextRequest) {
     const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
 
-    // 1. Insert the poll details
+    // 1. Insert the poll details (generating slug)
     const { data: poll, error: pollError } = await supabase
       .from("polls")
       .insert({
         title,
+        slug: slugify(title),
         description: description || null,
         voter_type,
         allowed_groups: allowed_groups || [],

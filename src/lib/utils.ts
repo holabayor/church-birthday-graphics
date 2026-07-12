@@ -78,3 +78,18 @@ export async function compressImage(file: File, maxW = 1200, maxH = 1200, qualit
     reader.onerror = () => resolve(file);
   });
 }
+
+export function slugify(text: string): string {
+  const base = text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^\w\-]+/g, "")
+    .replace(/\-\-+/g, "-")
+    .replace(/^-+/, "")
+    .replace(/-+$/, "");
+
+  const suffix = Math.random().toString(36).substring(2, 6);
+  return `${base}-${suffix}`;
+}
