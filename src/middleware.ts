@@ -47,6 +47,7 @@ export async function middleware(request: NextRequest) {
   ];
   if (
     publicPages.includes(pathname) ||
+    pathname === "/polls" ||
     pathname.startsWith("/polls/") ||
     publicApiPaths.some(p => pathname.startsWith(p)) ||
     pathname.startsWith("/_next") ||

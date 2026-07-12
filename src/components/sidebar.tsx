@@ -60,6 +60,7 @@ export function Sidebar() {
     [],
   );
   const [loading, setLoading] = useState(true);
+  const [hasActivePolls, setHasActivePolls] = useState(false);
 
   useEffect(() => {
     async function checkSession() {
@@ -67,6 +68,7 @@ export function Sidebar() {
         const res = await fetch("/api/auth");
         if (res.ok) {
           const data = await res.json();
+          const isLoggedIn = Boolean(data.user || data.memberId || data.member);
           if (data.user) {
             setSessionKind(SESSION_KIND.SUPER_ADMIN);
             setHasMemberProfile(Boolean(data.memberId));
@@ -76,6 +78,26 @@ export function Sidebar() {
           }
           setPermissions(data.permissions || data.user?.permissions || data.member?.permissions || []);
           setMemberUnitLeadership(data.memberUnitLeadership || []);
+
+          if (isLoggedIn) {
+            let fp = "";
+            if (typeof window !== "undefined") {
+              fp = localStorage.getItem("poll_device_fingerprint") || "";
+            }
+            const fpParam = fp ? `?fingerprint=${fp}` : "";
+            const pollsRes = await fetch(`/api/polls${fpParam}`);
+            if (pollsRes.ok) {
+              const pollsData = await pollsRes.json();
+              const activeEligible = (pollsData.data || []).some(
+                (p: any) => p.status === "active" && p.is_eligible !== false
+              );
+              setHasActivePolls(activeEligible);
+            }
+          } else {
+            setHasActivePolls(false);
+          }
+        } else {
+          setHasActivePolls(false);
         }
       } catch (e) {
         console.error("Failed to check auth session:", e);
@@ -85,6 +107,13 @@ export function Sidebar() {
     }
 
     checkSession();
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("auth-change", checkSession);
+      return () => {
+        window.removeEventListener("auth-change", checkSession);
+      };
+    }
   }, [pathname]);
 
   const handleLogout = async () => {
@@ -118,8 +147,7 @@ export function Sidebar() {
       ? [
           {
             href: "/units",
-            label:
-              hasMemberProfile && !can(PERMISSION.UNITS_VIEW) && !can(PERMISSION.UNITS_MANAGE) ? "My Units" : "Units",
+            label: "Ministry Units",
             icon: Building2,
             section: "operations" as const,
           },
@@ -132,7 +160,10 @@ export function Sidebar() {
       ? [{ href: "/designs", label: "Birthdays", icon: Palette, section: "operations" as const }]
       : []),
     ...(can(PERMISSION.POLLS_MANAGE)
-      ? [{ href: "/polls-manage", label: "Polls", icon: Vote, section: "operations" as const }]
+      ? [{ href: "/polls-manage", label: "Manage Polls", icon: Vote, section: "operations" as const }]
+      : []),
+    ...(hasActivePolls
+      ? [{ href: "/polls", label: "Polls", icon: Vote, section: "operations" as const }]
       : []),
     ...(can(PERMISSION.SETTINGS_MANAGE) || can(PERMISSION.ADMINS_MANAGE)
       ? [{ href: "/settings", label: "Settings", icon: Settings, section: "system" as const }]

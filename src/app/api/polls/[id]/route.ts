@@ -10,9 +10,30 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  // 1. Fetch the poll details and nominees (supporting slug or UUID lookup)
+  // 1. Fetch the poll details and nominees (supporting slug or UUID lookup, and joining member units)
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pollId);
-  let pollQuery = supabase.from("polls").select("*, poll_candidates(*)").eq(isUuid ? "id" : "slug", pollId);
+  let pollQuery = supabase
+    .from("polls")
+    .select(`
+      *, 
+      poll_candidates(
+        *, 
+        members(
+          id, 
+          first_name, 
+          last_name, 
+          photo_url, 
+          church_unit_members(
+            role, 
+            church_units(
+              id, 
+              name
+            )
+          )
+        )
+      )
+    `)
+    .eq(isUuid ? "id" : "slug", pollId);
   const { data: poll, error: pollError } = await pollQuery.maybeSingle();
 
   if (pollError || !poll) {
@@ -21,6 +42,34 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   // Check if current user is an admin
   const { allowed: isAdmin } = await requirePermission(PERMISSION.POLLS_MANAGE);
+
+  // If not admin, validate status and access rights
+  if (!isAdmin) {
+    if (poll.status === "draft") {
+      return NextResponse.json({ error: "Poll not found" }, { status: 404 });
+    }
+
+    // Resolve member authentication
+    let memberId: string | null = null;
+    try {
+      const authRes = await fetch(`${req.nextUrl.origin}/api/auth`, {
+        headers: { cookie: req.headers.get("cookie") || "" },
+      });
+      if (authRes.ok) {
+        const authJson = await authRes.json();
+        memberId = authJson.member?.id || authJson.user?.id || null;
+      }
+    } catch (e) {
+      console.error("Auth fetch failed in polls GET endpoint", e);
+    }
+
+    if (!memberId) {
+      // Unauthenticated public can only view active, public polls
+      if (poll.status !== "active" || poll.voter_type !== "anyone") {
+        return NextResponse.json({ error: "Authentication is required to view this poll" }, { status: 401 });
+      }
+    }
+  }
 
   // 2. Fetch the votes data if admin or if the poll is closed and results are viewable
   let votesData: any[] = [];
@@ -47,10 +96,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
   });
 
-  const candidatesWithVotes = poll.poll_candidates.map((cand: any) => ({
-    ...cand,
-    votes: showResults ? votesCount[cand.id] : null,
-  }));
+  const candidatesWithVotes = poll.poll_candidates.map((cand: any) => {
+    const units = cand.members?.church_unit_members?.map((cum: any) => cum.church_units?.name).filter(Boolean) || [];
+    return {
+      id: cand.id,
+      poll_id: cand.poll_id,
+      member_id: cand.member_id,
+      display_name: cand.display_name,
+      photo_url: cand.photo_url || cand.members?.photo_url || null,
+      nomination_reason: cand.nomination_reason,
+      created_at: cand.created_at,
+      votes: showResults ? votesCount[cand.id] : null,
+      departments: units,
+    };
+  });
 
   // 4. Determine if the current visitor has already voted in this poll
   let hasVoted = false;
@@ -192,6 +251,22 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const supabase = createClient(cookieStore);
 
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pollId);
+
+  // Fetch current poll status to check if it's ongoing
+  const { data: poll, error: fetchError } = await supabase
+    .from("polls")
+    .select("status")
+    .eq(isUuid ? "id" : "slug", pollId)
+    .maybeSingle();
+
+  if (fetchError || !poll) {
+    return NextResponse.json({ error: "Poll not found" }, { status: 404 });
+  }
+
+  if (poll.status === "active") {
+    return NextResponse.json({ error: "Ongoing polls cannot be deleted. Please close the poll first." }, { status: 400 });
+  }
+
   const { error } = await supabase.from("polls").delete().eq(isUuid ? "id" : "slug", pollId);
 
   if (error) {

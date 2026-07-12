@@ -65,6 +65,7 @@ export default function PollsAdminPage() {
   const [editingPoll, setEditingPoll] = useState<Poll | null>(null);
   const [editStartsAt, setEditStartsAt] = useState("");
   const [editEndsAt, setEditEndsAt] = useState("");
+  const [editAllowViewResults, setEditAllowViewResults] = useState(true);
   const [updatingPeriod, setUpdatingPeriod] = useState(false);
 
   // Form states
@@ -132,8 +133,12 @@ export default function PollsAdminPage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch("/api/polls", {
-        method: "POST",
+      const isEdit = !!editingPoll;
+      const url = isEdit ? `/api/polls/${editingPoll.id}` : "/api/polls";
+      const method = isEdit ? "PATCH" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: title.trim(),
@@ -143,24 +148,46 @@ export default function PollsAdminPage() {
           starts_at: new Date(startsAt).toISOString(),
           ends_at: new Date(endsAt).toISOString(),
           allow_view_results: allowViewResults,
-          candidates,
+          candidates: candidates.map(c => ({
+            member_id: c.member_id,
+            display_name: c.display_name,
+            photo_url: c.photo_url,
+            nomination_reason: c.nomination_reason,
+          })),
         }),
       });
 
       const data = await res.json();
       if (res.ok) {
-        toast.success("Poll created successfully");
+        toast.success(isEdit ? "Poll updated successfully" : "Poll created successfully");
         setCreateOpen(false);
         resetForm();
         fetchPolls();
       } else {
-        toast.error(data.error || "Failed to create poll");
+        toast.error(data.error || "Failed to save poll");
       }
     } catch {
-      toast.error("Network error creating poll");
+      toast.error("Network error saving poll");
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleStartEditDraft = (poll: Poll) => {
+    setEditingPoll(poll);
+    setTitle(poll.title);
+    setDescription(poll.description || "");
+    setVoterType(poll.voter_type);
+    setAllowedGroups(poll.allowed_groups || []);
+    
+    const localStart = new Date(new Date(poll.starts_at).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    const localEnd = new Date(new Date(poll.ends_at).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    setStartsAt(localStart);
+    setEndsAt(localEnd);
+    
+    setAllowViewResults(poll.allow_view_results);
+    setCandidates(poll.poll_candidates || []);
+    setCreateOpen(true);
   };
 
   const handleUpdatePeriod = async (e: React.FormEvent) => {
@@ -174,6 +201,7 @@ export default function PollsAdminPage() {
         body: JSON.stringify({
           starts_at: new Date(editStartsAt).toISOString(),
           ends_at: new Date(editEndsAt).toISOString(),
+          allow_view_results: editAllowViewResults,
         }),
       });
       const data = await res.json();
@@ -212,6 +240,12 @@ export default function PollsAdminPage() {
   };
 
   const handleDeletePoll = async (id: string) => {
+    const targetPoll = polls.find(p => p.id === id);
+    if (targetPoll?.status === "active") {
+      toast.error("Ongoing/active polls cannot be deleted. Please close the poll first.");
+      return;
+    }
+
     if (!confirm("Are you sure you want to delete this poll? This will erase all votes cast.")) return;
 
     try {
@@ -266,6 +300,7 @@ export default function PollsAdminPage() {
     setCandidates([]);
     setTempMemberId(null);
     setTempMemberName("");
+    setEditingPoll(null);
   };
 
   const handleAddCandidate = (memberId: string, fullName: string, photoUrl?: string | null) => {
@@ -465,26 +500,42 @@ export default function PollsAdminPage() {
                           Close Poll
                         </Button>
                       )}
+                      {poll.status === "draft" ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleStartEditDraft(poll)}
+                          className="border-(--outline-variant) bg-white text-slate-700 hover:bg-(--surface-container) text-xs"
+                        >
+                          Edit Poll
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const localStart = new Date(new Date(poll.starts_at).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                            const localEnd = new Date(new Date(poll.ends_at).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                            setEditingPoll(poll);
+                            setEditStartsAt(localStart);
+                            setEditEndsAt(localEnd);
+                            setEditAllowViewResults(poll.allow_view_results);
+                            setEditPeriodOpen(true);
+                          }}
+                          className={`border-(--outline-variant) bg-white text-slate-700 hover:bg-(--surface-container) text-xs ${poll.status === "closed" ? "flex-1" : ""}`}
+                        >
+                          Edit Period
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                          const localStart = new Date(new Date(poll.starts_at).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-                          const localEnd = new Date(new Date(poll.ends_at).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-                          setEditingPoll(poll);
-                          setEditStartsAt(localStart);
-                          setEditEndsAt(localEnd);
-                          setEditPeriodOpen(true);
-                        }}
-                        className={`border-(--outline-variant) bg-white text-slate-700 hover:bg-(--surface-container) text-xs ${poll.status === "closed" ? "flex-1" : ""}`}
-                      >
-                        Edit Period
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
+                        disabled={poll.status === "active"}
                         onClick={() => handleDeletePoll(poll.id)}
-                        className="text-red-500 border-red-100 hover:bg-red-50 hover:text-red-600"
+                        className={poll.status === "active"
+                          ? "text-slate-300 border-slate-100 cursor-not-allowed"
+                          : "text-red-500 border-red-100 hover:bg-red-50 hover:text-red-600"
+                        }
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -498,12 +549,14 @@ export default function PollsAdminPage() {
       </main>
 
       {/* Create Poll Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+      <Dialog open={createOpen} onOpenChange={(open) => { setCreateOpen(open); if(!open) resetForm(); }}>
         <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-hidden border-(--outline-variant) bg-(--surface-container-lowest) p-0 sm:max-w-2xl">
           <DialogHeader className="border-b border-(--outline-variant) bg-(--surface-container-lowest) px-8 py-6 text-left">
-            <DialogTitle className="font-headline text-2xl font-bold text-[#0B1C30]">Create New Poll</DialogTitle>
+            <DialogTitle className="font-headline text-2xl font-bold text-[#0B1C30]">{editingPoll ? "Edit Poll" : "Create New Poll"}</DialogTitle>
             <DialogDescription className="text-sm text-(--on-surface-variant)">
-              Initialize a new dynamic voting poll, define voter access criteria, and nominate candidates.
+              {editingPoll
+                ? `Modify the details, nominees, and metadata for "${editingPoll.title}".`
+                : "Initialize a new dynamic voting poll, define voter access criteria, and nominate candidates."}
             </DialogDescription>
           </DialogHeader>
 
@@ -758,7 +811,7 @@ export default function PollsAdminPage() {
               </Button>
               <Button type="submit" disabled={submitting}>
                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create Draft
+                {editingPoll ? "Save Changes" : "Create Draft"}
               </Button>
             </DialogFooter>
           </form>
@@ -900,6 +953,18 @@ export default function PollsAdminPage() {
                   required
                   className="h-11 border-(--outline-variant) bg-white"
                 />
+              </div>
+              <div className="flex items-center space-x-2 pt-2">
+                <input
+                  id="edit_allow_view_results"
+                  type="checkbox"
+                  checked={editAllowViewResults}
+                  onChange={e => setEditAllowViewResults(e.target.checked)}
+                  className="rounded border-(--outline-variant) text-primary focus:ring-primary h-4.5 w-4.5"
+                />
+                <Label htmlFor="edit_allow_view_results" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                  Allow voters to view results while voting is ongoing / closed
+                </Label>
               </div>
             </div>
 
