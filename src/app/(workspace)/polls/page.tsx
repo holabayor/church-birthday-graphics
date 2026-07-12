@@ -542,7 +542,10 @@ export default function PollsAdminPage() {
                   >
                     Who Can Vote?
                   </Label>
-                  <Select value={voterType} onValueChange={(val) => setVoterType(val as "anyone" | "members" | "workers" | "selected_groups")}>
+                  <Select
+                    value={voterType}
+                    onValueChange={val => setVoterType(val as "anyone" | "members" | "workers" | "selected_groups")}
+                  >
                     <SelectTrigger id="voter_type" className="h-11 bg-white border-(--outline-variant)">
                       <SelectValue placeholder="Select Voter Segment" />
                     </SelectTrigger>
@@ -727,7 +730,7 @@ export default function PollsAdminPage() {
               Failed to load results data.
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto px-5 py-5 max-h-[60vh] space-y-6">
+            <div className="flex-1 overflow-y-auto px-5 py-5 max-h-[60vh] space-y-6 bg-white">
               <div className="grid grid-cols-2 gap-4 p-4 rounded-xl border border-(--outline-variant) bg-slate-50/50 text-center">
                 <div>
                   <span className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Total Ballots</span>
