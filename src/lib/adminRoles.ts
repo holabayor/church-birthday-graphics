@@ -148,7 +148,7 @@ export const pageAccessDefinitions: PageAccessDefinition[] = [
   {
     key: "polls",
     label: "Polls",
-    path: "/polls",
+    path: "/polls/manage",
     description: "Manage voting polls, candidate nominations, and real-time voter turnout.",
     group: "Operations",
     visibilityPermissions: [PERMISSION.POLLS_MANAGE],
