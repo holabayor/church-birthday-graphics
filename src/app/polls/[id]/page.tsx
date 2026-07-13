@@ -177,7 +177,7 @@ export default function PublicPollPage() {
         description={poll.description || undefined}
         actions={
           <Button
-          variant="link"
+            variant="link"
             onClick={() => router.push("/polls")}
             // variant="ghost"
             // size="sm"
@@ -261,7 +261,7 @@ export default function PublicPollPage() {
                   /* Dynamic standings list */
                   <div className="space-y-6">
                     <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                      Current Tally Standings
+                      {isPollExpired ? "Final Results" : "Current Vote Results"}
                     </h4>
 
                     <div className="space-y-6">
