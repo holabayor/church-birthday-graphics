@@ -536,7 +536,7 @@ export default function PollsAdminPage() {
                           }}
                           className={`border-(--outline-variant) bg-white text-slate-700 hover:bg-(--surface-container) text-xs ${poll.status === "closed" ? "flex-1" : ""}`}
                         >
-                          Edit Period
+                          Edit Poll
                         </Button>
                       )}
                       <Button

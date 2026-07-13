@@ -19,7 +19,7 @@ export function PageHeader({ eyebrow, title, description, actions, meta, classNa
         className,
       )}
     >
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex gap-4 flex-row flex-wrap items-center justify-between">
         <div className="min-w-0">
           {eyebrow ? (
             <p className="font-mono text-[12px] font-medium uppercase leading-4 tracking-[0.05em] text-primary">

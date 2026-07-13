@@ -177,13 +177,14 @@ export default function PublicPollPage() {
         description={poll.description || undefined}
         actions={
           <Button
+          variant="link"
             onClick={() => router.push("/polls")}
             // variant="ghost"
             // size="sm"
             // className="-ml-3 h-8 text-(--outline) hover:bg-(--surface-container-low) rounded-md"
           >
-            <ArrowLeft className="mr-1.5 size-4" />
-            Back to Portal
+            <ArrowLeft className="size-4" />
+            Back to Polls
           </Button>
         }
         // meta={
