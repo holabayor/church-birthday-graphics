@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/page-header";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { getUnitIcon } from "@/lib/utils";
 import { UnitRole, unitRoleLabels } from "@/lib/unitRoles";
+import Link from "next/link";
 
 type Candidate = {
   id: string;
@@ -176,16 +177,10 @@ export default function PublicPollPage() {
         title={poll.title}
         description={poll.description || undefined}
         actions={
-          <Button
-            variant="link"
-            onClick={() => router.push("/polls")}
-            // variant="ghost"
-            // size="sm"
-            // className="-ml-3 h-8 text-(--outline) hover:bg-(--surface-container-low) rounded-md"
-          >
+          <Link href={"/polls"}>
             <ArrowLeft className="size-4" />
             Back to Polls
-          </Button>
+          </Link>
         }
         // meta={
         //   <div className="flex items-center gap-2">
