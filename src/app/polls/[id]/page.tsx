@@ -212,9 +212,9 @@ export default function PublicPollPage() {
       <main className="w-full space-y-6 p-4 md:p-8 pb-32">
         {/* Voting Deadline and Status Summary Card */}
         <div className="flex justify-between items-center bg-white border border-(--outline-variant)/60 px-5 py-4 rounded-2xl shadow-xs text-xs text-slate-500">
-          <span className="font-semibold text-slate-600">
+          {/* <span className="font-semibold text-slate-600">
             Voter Access: <span className="capitalize text-slate-800">{poll.voter_type.replace("_", " ")}</span>
-          </span>
+          </span> */}
           <span className="flex items-center gap-1.5 font-bold text-slate-700">
             <Calendar className="h-4 w-4 text-primary" />
             {deadlineStr}
