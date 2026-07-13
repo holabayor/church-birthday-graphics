@@ -97,7 +97,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const { data: existingVote } = await supabase
         .from("poll_votes")
         .select("id")
-        .eq("poll_id", pollId)
+        .eq("poll_id", poll.id)
         .eq("voter_member_id", memberId)
         .maybeSingle();
 
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       }
     } else {
       // Anonymous anti-cheat checks
-      let query = supabase.from("poll_votes").select("id").eq("poll_id", pollId);
+      let query = supabase.from("poll_votes").select("id").eq("poll_id", poll.id);
       if (fingerprint) {
         query = query.or(`voter_ip.eq.${ip},voter_fingerprint.eq.${fingerprint}`);
       } else {
@@ -123,7 +123,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { error: voteError } = await supabase
       .from("poll_votes")
       .insert({
-        poll_id: pollId,
+        poll_id: poll.id,
         candidate_id: candidateId,
         voter_member_id: memberId,
         voter_ip: ip,

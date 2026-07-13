@@ -2,7 +2,6 @@
 
 import { useState, type ReactNode } from "react";
 import {
-  BookOpen,
   BriefcaseBusiness,
   ChevronDown,
   Clock3,
@@ -10,14 +9,8 @@ import {
   MapPin,
   Phone,
   User,
-  Users,
   CheckCircle2,
   XCircle,
-  Music,
-  Video,
-  UserPlus,
-  Heart,
-  Shield,
   type LucideIcon,
 } from "lucide-react";
 
@@ -39,6 +32,7 @@ import {
   usesWorkProfile,
 } from "@/lib/memberLifecycle";
 import { getStudentStatusLabel } from "@/lib/studentStatus";
+import { getUnitIcon } from "@/lib/utils";
 
 type MemberDetailRecord = Partial<Member> & {
   id: string;
@@ -105,7 +99,8 @@ function formatBirthdayAndAge(dobString?: string | null) {
     if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
       age--;
     }
-    return `${formatted} (${age})`;
+    // return `${formatted} (${age})`;
+    return `${formatted}`;
   } catch {
     return dobString;
   }
@@ -119,18 +114,6 @@ function formatDateTime(date?: string | null) {
 function unitLabels(member: MemberDetailRecord, unitName?: string) {
   if (unitName && member.unit_role) return [{ id: "selected", name: unitName, role: member.unit_role }];
   return (member.units || []).map((unit: MemberUnitAssignment) => ({ id: unit.id, name: unit.name, role: unit.role }));
-}
-
-function getUnitIcon(unitName: string): LucideIcon {
-  const name = unitName.toLowerCase();
-  if (name.includes("choir") || name.includes("music") || name.includes("worship")) return Music;
-  if (name.includes("media") || name.includes("tech") || name.includes("sound")) return Video;
-  if (name.includes("usher") || name.includes("greeter")) return UserPlus;
-  if (name.includes("mentor") || name.includes("youth") || name.includes("care") || name.includes("welfare"))
-    return Heart;
-  if (name.includes("security") || name.includes("protocol")) return Shield;
-  if (name.includes("teach") || name.includes("sunday school") || name.includes("bible")) return BookOpen;
-  return Users;
 }
 
 function CollapsibleSection({

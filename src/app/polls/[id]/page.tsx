@@ -2,14 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { HelpCircle, Loader2, Calendar, AlertCircle, ArrowLeft, CheckCircle2, Search, User } from "lucide-react";
+import { HelpCircle, Loader2, Calendar, AlertCircle, ArrowLeft, CheckCircle2, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { getUnitIcon } from "@/lib/utils";
+import { UnitRole, unitRoleLabels } from "@/lib/unitRoles";
 
 type Candidate = {
   id: string;
@@ -18,7 +20,8 @@ type Candidate = {
   photo_url: string | null;
   nomination_reason: string | null;
   votes: number | null;
-  departments?: string[];
+  departments?: Array<{ name: string; role: string }>;
+  position?: string | null;
 };
 
 type Poll = {
@@ -48,7 +51,12 @@ export default function PublicPollPage() {
   const [selectedCandidate, setSelectedCandidate] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [fingerprint, setFingerprint] = useState("");
-  const [previewPhoto, setPreviewPhoto] = useState<{ url: string; name: string; depts: string[] } | null>(null);
+  const [previewCandidate, setPreviewCandidate] = useState<{
+    url: string;
+    name: string;
+    depts: Array<{ name: string; role: string }>;
+    position?: string | null;
+  } | null>(null);
 
   useEffect(() => {
     let fp = localStorage.getItem("poll_device_fingerprint");
@@ -213,18 +221,32 @@ export default function PublicPollPage() {
         </div>
 
         <div>
-          {hasVoted ? (
-            /* Voted Standings Mode */
+          {hasVoted || poll.status === "closed" || isPollExpired ? (
+            /* Standings / Results Mode */
             <div className="bg-white border border-(--outline-variant)/60 rounded-2xl shadow-xs overflow-hidden">
               <div className="p-6 md:p-8 border-b border-slate-100 bg-emerald-50/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3.5">
-                  <div className="h-12 w-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="h-6 w-6" />
+                  <div
+                    className={`h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                      poll.status === "closed" || isPollExpired
+                        ? "bg-blue-100 text-blue-600"
+                        : "bg-emerald-100 text-emerald-600"
+                    }`}
+                  >
+                    {poll.status === "closed" || isPollExpired ? (
+                      <Calendar className="h-6 w-6" />
+                    ) : (
+                      <CheckCircle2 className="h-6 w-6" />
+                    )}
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-slate-800 text-base">Your Vote is Cast</h3>
+                    <h3 className="font-extrabold text-slate-800 text-base">
+                      {poll.status === "closed" || isPollExpired ? "Voting Period Concluded" : "Your Vote is Cast"}
+                    </h3>
                     <p className="text-xs text-slate-400 font-medium mt-0.5">
-                      Thank you! Your selection is cryptographically registered.
+                      {poll.status === "closed" || isPollExpired
+                        ? "This poll has concluded. Final standings are displayed below."
+                        : "Thank you! Your selection is saved."}
                     </p>
                   </div>
                 </div>
@@ -234,7 +256,7 @@ export default function PublicPollPage() {
               </div>
 
               <div className="p-6 md:p-8 space-y-6">
-                {poll.allow_view_results ? (
+                {poll.allow_view_results || poll.status === "closed" || isPollExpired ? (
                   /* Dynamic standings list */
                   <div className="space-y-6">
                     <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
@@ -250,17 +272,20 @@ export default function PublicPollPage() {
                         return (
                           <div
                             key={cand.id}
-                            className="flex flex-col sm:flex-row sm:items-center gap-4 bg-slate-50/50 border border-slate-100 p-4 rounded-xl"
+                            className={`flex flex-col sm:flex-row sm:items-center gap-4 bg-slate-50/50 border p-4 rounded-xl ${
+                              isUserSelection ? "border-emerald-600 border-2" : "border-slate-100"
+                            }`}
                           >
                             {/* Nominee Profile info */}
-                            <div className="flex items-center gap-3 shrink-0 sm:w-1/3">
+                            <div className="flex items-center gap-3 shrink-0 sm:w-2/5">
                               <div
                                 onClick={e => {
                                   e.stopPropagation();
-                                  setPreviewPhoto({
+                                  setPreviewCandidate({
                                     url: cand.photo_url || "",
                                     name: cand.display_name,
                                     depts: cand.departments || [],
+                                    position: cand.position || null,
                                   });
                                 }}
                                 className="relative group shrink-0 cursor-zoom-in"
@@ -283,24 +308,20 @@ export default function PublicPollPage() {
                               <div className="min-w-0">
                                 <p className="font-bold text-slate-800 text-sm truncate flex items-center gap-1.5">
                                   {cand.display_name}
-                                  {isUserSelection && (
-                                    <Badge
-                                      variant="outline"
-                                      className="text-[9px] font-bold px-1.5 py-0 bg-emerald-100 text-emerald-700 border-emerald-200"
-                                    >
-                                      Selected
-                                    </Badge>
-                                  )}
                                 </p>
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                  {(cand.departments || []).map((dep, i) => (
-                                    <span
-                                      key={i}
-                                      className="text-[9px] bg-slate-200/50 text-slate-500 font-semibold px-1.5 py-0.5 rounded-md"
-                                    >
-                                      {dep}
-                                    </span>
-                                  ))}
+                                <div className="flex flex-wrap items-center gap-1">
+                                  {cand.departments?.map(unit => {
+                                    const UnitIcon = getUnitIcon(unit.name);
+                                    return (
+                                      <Badge
+                                        key={unit.name}
+                                        className="bg-(--surface-container) text-(--on-surface-variant) border border-(--outline-variant)/30 rounded-full px-2 py-0.5 text-xs font-medium shadow-none inline-flex items-center gap-1"
+                                      >
+                                        <UnitIcon className="h-2.5 w-2.5 text-primary" />
+                                        {unit.name} - {unitRoleLabels[unit.role as UnitRole] || unit.role}
+                                      </Badge>
+                                    );
+                                  })}
                                 </div>
                               </div>
                             </div>
@@ -373,10 +394,11 @@ export default function PublicPollPage() {
                         <div
                           onClick={e => {
                             e.stopPropagation();
-                            setPreviewPhoto({
+                            setPreviewCandidate({
                               url: cand.photo_url || "",
                               name: cand.display_name,
                               depts: cand.departments || [],
+                              position: cand.position || null,
                             });
                           }}
                           className="relative group/avatar shrink-0"
@@ -406,24 +428,19 @@ export default function PublicPollPage() {
                             {cand.display_name}
                           </h4>
 
-                          {/* Department chips */}
-                          <div className="flex flex-wrap gap-1">
-                            {(cand.departments || []).length > 0 ? (
-                              (cand.departments || []).map((dep, i) => (
-                                <span
-                                  key={i}
-                                  className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
-                                    isSelected
-                                      ? "bg-primary/10 text-primary"
-                                      : "bg-slate-100 text-slate-500 border border-slate-200/40"
-                                  }`}
+                          <div className="flex flex-wrap items-center gap-1">
+                            {cand.departments?.map(unit => {
+                              const UnitIcon = getUnitIcon(unit.name);
+                              return (
+                                <Badge
+                                  key={unit.name}
+                                  className="bg-(--surface-container) text-(--on-surface-variant) border border-(--outline-variant)/30 rounded-full px-2 py-0.5 text-xs font-medium shadow-none inline-flex items-center gap-1"
                                 >
-                                  {dep}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-[10px] text-slate-400 italic font-medium">No units assigned</span>
-                            )}
+                                  <UnitIcon className="h-2.5 w-2.5 text-primary" />
+                                  {unit.name} - {unitRoleLabels[unit.role as UnitRole] || unit.role}
+                                </Badge>
+                              );
+                            })}
                           </div>
 
                           {cand.nomination_reason && (
@@ -491,48 +508,59 @@ export default function PublicPollPage() {
 
       {/* Zoom Nominee Image Dialog */}
       <Dialog
-        open={!!previewPhoto}
+        open={!!previewCandidate}
         onOpenChange={open => {
-          if (!open) setPreviewPhoto(null);
+          if (!open) setPreviewCandidate(null);
         }}
       >
-        <DialogContent className="max-w-md p-0 overflow-hidden border-(--outline-variant) bg-white">
-          <DialogHeader className="p-6 pb-4 text-left border-b border-slate-100">
-            <DialogTitle className="font-headline text-lg font-bold text-slate-900">{previewPhoto?.name}</DialogTitle>
-            <div className="flex flex-wrap gap-1 mt-1.5">
-              {previewPhoto?.depts.map((d, i) => (
-                <span
-                  key={i}
-                  className="text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200/40 px-2 py-0.5 rounded-full"
-                >
-                  {d}
-                </span>
-              ))}
-            </div>
-          </DialogHeader>
-          <div className="relative aspect-square w-full bg-slate-50 flex items-center justify-center p-4">
-            {previewPhoto?.url ? (
-              <img
-                src={previewPhoto.url}
-                alt={previewPhoto?.name}
-                className="max-h-full max-w-full rounded-lg object-contain shadow-xs border border-slate-200/60"
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center text-slate-400">
-                <User className="size-16 stroke-1 mb-2" />
-                <span className="text-xs font-semibold">No profile image available</span>
-              </div>
-            )}
+        <DialogContent className="flex max-h-[60dvh] max-w-md h-full w-full p-0 overflow-hidden">
+          <div className="relative aspect-square w-full bg-slate-50 overflow-hidden flex items-center justify-center">
+            {previewCandidate ? (
+              <>
+                {previewCandidate?.url ? (
+                  <img
+                    src={previewCandidate.url}
+                    alt={previewCandidate?.name}
+                    className="h-full w-full object-cover object-center"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-primary/50 to-blue-100 text-lg text-white">
+                    No image available
+                  </div>
+                )}
+                {/* Gradient overlay at bottom for details */}
+                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent p-6 pt-20 text-white">
+                  {previewCandidate.name && (
+                    <p className="font-medium tracking-wider text-white/90 mb-1">{previewCandidate.name}</p>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    {previewCandidate.depts.map(unit => {
+                      const UnitIcon = getUnitIcon(unit.name);
+                      return (
+                        <Badge
+                          key={unit.name}
+                          className="bg-(--surface-container-low) text-(--on-surface-variant) border border-(--outline-variant)/30 rounded-full px-2.5 py-1 text-xs font-medium shadow-none inline-flex items-center gap-1"
+                        >
+                          <UnitIcon className="h-3 w-3 text-primary" />
+                          {unit.name} - {unitRoleLabels[unit.role as UnitRole] || unit.role}
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            ) : null}
           </div>
-          <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+          {/* <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
             <Button
-              onClick={() => setPreviewPhoto(null)}
+              onClick={() => setPreviewCandidate(null)}
               variant="outline"
               className="rounded-xl h-9.5 text-xs font-bold"
             >
               Close Preview
             </Button>
-          </div>
+          </div> */}
         </DialogContent>
       </Dialog>
     </div>

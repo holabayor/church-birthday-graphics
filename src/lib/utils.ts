@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { Member } from "./types";
+import { BookOpen, Users, Music, Video, UserPlus, Heart, Shield, type LucideIcon } from "lucide-react";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -24,10 +25,10 @@ export async function compressImage(file: File, maxW = 1200, maxH = 1200, qualit
     return file;
   }
 
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
-    reader.onload = (event) => {
+    reader.onload = event => {
       const img = new Image();
       img.src = event.target?.result as string;
       img.onload = () => {
@@ -58,7 +59,7 @@ export async function compressImage(file: File, maxW = 1200, maxH = 1200, qualit
 
         const outputType = file.type === "image/png" ? "image/png" : "image/jpeg";
         canvas.toBlob(
-          (blob) => {
+          blob => {
             if (blob && blob.size < file.size) {
               const compressedFile = new File([blob], file.name, {
                 type: outputType,
@@ -70,7 +71,7 @@ export async function compressImage(file: File, maxW = 1200, maxH = 1200, qualit
             }
           },
           outputType,
-          quality
+          quality,
         );
       };
       img.onerror = () => resolve(file);
@@ -92,4 +93,16 @@ export function slugify(text: string): string {
 
   const suffix = Math.random().toString(36).substring(2, 6);
   return `${base}-${suffix}`;
+}
+
+export function getUnitIcon(unitName: string): LucideIcon {
+  const name = unitName.toLowerCase();
+  if (name.includes("choir") || name.includes("music") || name.includes("worship")) return Music;
+  if (name.includes("media") || name.includes("tech") || name.includes("sound")) return Video;
+  if (name.includes("usher") || name.includes("greeter")) return UserPlus;
+  if (name.includes("mentor") || name.includes("youth") || name.includes("care") || name.includes("welfare"))
+    return Heart;
+  if (name.includes("security") || name.includes("protocol")) return Shield;
+  if (name.includes("teach") || name.includes("sunday school") || name.includes("bible")) return BookOpen;
+  return Users;
 }

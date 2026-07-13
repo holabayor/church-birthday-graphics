@@ -448,7 +448,7 @@ export default function UnitsPage() {
         </div>
 
         {/* Desktop Bottom Stat Cards Grid */}
-        <div className="hidden md:grid grid-cols-4 gap-6 mt-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
           {/* Card 1: Total Units */}
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between min-h-[120px]">
             <div className="flex items-center justify-between">

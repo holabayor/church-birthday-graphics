@@ -24,6 +24,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           first_name, 
           last_name, 
           photo_url, 
+          position,
           church_unit_members(
             role, 
             church_units(
@@ -67,13 +68,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   // 2. Fetch the votes data if admin or if the results are configured as viewable
   let votesData: any[] = [];
-  const showResults = isAdmin || poll.allow_view_results;
+  const showResults = isAdmin || poll.allow_view_results || poll.status === "closed";
 
   if (showResults) {
     const { data: votes, error: votesError } = await supabase
       .from("poll_votes")
       .select("candidate_id")
-      .eq("poll_id", pollId);
+      .eq("poll_id", poll.id);
     if (!votesError && votes) {
       votesData = votes;
     }
@@ -91,7 +92,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   });
 
   const candidatesWithVotes = poll.poll_candidates.map((cand: any) => {
-    const units = cand.members?.church_unit_members?.map((cum: any) => cum.church_units?.name).filter(Boolean) || [];
+    const units = cand.members?.church_unit_members?.map((cum: any) => ({
+      name: cum.church_units?.name,
+      role: cum.role,
+    })).filter((u: any) => !!u.name) || [];
     return {
       id: cand.id,
       poll_id: cand.poll_id,
@@ -102,6 +106,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       created_at: cand.created_at,
       votes: showResults ? votesCount[cand.id] : null,
       departments: units,
+      position: cand.members?.position || null,
     };
   });
 
@@ -114,7 +119,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const { data: memberVote } = await supabase
       .from("poll_votes")
       .select("candidate_id")
-      .eq("poll_id", pollId)
+      .eq("poll_id", poll.id)
       .eq("voter_member_id", memberId)
       .maybeSingle();
 
@@ -127,7 +132,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const ip = req.headers.get("x-forwarded-for") || "unknown";
     const fingerprint = req.nextUrl.searchParams.get("fingerprint") || "";
 
-    let query = supabase.from("poll_votes").select("candidate_id").eq("poll_id", pollId);
+    let query = supabase.from("poll_votes").select("candidate_id").eq("poll_id", poll.id);
     if (fingerprint) {
       query = query.or(`voter_ip.eq.${ip},voter_fingerprint.eq.${fingerprint}`);
     } else {

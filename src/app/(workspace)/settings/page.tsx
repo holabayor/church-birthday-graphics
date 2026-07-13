@@ -383,7 +383,7 @@ export default function SettingsPage() {
       <div className="w-full space-y-6 p-4 md:p-8">
         <Tabs defaultValue="general" className="w-full gap-6">
           <div className="overflow-x-auto rounded-xl border border-[var(--outline-variant)] bg-white p-2 shadow-sm">
-            <TabsList className="grid h-auto w-max min-w-full grid-cols-[repeat(3,minmax(140px,1fr))] gap-1 bg-transparent p-0">
+            <TabsList className="grid h-auto w-full grid-cols-3 gap-1 bg-transparent p-0">
               <TabsTrigger value="general" className={settingsTabClass}>
                 <Church className="h-4 w-4" />
                 Core

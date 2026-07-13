@@ -151,17 +151,15 @@ export default function PublicPollsDirectory() {
 
       <main className="w-full space-y-6 p-4 md:p-8">
         {/* Search Bar */}
-        <div className="flex items-center gap-4 bg-white p-2 rounded-2xl border border-(--outline-variant)/60 shadow-xs max-w-md">
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input
-              type="search"
-              placeholder="Search active polls..."
-              className="pl-10 h-11 border-none focus-visible:ring-0 bg-transparent text-sm"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-            />
-          </div>
+        <div className="flex items-center gap-4 bg-white rounded-2xl border border-(--outline-variant)/60 shadow-xs max-w-md relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            type="search"
+            placeholder="Search active polls..."
+            className="pl-10 h-10 border-none focus-visible:ring-0 bg-transparent text-sm"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
         </div>
 
         {/* Poll Grid */}
@@ -229,34 +227,36 @@ export default function PublicPollsDirectory() {
                       </div>
 
                       {/* Header block with Category Icon */}
-                      <div className="flex items-start gap-3.5 mb-3">
-                        <div className="size-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 text-slate-500">
+                      <div className="flex items-center gap-3.5 mb-3">
+                        <div className="size-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 text-slate-500">
                           <CategoryIcon className="size-5" />
                         </div>
                         <div className="min-w-0">
-                          <CardTitle className="text-base text-slate-900 font-bold tracking-tight line-clamp-1 leading-snug">
+                          <CardTitle className="text-base text-slate-900 font-bold tracking-tight line-clamp-2 leading-snug">
                             {poll.title}
                           </CardTitle>
-                          {/* <span className="text-[10px] font-bold text-slate-400 capitalize bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded-md mt-1 inline-block">
-                            {poll.voter_type.replace("_", " ")}
-                          </span> */}
                         </div>
                       </div>
 
                       {/* Description */}
-                      <CardDescription className="text-xs text-slate-500 line-clamp-2 leading-relaxed min-h-[2.25rem]">
-                        {poll.description || "No description provided."}
-                      </CardDescription>
+                      {poll.description && (
+                        <CardDescription className="text-xs text-slate-500 line-clamp-3 leading-relaxed min-h-[2.25rem]">
+                          {poll.description}
+                        </CardDescription>
+                      )}
                     </div>
 
                     {/* Footer Details */}
-                    <div className="pt-4 border-t border-slate-100 space-y-4">
+                    <div className="pt-2 border-t border-slate-200 space-y-4">
                       <div className="flex items-center justify-between">
                         {/* Overlapping Nominee Avatars */}
                         <div className="flex items-center">
-                          <div className="flex -space-x-2">
-                            {poll.poll_candidates.slice(0, 3).map((cand: any) => (
-                              <Avatar key={cand.id} className="size-8 md:size-10 border-2 border-white shadow-xs">
+                          <div className="flex -space-x-3">
+                            {poll.poll_candidates.slice(0, 3).map((cand: any, index: number) => (
+                              <Avatar
+                                key={cand.id}
+                                className={`size-10 border-2 border-white shadow-xs z-${index} relative`}
+                              >
                                 <AvatarImage src={cand.photo_url || ""} />
                                 <AvatarFallback className="bg-primary/5 text-primary text-[8px] font-bold">
                                   {cand.display_name.charAt(0)}
@@ -264,7 +264,7 @@ export default function PublicPollsDirectory() {
                               </Avatar>
                             ))}
                             {poll.poll_candidates.length > 3 && (
-                              <div className="size-8 md:size-10 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[8px] font-bold text-slate-500 shadow-xs z-10">
+                              <div className="size-10 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[8px] font-bold text-slate-500 shadow-xs z-10">
                                 +{poll.poll_candidates.length - 3}
                               </div>
                             )}
@@ -293,7 +293,7 @@ export default function PublicPollsDirectory() {
                       {/* Pill CTA button */}
                       <Button
                         disabled={!isEligible}
-                        className={`w-full h-9.5 rounded-xl font-bold text-xs shadow-none border transition-all duration-300 ${
+                        className={`w-full h-9.5 rounded-lg font-bold text-xs shadow-none border transition-all duration-300 ${
                           isVoted
                             ? "bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200"
                             : !isEligible

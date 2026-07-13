@@ -34,8 +34,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ data: rawPolls });
   }
 
-  // Guest or non-admin member sees only active polls
-  const activePolls = rawPolls.filter(poll => poll.status === "active");
+  // Guest or non-admin member sees active or closed polls
+  const activePolls = rawPolls.filter(poll => poll.status === "active" || poll.status === "closed");
 
   // Resolve member auth session details directly from cookies (bypassing loopback HTTP fetch)
   let memberId = cookieStore.get("member_id")?.value || null;

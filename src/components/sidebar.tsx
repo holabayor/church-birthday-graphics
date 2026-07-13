@@ -89,7 +89,7 @@ export function Sidebar() {
             if (pollsRes.ok) {
               const pollsData = await pollsRes.json();
               const activeEligible = (pollsData.data || []).some(
-                (p: any) => p.status === "active" && p.is_eligible !== false
+                (p: any) => p.status === "active" || p.is_eligible !== false
               );
               setHasActivePolls(activeEligible);
             }
