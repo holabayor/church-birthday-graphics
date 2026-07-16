@@ -1762,142 +1762,151 @@ export const designs: Array<{
       );
     }
   },
-
   {
     name: "Classic Alabaster",
-    render: ({ member, message, churchLogoUrl }) => (
-      <div
-        style={{
-          display: "flex",
-          width: 1080,
-          height: 1080,
-          background: "#f3f4f6",
-          overflow: "hidden",
-          fontFamily: "sans-serif",
-          position: "relative",
-        }}
-      >
-        <div style={{ position: "absolute", left: 30, bottom: 30, display: "flex" }}>
-          <svg width="60" height="60" viewBox="0 0 60 60" style={{ display: "flex", opacity: 0.25 }}>
-            <circle cx="6" cy="6" r="2.5" fill="#1f2937" />
-            <circle cx="22" cy="6" r="2.5" fill="#1f2937" />
-            <circle cx="38" cy="6" r="2.5" fill="#1f2937" />
-            <circle cx="54" cy="6" r="2.5" fill="#1f2937" />
-            <circle cx="6" cy="22" r="2.5" fill="#1f2937" />
-            <circle cx="22" cy="22" r="2.5" fill="#1f2937" />
-            <circle cx="38" cy="22" r="2.5" fill="#1f2937" />
-            <circle cx="54" cy="22" r="2.5" fill="#1f2937" />
-            <circle cx="6" cy="38" r="2.5" fill="#1f2937" />
-            <circle cx="22" cy="38" r="2.5" fill="#1f2937" />
-            <circle cx="38" cy="38" r="2.5" fill="#1f2937" />
-            <circle cx="54" cy="38" r="2.5" fill="#1f2937" />
-            <circle cx="6" cy="54" r="2.5" fill="#1f2937" />
-            <circle cx="22" cy="54" r="2.5" fill="#1f2937" />
-            <circle cx="38" cy="54" r="2.5" fill="#1f2937" />
-            <circle cx="54" cy="54" r="2.5" fill="#1f2937" />
-          </svg>
-        </div>
-        <div style={{ position: "absolute", right: 30, bottom: 30, display: "flex" }}>
-          <svg width="60" height="60" viewBox="0 0 60 60" style={{ display: "flex", opacity: 0.25 }}>
-            <circle cx="6" cy="6" r="2.5" fill="#1f2937" />
-            <circle cx="22" cy="6" r="2.5" fill="#1f2937" />
-            <circle cx="38" cy="6" r="2.5" fill="#1f2937" />
-            <circle cx="54" cy="6" r="2.5" fill="#1f2937" />
-            <circle cx="6" cy="22" r="2.5" fill="#1f2937" />
-            <circle cx="22" cy="22" r="2.5" fill="#1f2937" />
-            <circle cx="38" cy="22" r="2.5" fill="#1f2937" />
-            <circle cx="54" cy="22" r="2.5" fill="#1f2937" />
-            <circle cx="6" cy="38" r="2.5" fill="#1f2937" />
-            <circle cx="22" cy="38" r="2.5" fill="#1f2937" />
-            <circle cx="38" cy="38" r="2.5" fill="#1f2937" />
-            <circle cx="54" cy="38" r="2.5" fill="#1f2937" />
-            <circle cx="6" cy="54" r="2.5" fill="#1f2937" />
-            <circle cx="22" cy="54" r="2.5" fill="#1f2937" />
-            <circle cx="38" cy="54" r="2.5" fill="#1f2937" />
-            <circle cx="54" cy="54" r="2.5" fill="#1f2937" />
-          </svg>
-        </div>
+    render: ({ member, message, churchLogoUrl }) => {
+      const toTitleCase = (str: string) => {
+        return str
+          .toLowerCase()
+          .split(" ")
+          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ");
+      };
+      
+      const rawFullName = `${member.first_name || ""} ${member.middle_name || ""} ${member.last_name || ""}`.replace(/\s+/g, ' ').trim();
+      const fullName = toTitleCase(rawFullName);
 
+      return (
         <div
           style={{
             display: "flex",
-            width: "50%",
-            flexDirection: "column",
-            justifyContent: "center",
-            paddingLeft: 80,
-            paddingRight: 40,
-            zIndex: 10,
+            width: 1080,
+            height: 1080,
+            background: "#f3f4f6",
+            overflow: "hidden",
+            fontFamily: "sans-serif",
+            position: "relative",
           }}
         >
-          {churchLogoUrl && (
-            <div style={{ display: "flex", marginBottom: 50 }}>
-              <img src={churchLogoUrl} alt="Church Logo" height={90} style={{ objectFit: "contain" }} />
-            </div>
-          )}
-
+          {/* Left Column (The Text Stack - perfectly left-aligned) */}
           <div
             style={{
               display: "flex",
+              width: "50%",
               flexDirection: "column",
-              marginBottom: 40,
+              justifyContent: "center",
+              paddingLeft: 80,
+              paddingRight: 40,
+              zIndex: 10,
             }}
           >
-            <span style={{ fontSize: 40, fontWeight: 300, fontStyle: "italic", color: "#1f2937", lineHeight: 1 }}>happy</span>
-            <span style={{ fontSize: 64, fontWeight: 900, color: "#c5a86a", letterSpacing: 3, lineHeight: 1.1, marginTop: 4 }}>BIRTHDAY</span>
-          </div>
+            {churchLogoUrl && (
+              <div style={{ display: "flex", marginBottom: 40 }}>
+                <img src={churchLogoUrl} alt="Church Logo" height={90} style={{ objectFit: "contain" }} />
+              </div>
+            )}
 
-          <div style={{ display: "flex", flexDirection: "column", marginBottom: 35 }}>
-            <span style={{ fontSize: 72, fontWeight: 900, color: "#c5a86a", lineHeight: 0.5, marginBottom: 10 }}>“</span>
-            <span style={{ fontSize: 26, lineHeight: 1.6, color: "#4b5563" }}>{message}</span>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              width: 240,
-              height: 4,
-              background: "#c5a86a",
-              marginBottom: getDepartmentText(member) ? 20 : 35,
-            }}
-          />
-
-          {getDepartmentText(member) && (
+            {/* Date at the top of the stack */}
             <div
               style={{
                 display: "flex",
-                fontSize: 24,
+                fontFamily: "Montserrat",
+                fontSize: 18,
+                fontWeight: 700,
                 color: "#c5a86a",
-                fontWeight: 600,
-                fontStyle: "italic",
-                marginBottom: 20,
+                letterSpacing: 5,
+                marginBottom: 12,
               }}
             >
-              {getDepartmentText(member)}
+              {getBirthDate(member).toUpperCase()}
             </div>
-          )}
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={{ fontSize: 22, fontWeight: 800, color: "#1f2937" }}>
-              Born: {getBirthDate(member)}
-            </span>
+            {/* HAPPY BIRTHDAY Header */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                fontFamily: "Cinzel",
+                marginBottom: 18,
+              }}
+            >
+              <span style={{ fontSize: 44, fontWeight: 700, color: "#c5a86a", letterSpacing: 4, lineHeight: 1 }}>HAPPY</span>
+              <span style={{ fontSize: 32, fontWeight: 400, color: "#c5a86a", letterSpacing: 6, lineHeight: 1, marginTop: 4 }}>BIRTHDAY</span>
+            </div>
+
+            {/* Celebrant Name */}
+            <div
+              style={{
+                display: "flex",
+                fontFamily: "Cinzel",
+                fontSize: getNameFontSize(fullName, 46),
+                fontWeight: 700,
+                color: "#1e2022",
+                lineHeight: 1.2,
+                marginBottom: 12,
+              }}
+            >
+              {fullName}
+            </div>
+
+            {/* Department Label */}
+            {getDepartmentText(member) && (
+              <div
+                style={{
+                  display: "flex",
+                  fontFamily: "Montserrat",
+                  fontSize: 18,
+                  color: "#c5a86a",
+                  fontWeight: 700,
+                  letterSpacing: 4,
+                  textTransform: "uppercase",
+                  marginBottom: member.position ? 12 : 20,
+                }}
+              >
+                {getDepartmentText(member)}
+              </div>
+            )}
+
+            {/* Position Badge */}
+            {member.position && (
+              <div style={{ display: "flex", marginBottom: 20 }}>
+                <PositionBadge text={member.position} bg="#eae3d2" color="#a3874b" />
+              </div>
+            )}
+
+            {/* Thin Divider Line */}
+            <div
+              style={{
+                display: "flex",
+                width: 120,
+                height: 2,
+                background: "#c5a86a",
+                marginBottom: 24,
+              }}
+            />
+
+            {/* Prayer/Wish Copy */}
+            <div
+              style={{
+                display: "flex",
+                fontFamily: "Montserrat",
+                fontSize: 26,
+                lineHeight: 1.6,
+                color: "#4b5563",
+              }}
+            >
+              {message}
+            </div>
           </div>
-        </div>
 
-        <div
-          style={{
-            display: "flex",
-            width: "50%",
-            justifyContent: "center",
-            alignItems: "center",
-            paddingRight: 60,
-          }}
-        >
+          {/* Right Column (Clean framed photo with drop shadow) */}
           <div
             style={{
               display: "flex",
-              position: "relative",
-              width: 440,
-              height: 640,
+              width: "50%",
+              justifyContent: "center",
+              alignItems: "center",
+              paddingRight: 60,
             }}
           >
             <div
@@ -1906,7 +1915,7 @@ export const designs: Array<{
                 width: 440,
                 height: 640,
                 border: "8px solid #ffffff",
-                boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+                boxShadow: "0 15px 35px rgba(0,0,0,0.06)",
                 overflow: "hidden",
               }}
             >
@@ -1931,187 +1940,157 @@ export const designs: Array<{
                 />
               )}
             </div>
-
-            <div
-              style={{
-                position: "absolute",
-                left: -20,
-                bottom: 40,
-                width: 420,
-                background: "#c5a86a",
-                display: "flex",
-                flexDirection: "column",
-                padding: "16px 24px",
-                boxShadow: "5px 5px 15px rgba(0,0,0,0.15)",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: getNameFontSize(getDesignFullName(member), 26),
-                  fontWeight: 900,
-                  color: "#ffffff",
-                  textTransform: "uppercase",
-                  letterSpacing: "1px",
-                }}
-              >
-                {getDesignFullName(member)}
-              </span>
-              {member.position && (
-                <span
-                  style={{
-                    fontSize: 16,
-                    fontWeight: 700,
-                    color: "#f3f4f6",
-                    textTransform: "uppercase",
-                    letterSpacing: "2px",
-                    marginTop: 4,
-                  }}
-                >
-                  {member.position}
-                </span>
-              )}
-            </div>
           </div>
         </div>
-      </div>
-    ),
+      );
+    }
   },
 
   {
     name: "Obsidian Gold",
-    render: ({ member, message, churchLogoUrl }) => (
-      <div
-        style={{
-          display: "flex",
-          width: 1080,
-          height: 1080,
-          background: "#0b0d17",
-          overflow: "hidden",
-          fontFamily: "sans-serif",
-          position: "relative",
-        }}
-      >
-        <div style={{ position: "absolute", left: 30, bottom: 30, display: "flex" }}>
-          <svg width="60" height="60" viewBox="0 0 60 60" style={{ display: "flex", opacity: 0.15 }}>
-            <circle cx="6" cy="6" r="2.5" fill="#ffffff" />
-            <circle cx="22" cy="6" r="2.5" fill="#ffffff" />
-            <circle cx="38" cy="6" r="2.5" fill="#ffffff" />
-            <circle cx="54" cy="6" r="2.5" fill="#ffffff" />
-            <circle cx="6" cy="22" r="2.5" fill="#ffffff" />
-            <circle cx="22" cy="22" r="2.5" fill="#ffffff" />
-            <circle cx="38" cy="22" r="2.5" fill="#ffffff" />
-            <circle cx="54" cy="22" r="2.5" fill="#ffffff" />
-            <circle cx="6" cy="38" r="2.5" fill="#ffffff" />
-            <circle cx="22" cy="38" r="2.5" fill="#ffffff" />
-            <circle cx="38" cy="38" r="2.5" fill="#ffffff" />
-            <circle cx="54" cy="38" r="2.5" fill="#ffffff" />
-            <circle cx="6" cy="54" r="2.5" fill="#ffffff" />
-            <circle cx="22" cy="54" r="2.5" fill="#ffffff" />
-            <circle cx="38" cy="54" r="2.5" fill="#ffffff" />
-            <circle cx="54" cy="54" r="2.5" fill="#ffffff" />
-          </svg>
-        </div>
-        <div style={{ position: "absolute", right: 30, bottom: 30, display: "flex" }}>
-          <svg width="60" height="60" viewBox="0 0 60 60" style={{ display: "flex", opacity: 0.15 }}>
-            <circle cx="6" cy="6" r="2.5" fill="#ffffff" />
-            <circle cx="22" cy="6" r="2.5" fill="#ffffff" />
-            <circle cx="38" cy="6" r="2.5" fill="#ffffff" />
-            <circle cx="54" cy="6" r="2.5" fill="#ffffff" />
-            <circle cx="6" cy="22" r="2.5" fill="#ffffff" />
-            <circle cx="22" cy="22" r="2.5" fill="#ffffff" />
-            <circle cx="38" cy="22" r="2.5" fill="#ffffff" />
-            <circle cx="54" cy="22" r="2.5" fill="#ffffff" />
-            <circle cx="6" cy="38" r="2.5" fill="#ffffff" />
-            <circle cx="22" cy="38" r="2.5" fill="#ffffff" />
-            <circle cx="38" cy="38" r="2.5" fill="#ffffff" />
-            <circle cx="54" cy="38" r="2.5" fill="#ffffff" />
-            <circle cx="6" cy="54" r="2.5" fill="#ffffff" />
-            <circle cx="22" cy="54" r="2.5" fill="#ffffff" />
-            <circle cx="38" cy="54" r="2.5" fill="#ffffff" />
-            <circle cx="54" cy="54" r="2.5" fill="#ffffff" />
-          </svg>
-        </div>
+    render: ({ member, message, churchLogoUrl }) => {
+      const toTitleCase = (str: string) => {
+        return str
+          .toLowerCase()
+          .split(" ")
+          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ");
+      };
+      
+      const rawFullName = `${member.first_name || ""} ${member.middle_name || ""} ${member.last_name || ""}`.replace(/\s+/g, ' ').trim();
+      const fullName = toTitleCase(rawFullName);
 
+      return (
         <div
           style={{
             display: "flex",
-            width: "50%",
-            flexDirection: "column",
-            justifyContent: "center",
-            paddingLeft: 80,
-            paddingRight: 40,
-            zIndex: 10,
+            width: 1080,
+            height: 1080,
+            background: "#0b0d17",
+            overflow: "hidden",
+            fontFamily: "sans-serif",
+            position: "relative",
           }}
         >
-          {churchLogoUrl && (
-            <div style={{ display: "flex", marginBottom: 50 }}>
-              <img src={churchLogoUrl} alt="Church Logo" height={90} style={{ objectFit: "contain" }} />
-            </div>
-          )}
-
+          {/* Left Column (The Text Stack - perfectly left-aligned) */}
           <div
             style={{
               display: "flex",
+              width: "50%",
               flexDirection: "column",
-              marginBottom: 40,
+              justifyContent: "center",
+              paddingLeft: 80,
+              paddingRight: 40,
+              zIndex: 10,
             }}
           >
-            <span style={{ fontSize: 40, fontWeight: 300, fontStyle: "italic", color: "#ffffff", lineHeight: 1 }}>happy</span>
-            <span style={{ fontSize: 64, fontWeight: 900, color: "#c5a86a", letterSpacing: 3, lineHeight: 1.1, marginTop: 4 }}>BIRTHDAY</span>
-          </div>
+            {churchLogoUrl && (
+              <div style={{ display: "flex", marginBottom: 40 }}>
+                <img src={churchLogoUrl} alt="Church Logo" height={90} style={{ objectFit: "contain" }} />
+              </div>
+            )}
 
-          <div style={{ display: "flex", flexDirection: "column", marginBottom: 35 }}>
-            <span style={{ fontSize: 72, fontWeight: 900, color: "#c5a86a", lineHeight: 0.5, marginBottom: 10 }}>“</span>
-            <span style={{ fontSize: 26, lineHeight: 1.6, color: "#9ca3af" }}>{message}</span>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              width: 240,
-              height: 4,
-              background: "#c5a86a",
-              marginBottom: getDepartmentText(member) ? 20 : 35,
-            }}
-          />
-
-          {getDepartmentText(member) && (
+            {/* Date at the top of the stack */}
             <div
               style={{
                 display: "flex",
-                fontSize: 24,
+                fontFamily: "Montserrat",
+                fontSize: 18,
+                fontWeight: 700,
                 color: "#c5a86a",
-                fontWeight: 600,
-                fontStyle: "italic",
-                marginBottom: 20,
+                letterSpacing: 5,
+                marginBottom: 12,
               }}
             >
-              {getDepartmentText(member)}
+              {getBirthDate(member).toUpperCase()}
             </div>
-          )}
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={{ fontSize: 22, fontWeight: 800, color: "#ffffff" }}>
-              Born: {getBirthDate(member)}
-            </span>
+            {/* HAPPY BIRTHDAY Header */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                fontFamily: "Cinzel",
+                marginBottom: 18,
+              }}
+            >
+              <span style={{ fontSize: 44, fontWeight: 700, color: "#c5a86a", letterSpacing: 4, lineHeight: 1 }}>HAPPY</span>
+              <span style={{ fontSize: 32, fontWeight: 400, color: "#c5a86a", letterSpacing: 6, lineHeight: 1, marginTop: 4 }}>BIRTHDAY</span>
+            </div>
+
+            {/* Celebrant Name */}
+            <div
+              style={{
+                display: "flex",
+                fontFamily: "Cinzel",
+                fontSize: getNameFontSize(fullName, 46),
+                fontWeight: 700,
+                color: "#ffffff",
+                lineHeight: 1.2,
+                marginBottom: 12,
+              }}
+            >
+              {fullName}
+            </div>
+
+            {/* Department Label */}
+            {getDepartmentText(member) && (
+              <div
+                style={{
+                  display: "flex",
+                  fontFamily: "Montserrat",
+                  fontSize: 18,
+                  color: "#c5a86a",
+                  fontWeight: 700,
+                  letterSpacing: 4,
+                  textTransform: "uppercase",
+                  marginBottom: member.position ? 12 : 20,
+                }}
+              >
+                {getDepartmentText(member)}
+              </div>
+            )}
+
+            {/* Position Badge */}
+            {member.position && (
+              <div style={{ display: "flex", marginBottom: 20 }}>
+                <PositionBadge text={member.position} bg="#1e1e24" color="#c5a86a" />
+              </div>
+            )}
+
+            {/* Thin Divider Line */}
+            <div
+              style={{
+                display: "flex",
+                width: 120,
+                height: 2,
+                background: "#c5a86a",
+                marginBottom: 24,
+              }}
+            />
+
+            {/* Prayer/Wish Copy */}
+            <div
+              style={{
+                display: "flex",
+                fontFamily: "Montserrat",
+                fontSize: 26,
+                lineHeight: 1.6,
+                color: "#9ca3af",
+              }}
+            >
+              {message}
+            </div>
           </div>
-        </div>
 
-        <div
-          style={{
-            display: "flex",
-            width: "50%",
-            justifyContent: "center",
-            alignItems: "center",
-            paddingRight: 60,
-          }}
-        >
+          {/* Right Column (Clean framed photo with drop shadow) */}
           <div
             style={{
               display: "flex",
-              position: "relative",
-              width: 440,
-              height: 640,
+              width: "50%",
+              justifyContent: "center",
+              alignItems: "center",
+              paddingRight: 60,
             }}
           >
             <div
@@ -2120,7 +2099,7 @@ export const designs: Array<{
                 width: 440,
                 height: 640,
                 border: "8px solid #ffffff",
-                boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+                boxShadow: "0 15px 35px rgba(0,0,0,0.3)",
                 overflow: "hidden",
               }}
             >
@@ -2145,50 +2124,10 @@ export const designs: Array<{
                 />
               )}
             </div>
-
-            <div
-              style={{
-                position: "absolute",
-                left: -20,
-                bottom: 40,
-                width: 420,
-                background: "#c5a86a",
-                display: "flex",
-                flexDirection: "column",
-                padding: "16px 24px",
-                boxShadow: "5px 5px 15px rgba(0,0,0,0.3)",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: getNameFontSize(getDesignFullName(member), 26),
-                  fontWeight: 900,
-                  color: "#ffffff",
-                  textTransform: "uppercase",
-                  letterSpacing: "1px",
-                }}
-              >
-                {getDesignFullName(member)}
-              </span>
-              {member.position && (
-                <span
-                  style={{
-                    fontSize: 16,
-                    fontWeight: 700,
-                    color: "#f3f4f6",
-                    textTransform: "uppercase",
-                    letterSpacing: "2px",
-                    marginTop: 4,
-                  }}
-                >
-                  {member.position}
-                </span>
-              )}
-            </div>
           </div>
         </div>
-      </div>
-    ),
+      );
+    }
   },
 ];
 

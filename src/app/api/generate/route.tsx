@@ -10,15 +10,35 @@ import { Member } from "@/lib/types";
 import { SupabaseClient } from "@supabase/supabase-js";
 
 // ---------------------------------------------------------------------------
-// Font - loaded once from the local public directory (no network round-trip)
+// Fonts - loaded once from the local public directory (no network round-trip)
 // ---------------------------------------------------------------------------
-let fontCache: ArrayBuffer | null = null;
+interface FontsCache {
+  inter: ArrayBuffer;
+  cinzelRegular: ArrayBuffer;
+  cinzelBold: ArrayBuffer;
+  montserratRegular: ArrayBuffer;
+  montserratBold: ArrayBuffer;
+}
 
-function loadFont(): ArrayBuffer {
-  if (fontCache) return fontCache;
-  const fontPath = path.join(process.cwd(), "public", "inter-regular.ttf");
-  fontCache = fs.readFileSync(fontPath).buffer as ArrayBuffer;
-  return fontCache;
+let fontsCache: FontsCache | null = null;
+
+function loadFonts(): FontsCache {
+  if (fontsCache) return fontsCache;
+  
+  const loadFile = (filename: string) => {
+    const filePath = path.join(process.cwd(), "public", filename);
+    return fs.readFileSync(filePath).buffer as ArrayBuffer;
+  };
+
+  fontsCache = {
+    inter: loadFile("inter-regular.ttf"),
+    cinzelRegular: loadFile("Cinzel-Regular.ttf"),
+    cinzelBold: loadFile("Cinzel-Bold.ttf"),
+    montserratRegular: loadFile("Montserrat-Regular.ttf"),
+    montserratBold: loadFile("Montserrat-Bold.ttf"),
+  };
+  
+  return fontsCache;
 }
 
 // ---------------------------------------------------------------------------
@@ -80,7 +100,7 @@ export async function GET(req: NextRequest) {
     const supabase = createClient(cookieStore);
 
     // Run font load and logo fetch concurrently
-    const [fontData, churchLogoUrl] = await Promise.all([Promise.resolve(loadFont()), getChurchLogoUrl(supabase)]);
+    const [fonts, churchLogoUrl] = await Promise.all([Promise.resolve(loadFonts()), getChurchLogoUrl(supabase)]);
 
     const design = designs[designIndex % designs.length];
     const element = design.render({ member, message, churchLogoUrl });
@@ -88,7 +108,13 @@ export async function GET(req: NextRequest) {
     const svg = await satori(element, {
       width: 1080,
       height: 1080,
-      fonts: [{ name: "sans-serif", data: fontData, weight: 400, style: "normal" }],
+      fonts: [
+        { name: "sans-serif", data: fonts.inter, weight: 400, style: "normal" },
+        { name: "Cinzel", data: fonts.cinzelRegular, weight: 400, style: "normal" },
+        { name: "Cinzel", data: fonts.cinzelBold, weight: 700, style: "normal" },
+        { name: "Montserrat", data: fonts.montserratRegular, weight: 400, style: "normal" },
+        { name: "Montserrat", data: fonts.montserratBold, weight: 700, style: "normal" },
+      ],
     });
 
     // compressionLevel 6 + effort 1 = fast encode, good size balance
