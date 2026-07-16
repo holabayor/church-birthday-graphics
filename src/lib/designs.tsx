@@ -1479,6 +1479,749 @@ export const designs: Array<{
       </div>
     ),
   },
+
+  {
+    name: "Triptych Teal",
+    render: ({ member, message, churchLogoUrl }) => {
+      const dob = new Date(member.date_of_birth);
+      const day = dob.getDate();
+      const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+      const month = monthNames[dob.getMonth()] || "FEB";
+      
+      const nth = (d: number) => {
+        if (d > 3 && d < 21) return "TH";
+        switch (d % 10) {
+          case 1:  return "ST";
+          case 2:  return "ND";
+          case 3:  return "RD";
+          default: return "TH";
+        }
+      };
+
+      return (
+        <div
+          style={{
+            display: "flex",
+            width: 1080,
+            height: 1080,
+            background: "#ffffff",
+            overflow: "hidden",
+            fontFamily: "sans-serif",
+            position: "relative",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "56%",
+              height: "100%",
+              background: "#f0f2f5",
+              display: "flex",
+            }}
+          />
+
+          <div
+            style={{
+              position: "absolute",
+              width: 580,
+              height: 580,
+              borderRadius: 290,
+              background: "#e4e7eb",
+              left: 30,
+              top: 150,
+              display: "flex",
+            }}
+          />
+
+          <div
+            style={{
+              position: "absolute",
+              width: 50,
+              height: 50,
+              borderRadius: 25,
+              background: "radial-gradient(circle, #06b6d4 0%, #0891b2 100%)",
+              left: 60,
+              top: 60,
+              display: "flex",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              width: 24,
+              height: 24,
+              borderRadius: 12,
+              background: "#facc15",
+              left: 120,
+              top: 120,
+              display: "flex",
+            }}
+          />
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              width: "56%",
+              height: "100%",
+              justifyContent: "center",
+              alignItems: "center",
+              paddingTop: 40,
+              zIndex: 10,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                position: "relative",
+                width: 440,
+                height: 680,
+                borderRadius: "220px 220px 0 0",
+                overflow: "hidden",
+                border: "4px solid #ffffff",
+                boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+              }}
+            >
+              {member.photo_url ? (
+                <img
+                  src={member.photo_url}
+                  alt="Member"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    display: "flex",
+                    width: "100%",
+                    height: "100%",
+                    background: "#0891b2",
+                  }}
+                />
+              )}
+
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  top: 0,
+                  width: 130,
+                  height: "100%",
+                  background: "linear-gradient(to bottom, rgba(6,182,212,0.4), rgba(8,145,178,0.75))",
+                  display: "flex",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  right: 0,
+                  top: 0,
+                  width: 130,
+                  height: "100%",
+                  background: "linear-gradient(to bottom, rgba(6,182,212,0.4), rgba(8,145,178,0.75))",
+                  display: "flex",
+                }}
+              />
+
+              <div
+                style={{
+                  position: "absolute",
+                  left: 130,
+                  top: 0,
+                  width: 14,
+                  height: "100%",
+                  background: "#ffffff",
+                  display: "flex",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  left: 296,
+                  top: 0,
+                  width: 14,
+                  height: "100%",
+                  background: "#ffffff",
+                  display: "flex",
+                }}
+              />
+
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  top: 40,
+                  width: 130,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  color: "#ffffff",
+                }}
+              >
+                <span style={{ fontSize: 36, fontWeight: 900, lineHeight: 1 }}>{day}{nth(day)}</span>
+                <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: 1.5, marginTop: 4 }}>{month}</span>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                fontSize: getNameFontSize(getDesignFullName(member), 42),
+                fontWeight: 900,
+                color: "#111827",
+                marginTop: 35,
+                textAlign: "center",
+              }}
+            >
+              {getDesignFullName(member)}
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              width: "44%",
+              flexDirection: "column",
+              justifyContent: "center",
+              paddingLeft: 60,
+              paddingRight: 60,
+              zIndex: 10,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 30 }}>
+              <svg width="150" height="180" viewBox="0 0 180 240" fill="none" style={{ display: "flex" }}>
+                <ellipse cx="60" cy="80" rx="30" ry="40" fill="#3b82f6" opacity="0.85" />
+                <path d="M60 120 L80 190" stroke="#94a3b8" strokeWidth="2" />
+                <ellipse cx="120" cy="80" rx="30" ry="40" fill="#22d3ee" opacity="0.85" />
+                <path d="M120 120 L100 190" stroke="#94a3b8" strokeWidth="2" />
+                <ellipse cx="90" cy="70" rx="32" ry="42" fill="#06b6d4" />
+                <path d="M90 112 L90 195" stroke="#64748b" strokeWidth="2" />
+                <polygon points="60,120 57,125 63,125" fill="#2563eb" />
+                <polygon points="120,120 117,125 123,125" fill="#0891b2" />
+                <polygon points="90,112 87,117 93,117" fill="#0891b2" />
+              </svg>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                textAlign: "center",
+                width: "100%",
+              }}
+            >
+              <span style={{ fontSize: 44, fontWeight: 300, color: "#1f2937", lineHeight: 1.1 }}>Happy</span>
+              <span style={{ fontSize: 62, fontWeight: 900, color: "#111827", letterSpacing: 2, lineHeight: 1 }}>BIRTHDAY</span>
+              {member.position && (
+                <span style={{ fontSize: 44, fontWeight: 800, color: "#0891b2", textTransform: "uppercase", marginTop: 4 }}>
+                  {member.position}
+                </span>
+              )}
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                width: 100,
+                height: 4,
+                background: "#06b6d4",
+                alignSelf: "center",
+                marginTop: 25,
+                marginBottom: getDepartmentText(member) ? 16 : 25,
+              }}
+            />
+
+            {getDepartmentText(member) && (
+              <div
+                style={{
+                  display: "flex",
+                  fontSize: 22,
+                  color: "#0891b2",
+                  fontWeight: 600,
+                  fontStyle: "italic",
+                  alignSelf: "center",
+                  marginBottom: 20,
+                }}
+              >
+                {getDepartmentText(member)}
+              </div>
+            )}
+
+            <div
+              style={{
+                display: "flex",
+                fontSize: 26,
+                lineHeight: 1.6,
+                color: "#4b5563",
+                textAlign: "center",
+              }}
+            >
+              {message}
+            </div>
+
+            <div
+              style={{
+                position: "absolute",
+                width: 20,
+                height: 20,
+                borderRadius: 10,
+                background: "#facc15",
+                right: 140,
+                bottom: 80,
+                display: "flex",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                background: "radial-gradient(circle, #06b6d4 0%, #0891b2 100%)",
+                right: 60,
+                bottom: 40,
+                display: "flex",
+              }}
+            />
+          </div>
+        </div>
+      );
+    }
+  },
+
+  {
+    name: "Classic Alabaster",
+    render: ({ member, message, churchLogoUrl }) => (
+      <div
+        style={{
+          display: "flex",
+          width: 1080,
+          height: 1080,
+          background: "#f3f4f6",
+          overflow: "hidden",
+          fontFamily: "sans-serif",
+          position: "relative",
+        }}
+      >
+        <div style={{ position: "absolute", left: 30, bottom: 30, display: "flex" }}>
+          <svg width="60" height="60" viewBox="0 0 60 60" style={{ display: "flex", opacity: 0.25 }}>
+            <circle cx="6" cy="6" r="2.5" fill="#1f2937" />
+            <circle cx="22" cy="6" r="2.5" fill="#1f2937" />
+            <circle cx="38" cy="6" r="2.5" fill="#1f2937" />
+            <circle cx="54" cy="6" r="2.5" fill="#1f2937" />
+            <circle cx="6" cy="22" r="2.5" fill="#1f2937" />
+            <circle cx="22" cy="22" r="2.5" fill="#1f2937" />
+            <circle cx="38" cy="22" r="2.5" fill="#1f2937" />
+            <circle cx="54" cy="22" r="2.5" fill="#1f2937" />
+            <circle cx="6" cy="38" r="2.5" fill="#1f2937" />
+            <circle cx="22" cy="38" r="2.5" fill="#1f2937" />
+            <circle cx="38" cy="38" r="2.5" fill="#1f2937" />
+            <circle cx="54" cy="38" r="2.5" fill="#1f2937" />
+            <circle cx="6" cy="54" r="2.5" fill="#1f2937" />
+            <circle cx="22" cy="54" r="2.5" fill="#1f2937" />
+            <circle cx="38" cy="54" r="2.5" fill="#1f2937" />
+            <circle cx="54" cy="54" r="2.5" fill="#1f2937" />
+          </svg>
+        </div>
+        <div style={{ position: "absolute", right: 30, bottom: 30, display: "flex" }}>
+          <svg width="60" height="60" viewBox="0 0 60 60" style={{ display: "flex", opacity: 0.25 }}>
+            <circle cx="6" cy="6" r="2.5" fill="#1f2937" />
+            <circle cx="22" cy="6" r="2.5" fill="#1f2937" />
+            <circle cx="38" cy="6" r="2.5" fill="#1f2937" />
+            <circle cx="54" cy="6" r="2.5" fill="#1f2937" />
+            <circle cx="6" cy="22" r="2.5" fill="#1f2937" />
+            <circle cx="22" cy="22" r="2.5" fill="#1f2937" />
+            <circle cx="38" cy="22" r="2.5" fill="#1f2937" />
+            <circle cx="54" cy="22" r="2.5" fill="#1f2937" />
+            <circle cx="6" cy="38" r="2.5" fill="#1f2937" />
+            <circle cx="22" cy="38" r="2.5" fill="#1f2937" />
+            <circle cx="38" cy="38" r="2.5" fill="#1f2937" />
+            <circle cx="54" cy="38" r="2.5" fill="#1f2937" />
+            <circle cx="6" cy="54" r="2.5" fill="#1f2937" />
+            <circle cx="22" cy="54" r="2.5" fill="#1f2937" />
+            <circle cx="38" cy="54" r="2.5" fill="#1f2937" />
+            <circle cx="54" cy="54" r="2.5" fill="#1f2937" />
+          </svg>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            width: "50%",
+            flexDirection: "column",
+            justifyContent: "center",
+            paddingLeft: 80,
+            paddingRight: 40,
+            zIndex: 10,
+          }}
+        >
+          {churchLogoUrl && (
+            <div style={{ display: "flex", marginBottom: 50 }}>
+              <img src={churchLogoUrl} alt="Church Logo" height={90} style={{ objectFit: "contain" }} />
+            </div>
+          )}
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              marginBottom: 40,
+            }}
+          >
+            <span style={{ fontSize: 40, fontWeight: 300, fontStyle: "italic", color: "#1f2937", lineHeight: 1 }}>happy</span>
+            <span style={{ fontSize: 64, fontWeight: 900, color: "#c5a86a", letterSpacing: 3, lineHeight: 1.1, marginTop: 4 }}>BIRTHDAY</span>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", marginBottom: 35 }}>
+            <span style={{ fontSize: 72, fontWeight: 900, color: "#c5a86a", lineHeight: 0.5, marginBottom: 10 }}>“</span>
+            <span style={{ fontSize: 26, lineHeight: 1.6, color: "#4b5563" }}>{message}</span>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              width: 240,
+              height: 4,
+              background: "#c5a86a",
+              marginBottom: getDepartmentText(member) ? 20 : 35,
+            }}
+          />
+
+          {getDepartmentText(member) && (
+            <div
+              style={{
+                display: "flex",
+                fontSize: 24,
+                color: "#c5a86a",
+                fontWeight: 600,
+                fontStyle: "italic",
+                marginBottom: 20,
+              }}
+            >
+              {getDepartmentText(member)}
+            </div>
+          )}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={{ fontSize: 22, fontWeight: 800, color: "#1f2937" }}>
+              Born: {getBirthDate(member)}
+            </span>
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            width: "50%",
+            justifyContent: "center",
+            alignItems: "center",
+            paddingRight: 60,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              position: "relative",
+              width: 440,
+              height: 640,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                width: 440,
+                height: 640,
+                border: "8px solid #ffffff",
+                boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+                overflow: "hidden",
+              }}
+            >
+              {member.photo_url ? (
+                <img
+                  src={member.photo_url}
+                  alt="Member"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    display: "flex",
+                    width: "100%",
+                    height: "100%",
+                    background: "#eae7e2",
+                  }}
+                />
+              )}
+            </div>
+
+            <div
+              style={{
+                position: "absolute",
+                left: -20,
+                bottom: 40,
+                width: 420,
+                background: "#c5a86a",
+                display: "flex",
+                flexDirection: "column",
+                padding: "16px 24px",
+                boxShadow: "5px 5px 15px rgba(0,0,0,0.15)",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: getNameFontSize(getDesignFullName(member), 26),
+                  fontWeight: 900,
+                  color: "#ffffff",
+                  textTransform: "uppercase",
+                  letterSpacing: "1px",
+                }}
+              >
+                {getDesignFullName(member)}
+              </span>
+              {member.position && (
+                <span
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: "#f3f4f6",
+                    textTransform: "uppercase",
+                    letterSpacing: "2px",
+                    marginTop: 4,
+                  }}
+                >
+                  {member.position}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+
+  {
+    name: "Obsidian Gold",
+    render: ({ member, message, churchLogoUrl }) => (
+      <div
+        style={{
+          display: "flex",
+          width: 1080,
+          height: 1080,
+          background: "#0b0d17",
+          overflow: "hidden",
+          fontFamily: "sans-serif",
+          position: "relative",
+        }}
+      >
+        <div style={{ position: "absolute", left: 30, bottom: 30, display: "flex" }}>
+          <svg width="60" height="60" viewBox="0 0 60 60" style={{ display: "flex", opacity: 0.15 }}>
+            <circle cx="6" cy="6" r="2.5" fill="#ffffff" />
+            <circle cx="22" cy="6" r="2.5" fill="#ffffff" />
+            <circle cx="38" cy="6" r="2.5" fill="#ffffff" />
+            <circle cx="54" cy="6" r="2.5" fill="#ffffff" />
+            <circle cx="6" cy="22" r="2.5" fill="#ffffff" />
+            <circle cx="22" cy="22" r="2.5" fill="#ffffff" />
+            <circle cx="38" cy="22" r="2.5" fill="#ffffff" />
+            <circle cx="54" cy="22" r="2.5" fill="#ffffff" />
+            <circle cx="6" cy="38" r="2.5" fill="#ffffff" />
+            <circle cx="22" cy="38" r="2.5" fill="#ffffff" />
+            <circle cx="38" cy="38" r="2.5" fill="#ffffff" />
+            <circle cx="54" cy="38" r="2.5" fill="#ffffff" />
+            <circle cx="6" cy="54" r="2.5" fill="#ffffff" />
+            <circle cx="22" cy="54" r="2.5" fill="#ffffff" />
+            <circle cx="38" cy="54" r="2.5" fill="#ffffff" />
+            <circle cx="54" cy="54" r="2.5" fill="#ffffff" />
+          </svg>
+        </div>
+        <div style={{ position: "absolute", right: 30, bottom: 30, display: "flex" }}>
+          <svg width="60" height="60" viewBox="0 0 60 60" style={{ display: "flex", opacity: 0.15 }}>
+            <circle cx="6" cy="6" r="2.5" fill="#ffffff" />
+            <circle cx="22" cy="6" r="2.5" fill="#ffffff" />
+            <circle cx="38" cy="6" r="2.5" fill="#ffffff" />
+            <circle cx="54" cy="6" r="2.5" fill="#ffffff" />
+            <circle cx="6" cy="22" r="2.5" fill="#ffffff" />
+            <circle cx="22" cy="22" r="2.5" fill="#ffffff" />
+            <circle cx="38" cy="22" r="2.5" fill="#ffffff" />
+            <circle cx="54" cy="22" r="2.5" fill="#ffffff" />
+            <circle cx="6" cy="38" r="2.5" fill="#ffffff" />
+            <circle cx="22" cy="38" r="2.5" fill="#ffffff" />
+            <circle cx="38" cy="38" r="2.5" fill="#ffffff" />
+            <circle cx="54" cy="38" r="2.5" fill="#ffffff" />
+            <circle cx="6" cy="54" r="2.5" fill="#ffffff" />
+            <circle cx="22" cy="54" r="2.5" fill="#ffffff" />
+            <circle cx="38" cy="54" r="2.5" fill="#ffffff" />
+            <circle cx="54" cy="54" r="2.5" fill="#ffffff" />
+          </svg>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            width: "50%",
+            flexDirection: "column",
+            justifyContent: "center",
+            paddingLeft: 80,
+            paddingRight: 40,
+            zIndex: 10,
+          }}
+        >
+          {churchLogoUrl && (
+            <div style={{ display: "flex", marginBottom: 50 }}>
+              <img src={churchLogoUrl} alt="Church Logo" height={90} style={{ objectFit: "contain" }} />
+            </div>
+          )}
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              marginBottom: 40,
+            }}
+          >
+            <span style={{ fontSize: 40, fontWeight: 300, fontStyle: "italic", color: "#ffffff", lineHeight: 1 }}>happy</span>
+            <span style={{ fontSize: 64, fontWeight: 900, color: "#c5a86a", letterSpacing: 3, lineHeight: 1.1, marginTop: 4 }}>BIRTHDAY</span>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", marginBottom: 35 }}>
+            <span style={{ fontSize: 72, fontWeight: 900, color: "#c5a86a", lineHeight: 0.5, marginBottom: 10 }}>“</span>
+            <span style={{ fontSize: 26, lineHeight: 1.6, color: "#9ca3af" }}>{message}</span>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              width: 240,
+              height: 4,
+              background: "#c5a86a",
+              marginBottom: getDepartmentText(member) ? 20 : 35,
+            }}
+          />
+
+          {getDepartmentText(member) && (
+            <div
+              style={{
+                display: "flex",
+                fontSize: 24,
+                color: "#c5a86a",
+                fontWeight: 600,
+                fontStyle: "italic",
+                marginBottom: 20,
+              }}
+            >
+              {getDepartmentText(member)}
+            </div>
+          )}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={{ fontSize: 22, fontWeight: 800, color: "#ffffff" }}>
+              Born: {getBirthDate(member)}
+            </span>
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            width: "50%",
+            justifyContent: "center",
+            alignItems: "center",
+            paddingRight: 60,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              position: "relative",
+              width: 440,
+              height: 640,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                width: 440,
+                height: 640,
+                border: "8px solid #ffffff",
+                boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+                overflow: "hidden",
+              }}
+            >
+              {member.photo_url ? (
+                <img
+                  src={member.photo_url}
+                  alt="Member"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    display: "flex",
+                    width: "100%",
+                    height: "100%",
+                    background: "#1e1e24",
+                  }}
+                />
+              )}
+            </div>
+
+            <div
+              style={{
+                position: "absolute",
+                left: -20,
+                bottom: 40,
+                width: 420,
+                background: "#c5a86a",
+                display: "flex",
+                flexDirection: "column",
+                padding: "16px 24px",
+                boxShadow: "5px 5px 15px rgba(0,0,0,0.3)",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: getNameFontSize(getDesignFullName(member), 26),
+                  fontWeight: 900,
+                  color: "#ffffff",
+                  textTransform: "uppercase",
+                  letterSpacing: "1px",
+                }}
+              >
+                {getDesignFullName(member)}
+              </span>
+              {member.position && (
+                <span
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: "#f3f4f6",
+                    textTransform: "uppercase",
+                    letterSpacing: "2px",
+                    marginTop: 4,
+                  }}
+                >
+                  {member.position}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    ),
+  },
 ];
 
 export const defaultMessages = [
