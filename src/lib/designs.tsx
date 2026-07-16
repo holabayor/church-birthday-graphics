@@ -934,6 +934,559 @@ export const designs: Array<{
       </div>
     ),
   },
+
+  {
+    name: "Sunset Minimalist",
+    render: ({ member, message, churchLogoUrl }) => (
+      <div
+        style={{
+          display: "flex",
+          width: 1080,
+          height: 1080,
+          background: "#2d141b",
+          overflow: "hidden",
+          fontFamily: "sans-serif",
+          position: "relative",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            position: "absolute",
+            width: 700,
+            height: 700,
+            borderRadius: 350,
+            background: "radial-gradient(circle, rgba(226,186,115,0.06) 0%, transparent 70%)",
+            left: -150,
+            bottom: -150,
+          }}
+        />
+
+        <div
+          style={{
+            display: "flex",
+            width: "46%",
+            justifyContent: "center",
+            alignItems: "center",
+            paddingLeft: 60,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              position: "relative",
+              width: 420,
+              height: 660,
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: 20,
+                left: 20,
+                width: 420,
+                height: 660,
+                border: "3px solid #e2ba73",
+                borderRadius: 16,
+              }}
+            />
+            <div
+              style={{
+                display: "flex",
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: 420,
+                height: 660,
+                borderRadius: 16,
+                overflow: "hidden",
+                border: "4px solid #ffffff",
+              }}
+            >
+              {member.photo_url ? (
+                <img
+                  src={member.photo_url}
+                  alt="Member"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    display: "flex",
+                    width: "100%",
+                    height: "100%",
+                    background: "#3c1b24",
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            width: "54%",
+            flexDirection: "column",
+            justifyContent: "center",
+            paddingLeft: 60,
+            paddingRight: 80,
+            zIndex: 10,
+          }}
+        >
+          {churchLogoUrl && (
+            <div style={{ display: "flex", marginBottom: 40 }}>
+              <img src={churchLogoUrl} alt="Church Logo" height={90} style={{ objectFit: "contain" }} />
+            </div>
+          )}
+
+          <div
+            style={{
+              display: "flex",
+              fontSize: 20,
+              color: "#e2ba73",
+              letterSpacing: 6,
+              marginBottom: 16,
+            }}
+          >
+            HAPPY BIRTHDAY
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              fontSize: getNameFontSize(getDesignFullName(member), 80),
+              lineHeight: 1.1,
+              fontWeight: 800,
+              color: "#ffffff",
+              marginBottom: getDepartmentText(member) ? 14 : (member.position ? 18 : 28),
+            }}
+          >
+            {getDesignFullName(member)}
+          </div>
+
+          {getDepartmentText(member) && (
+            <div
+              style={{
+                display: "flex",
+                fontSize: 24,
+                color: "#e2ba73",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "3px",
+                marginBottom: member.position ? 18 : 28,
+              }}
+            >
+              {getDepartmentText(member)}
+            </div>
+          )}
+
+          {member.position && (
+            <div style={{ display: "flex", marginBottom: 28 }}>
+              <PositionBadge text={member.position} bg="#3c1b24" color="#e2ba73" />
+            </div>
+          )}
+
+          <div
+            style={{
+              display: "flex",
+              width: 100,
+              height: 4,
+              background: "#e2ba73",
+              marginBottom: 30,
+            }}
+          />
+
+          <div
+            style={{
+              display: "flex",
+              fontSize: 26,
+              lineHeight: 1.6,
+              color: "#dcd2d4",
+              marginBottom: 36,
+            }}
+          >
+            {message}
+          </div>
+
+          <div style={{ display: "flex" }}>
+            <div
+              style={{
+                display: "flex",
+                padding: "12px 32px",
+                background: "#e2ba73",
+                color: "#2d141b",
+                borderRadius: 8,
+                fontSize: 26,
+                fontWeight: 800,
+                letterSpacing: 2,
+              }}
+            >
+              {getBirthDate(member)}
+            </div>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+
+  {
+    name: "Glow Cyber",
+    render: ({ member, message, churchLogoUrl }) => (
+      <div
+        style={{
+          display: "flex",
+          width: 1080,
+          height: 1080,
+          background: "#070913",
+          overflow: "hidden",
+          fontFamily: "sans-serif",
+          position: "relative",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            position: "absolute",
+            width: 600,
+            height: 600,
+            borderRadius: 300,
+            background: "radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%)",
+            right: -100,
+            top: -100,
+          }}
+        />
+        <div
+          style={{
+            display: "flex",
+            position: "absolute",
+            width: 500,
+            height: 500,
+            borderRadius: 250,
+            background: "radial-gradient(circle, rgba(6,182,212,0.1) 0%, transparent 70%)",
+            left: -100,
+            bottom: -100,
+          }}
+        />
+
+        <div
+          style={{
+            display: "flex",
+            width: "56%",
+            flexDirection: "column",
+            justifyContent: "center",
+            paddingLeft: 80,
+            paddingRight: 40,
+            zIndex: 10,
+          }}
+        >
+          {churchLogoUrl && (
+            <div style={{ display: "flex", marginBottom: 40 }}>
+              <img src={churchLogoUrl} alt="Church Logo" height={90} style={{ objectFit: "contain" }} />
+            </div>
+          )}
+
+          <div
+            style={{
+              display: "flex",
+              fontSize: 20,
+              color: "#06b6d4",
+              letterSpacing: 6,
+              marginBottom: 16,
+            }}
+          >
+            HAPPY BIRTHDAY
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              fontSize: getNameFontSize(getDesignFullName(member), 80),
+              lineHeight: 1.1,
+              fontWeight: 800,
+              color: "#ffffff",
+              marginBottom: getDepartmentText(member) ? 14 : (member.position ? 18 : 28),
+            }}
+          >
+            {getDesignFullName(member)}
+          </div>
+
+          {getDepartmentText(member) && (
+            <div
+              style={{
+                display: "flex",
+                fontSize: 24,
+                color: "#06b6d4",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "3px",
+                marginBottom: member.position ? 18 : 28,
+              }}
+            >
+              {getDepartmentText(member)}
+            </div>
+          )}
+
+          {member.position && (
+            <div style={{ display: "flex", marginBottom: 28 }}>
+              <PositionBadge text={member.position} bg="#161329" color="#a78bfa" />
+            </div>
+          )}
+
+          <div
+            style={{
+              display: "flex",
+              width: 100,
+              height: 4,
+              background: "linear-gradient(90deg, #8b5cf6, #06b6d4)",
+              marginBottom: 30,
+            }}
+          />
+
+          <div
+            style={{
+              display: "flex",
+              fontSize: 26,
+              lineHeight: 1.6,
+              color: "#9ca3af",
+              marginBottom: 36,
+            }}
+          >
+            {message}
+          </div>
+
+          <div style={{ display: "flex" }}>
+            <div
+              style={{
+                display: "flex",
+                padding: "12px 32px",
+                background: "linear-gradient(90deg, #8b5cf6, #06b6d4)",
+                color: "#ffffff",
+                borderRadius: 8,
+                fontSize: 26,
+                fontWeight: 800,
+                letterSpacing: 2,
+              }}
+            >
+              {getBirthDate(member)}
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            width: "44%",
+            justifyContent: "center",
+            alignItems: "center",
+            paddingRight: 60,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              position: "relative",
+              width: 420,
+              height: 640,
+              borderRadius: 30,
+              overflow: "hidden",
+              border: "4px solid #8b5cf6",
+            }}
+          >
+            {member.photo_url ? (
+              <img
+                src={member.photo_url}
+                alt="Member"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  display: "flex",
+                  width: "100%",
+                  height: "100%",
+                  background: "#161329",
+                }}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    ),
+  },
+
+  {
+    name: "Ivory Luxury",
+    render: ({ member, message, churchLogoUrl }) => (
+      <div
+        style={{
+          display: "flex",
+          width: 1080,
+          height: 1080,
+          background: "#fcfbfa",
+          overflow: "hidden",
+          fontFamily: "sans-serif",
+          position: "relative",
+          border: "24px solid #b89753",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            width: "46%",
+            justifyContent: "center",
+            alignItems: "center",
+            paddingLeft: 40,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              width: 400,
+              height: 620,
+              borderRadius: 4,
+              overflow: "hidden",
+              border: "6px double #b89753",
+            }}
+          >
+            {member.photo_url ? (
+              <img
+                src={member.photo_url}
+                alt="Member"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  display: "flex",
+                  width: "100%",
+                  height: "100%",
+                  background: "#eae7e2",
+                }}
+              />
+            )}
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            width: "54%",
+            flexDirection: "column",
+            justifyContent: "center",
+            paddingLeft: 60,
+            paddingRight: 60,
+            zIndex: 10,
+          }}
+        >
+          {churchLogoUrl && (
+            <div style={{ display: "flex", marginBottom: 40 }}>
+              <img src={churchLogoUrl} alt="Church Logo" height={90} style={{ objectFit: "contain" }} />
+            </div>
+          )}
+
+          <div
+            style={{
+              display: "flex",
+              fontSize: 20,
+              color: "#b89753",
+              letterSpacing: 6,
+              fontWeight: 700,
+              marginBottom: 16,
+            }}
+          >
+            HAPPY BIRTHDAY
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              fontSize: getNameFontSize(getDesignFullName(member), 80),
+              lineHeight: 1.1,
+              fontWeight: 800,
+              color: "#1e2022",
+              marginBottom: getDepartmentText(member) ? 14 : (member.position ? 18 : 28),
+            }}
+          >
+            {getDesignFullName(member)}
+          </div>
+
+          {getDepartmentText(member) && (
+            <div
+              style={{
+                display: "flex",
+                fontSize: 24,
+                color: "#b89753",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "3px",
+                marginBottom: member.position ? 18 : 28,
+              }}
+            >
+              {getDepartmentText(member)}
+            </div>
+          )}
+
+          {member.position && (
+            <div style={{ display: "flex", marginBottom: 28 }}>
+              <PositionBadge text={member.position} bg="#f5efdf" color="#b89753" />
+            </div>
+          )}
+
+          <div
+            style={{
+              display: "flex",
+              width: 100,
+              height: 4,
+              background: "#b89753",
+              marginBottom: 30,
+            }}
+          />
+
+          <div
+            style={{
+              display: "flex",
+              fontSize: 26,
+              lineHeight: 1.6,
+              color: "#4a4a4a",
+              marginBottom: 36,
+            }}
+          >
+            {message}
+          </div>
+
+          <div style={{ display: "flex" }}>
+            <div
+              style={{
+                display: "flex",
+                padding: "12px 32px",
+                background: "#b89753",
+                color: "#fcfbfa",
+                borderRadius: 4,
+                fontSize: 26,
+                fontWeight: 800,
+                letterSpacing: 2,
+              }}
+            >
+              {getBirthDate(member)}
+            </div>
+          </div>
+        </div>
+      </div>
+    ),
+  },
 ];
 
 export const defaultMessages = [
