@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 import { MEMBERSHIP_STATUS } from "@/lib/memberLifecycle";
 import { cacheKeys, getCached } from "@/lib/serverCache";
 
+import { attachMemberUnits } from "@/lib/memberUnits";
+
 export async function GET() {
   const today = new Date();
   const month = today.getMonth() + 1;
@@ -21,7 +23,8 @@ export async function GET() {
       .eq("birth_day", day);
 
     if (error) throw new Error(error.message);
-    return data || [];
+    const dataWithUnits = await attachMemberUnits(supabase, data || []);
+    return dataWithUnits;
   });
 
   if (!cacheResult.hit && (cacheResult.value as any)?.error) {

@@ -125,6 +125,7 @@ export default function DesignsPage() {
       return;
     }
 
+    const primaryUnit = activeMember.units?.[0];
     const params = new URLSearchParams({
       design: designIndex.toString(),
       first_name: activeMember.first_name,
@@ -134,6 +135,8 @@ export default function DesignsPage() {
       photo_url: activeMember.photo_url || "",
       date_of_birth: activeMember.date_of_birth,
       message,
+      unit_name: primaryUnit?.name || "",
+      unit_role: primaryUnit?.role || "",
     });
     setCelebrantPreviewUrl(`/api/generate?${params.toString()}`);
   }, [activeMember, designIndex, message]);
@@ -159,6 +162,8 @@ export default function DesignsPage() {
       position: "Choir Director",
       date_of_birth: "1991-02-11",
       message,
+      unit_name: "Choir",
+      unit_role: "head",
     });
     setPreviewUrl(`/api/generate?${params.toString()}`);
   };

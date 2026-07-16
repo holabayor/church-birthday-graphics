@@ -80,6 +80,7 @@ export default function Dashboard() {
       return;
     }
 
+    const primaryUnit = activeMember.units?.[0];
     const params = new URLSearchParams({
       design: designIndex.toString(),
       first_name: activeMember.first_name,
@@ -89,6 +90,8 @@ export default function Dashboard() {
       photo_url: activeMember.photo_url || "",
       date_of_birth: activeMember.date_of_birth,
       message,
+      unit_name: primaryUnit?.name || "",
+      unit_role: primaryUnit?.role || "",
     });
     setPreviewUrl(`/api/generate?${params.toString()}`);
   }, [activeMember, designIndex, message]);

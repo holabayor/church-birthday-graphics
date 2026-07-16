@@ -22,6 +22,8 @@ function getMonthsInRange(start: Date, end: Date): number[] {
   return Array.from(months);
 }
 
+import { attachMemberUnits } from "@/lib/memberUnits";
+
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const startStr = searchParams.get("start");
@@ -89,7 +91,8 @@ export async function GET(req: NextRequest) {
       return bdayA.getTime() - bdayB.getTime();
     });
 
-    return filtered;
+    const filteredWithUnits = await attachMemberUnits(supabase, filtered);
+    return filteredWithUnits;
   });
 
   if (!cacheResult.hit && (cacheResult.value as any)?.error) {

@@ -13,6 +13,31 @@ function getNameFontSize(name: string, baseSize: number): number {
   return Math.max(40, Math.min(baseSize, Math.round(baseSize * (12 / name.length) * 1.15)));
 }
 
+function getDepartmentText(member: Member): string {
+  const primaryUnit = member.units?.[0];
+  if (!primaryUnit) return "";
+  const role = primaryUnit.role;
+  const name = primaryUnit.name;
+  const unitSuffix = name.toLowerCase().includes("unit") || name.toLowerCase().includes("department") || name.toLowerCase().includes("committee") ? "" : " Department";
+  const displayName = `${name}${unitSuffix}`;
+  
+  if (role === "head") {
+    return `HOD - ${displayName}`;
+  } else if (role === "assistant") {
+    return `Assistant - ${displayName}`;
+  } else {
+    return displayName;
+  }
+}
+
+function getDesignFullName(member: Member): string {
+  const last = (member.last_name || "").toUpperCase();
+  const firstAndMiddle = [member.first_name, member.middle_name].filter(Boolean).join(" ");
+  if (!last) return firstAndMiddle;
+  if (!firstAndMiddle) return last;
+  return `${last}, ${firstAndMiddle}`;
+}
+
 // ---------------------------------------------------------------------------
 // HELPER COMPONENTS
 // ---------------------------------------------------------------------------
@@ -120,15 +145,31 @@ export const designs: Array<{
           <div
             style={{
               display: "flex",
-              fontSize: getNameFontSize(getFullName(member), 82),
+              fontSize: getNameFontSize(getDesignFullName(member), 82),
               color: "white",
               fontWeight: 800,
               lineHeight: 1,
-              marginBottom: member.position ? 20 : 28,
+              marginBottom: getDepartmentText(member) ? 14 : (member.position ? 20 : 28),
             }}
           >
-            {getFullName(member)}
+            {getDesignFullName(member)}
           </div>
+
+          {getDepartmentText(member) && (
+            <div
+              style={{
+                display: "flex",
+                fontSize: 24,
+                color: "#d4af37",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "3px",
+                marginBottom: member.position ? 20 : 28,
+              }}
+            >
+              {getDepartmentText(member)}
+            </div>
+          )}
 
           {member.position && (
             <div style={{ display: "flex", marginBottom: 28 }}>
@@ -322,15 +363,31 @@ export const designs: Array<{
           <div
             style={{
               display: "flex",
-              fontSize: getNameFontSize(getFullName(member), 78),
+              fontSize: getNameFontSize(getDesignFullName(member), 78),
               lineHeight: 1,
               fontWeight: 800,
               color: "white",
-              marginBottom: member.position ? 20 : 30,
+              marginBottom: getDepartmentText(member) ? 14 : (member.position ? 20 : 30),
             }}
           >
-            {getFullName(member)}
+            {getDesignFullName(member)}
           </div>
+
+          {getDepartmentText(member) && (
+            <div
+              style={{
+                display: "flex",
+                fontSize: 24,
+                color: "#d4af37",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "3px",
+                marginBottom: member.position ? 20 : 30,
+              }}
+            >
+              {getDepartmentText(member)}
+            </div>
+          )}
 
           {member.position && (
             <div style={{ display: "flex", marginBottom: 30 }}>
@@ -467,15 +524,33 @@ export const designs: Array<{
             style={{
               display: "flex",
               textAlign: "center",
-              fontSize: getNameFontSize(getFullName(member), 76),
+              fontSize: getNameFontSize(getDesignFullName(member), 76),
               lineHeight: 1,
               fontWeight: 800,
               color: "white",
-              marginBottom: member.position ? 20 : 28,
+              marginBottom: getDepartmentText(member) ? 14 : (member.position ? 20 : 28),
             }}
           >
-            {getFullName(member)}
+            {getDesignFullName(member)}
           </div>
+
+          {getDepartmentText(member) && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                textAlign: "center",
+                fontSize: 24,
+                color: "#e8b943",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "3px",
+                marginBottom: member.position ? 20 : 28,
+              }}
+            >
+              {getDepartmentText(member)}
+            </div>
+          )}
 
           {member.position && (
             <div style={{ display: "flex", marginBottom: 28, justifyContent: "center" }}>
@@ -612,15 +687,31 @@ export const designs: Array<{
           <div
             style={{
               display: "flex",
-              fontSize: getNameFontSize(getFullName(member), 80),
+              fontSize: getNameFontSize(getDesignFullName(member), 80),
               lineHeight: 1,
               fontWeight: 800,
               color: "white",
-              marginBottom: member.position ? 20 : 30,
+              marginBottom: getDepartmentText(member) ? 14 : (member.position ? 20 : 30),
             }}
           >
-            {getFullName(member)}
+            {getDesignFullName(member)}
           </div>
+
+          {getDepartmentText(member) && (
+            <div
+              style={{
+                display: "flex",
+                fontSize: 24,
+                color: "#38bdf8",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "3px",
+                marginBottom: member.position ? 20 : 30,
+              }}
+            >
+              {getDepartmentText(member)}
+            </div>
+          )}
 
           {member.position && (
             <div style={{ display: "flex", marginBottom: 30 }}>
@@ -731,15 +822,31 @@ export const designs: Array<{
           <div
             style={{
               display: "flex",
-              fontSize: getNameFontSize(getFullName(member), 78),
+              fontSize: getNameFontSize(getDesignFullName(member), 78),
               fontWeight: 800,
               lineHeight: 1,
               color: "white",
-              marginBottom: member.position ? 20 : 28,
+              marginBottom: getDepartmentText(member) ? 14 : (member.position ? 20 : 28),
             }}
           >
-            {getFullName(member)}
+            {getDesignFullName(member)}
           </div>
+
+          {getDepartmentText(member) && (
+            <div
+              style={{
+                display: "flex",
+                fontSize: 24,
+                color: "#fbbf24",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "3px",
+                marginBottom: member.position ? 20 : 28,
+              }}
+            >
+              {getDepartmentText(member)}
+            </div>
+          )}
 
           {member.position && (
             <div style={{ display: "flex", marginBottom: 28 }}>

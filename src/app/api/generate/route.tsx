@@ -52,6 +52,8 @@ export async function GET(req: NextRequest) {
     const dob = searchParams.get("date_of_birth") || "2000-01-01";
     const photoUrl = searchParams.get("photo_url");
     const message = searchParams.get("message") || defaultMessages[0];
+    const unitName = searchParams.get("unit_name") || "";
+    const unitRole = searchParams.get("unit_role") || "";
 
     const member: Member = {
       id: "",
@@ -64,6 +66,14 @@ export async function GET(req: NextRequest) {
       is_active: true,
       created_at: "",
       updated_at: "",
+      units: unitName ? [{
+        id: "",
+        name: unitName,
+        description: null,
+        created_at: "",
+        updated_at: "",
+        role: unitRole as any,
+      }] : [],
     };
 
     const cookieStore = await cookies();
@@ -71,7 +81,6 @@ export async function GET(req: NextRequest) {
 
     // Run font load and logo fetch concurrently
     const [fontData, churchLogoUrl] = await Promise.all([Promise.resolve(loadFont()), getChurchLogoUrl(supabase)]);
-
 
     const design = designs[designIndex % designs.length];
     const element = design.render({ member, message, churchLogoUrl });
