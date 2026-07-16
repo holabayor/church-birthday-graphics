@@ -1500,20 +1500,12 @@ export const designs: Array<{
   {
     name: "Triptych Teal",
     render: ({ member, message, churchLogoUrl }) => {
-      const dob = new Date(member.date_of_birth);
-      const day = dob.getDate();
-      const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-      const month = monthNames[dob.getMonth()] || "FEB";
-      
-      const nth = (d: number) => {
-        if (d > 3 && d < 21) return "TH";
-        switch (d % 10) {
-          case 1:  return "ST";
-          case 2:  return "ND";
-          case 3:  return "RD";
-          default: return "TH";
-        }
-      };
+      const formattedDate = (() => {
+        const dob = new Date(member.date_of_birth);
+        const day = dob.getDate();
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        return `${day} ${monthNames[dob.getMonth()] || "Feb"}`;
+      })();
 
       return (
         <div
@@ -1597,7 +1589,7 @@ export const designs: Array<{
                 height: 680,
                 borderRadius: "220px 220px 0 0",
                 overflow: "hidden",
-                border: "4px solid #ffffff",
+                border: "6px solid #ffffff",
                 boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
               }}
             >
@@ -1621,68 +1613,6 @@ export const designs: Array<{
                   }}
                 />
               )}
-
-              <div
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  top: 0,
-                  width: 130,
-                  height: "100%",
-                  background: "linear-gradient(to bottom, rgba(6,182,212,0.4), rgba(8,145,178,0.75))",
-                  display: "flex",
-                }}
-              />
-              <div
-                style={{
-                  position: "absolute",
-                  right: 0,
-                  top: 0,
-                  width: 130,
-                  height: "100%",
-                  background: "linear-gradient(to bottom, rgba(6,182,212,0.4), rgba(8,145,178,0.75))",
-                  display: "flex",
-                }}
-              />
-
-              <div
-                style={{
-                  position: "absolute",
-                  left: 130,
-                  top: 0,
-                  width: 14,
-                  height: "100%",
-                  background: "#ffffff",
-                  display: "flex",
-                }}
-              />
-              <div
-                style={{
-                  position: "absolute",
-                  left: 296,
-                  top: 0,
-                  width: 14,
-                  height: "100%",
-                  background: "#ffffff",
-                  display: "flex",
-                }}
-              />
-
-              <div
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  top: 40,
-                  width: 130,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  color: "#ffffff",
-                }}
-              >
-                <span style={{ fontSize: 36, fontWeight: 900, lineHeight: 1 }}>{day}{nth(day)}</span>
-                <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: 1.5, marginTop: 4 }}>{month}</span>
-              </div>
             </div>
 
             <div
@@ -1710,8 +1640,8 @@ export const designs: Array<{
               zIndex: 10,
             }}
           >
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 30 }}>
-              <svg width="150" height="180" viewBox="0 0 180 240" fill="none" style={{ display: "flex" }}>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+              <svg width="130" height="150" viewBox="0 0 180 240" fill="none" style={{ display: "flex" }}>
                 <ellipse cx="60" cy="80" rx="30" ry="40" fill="#3b82f6" opacity="0.85" />
                 <path d="M60 120 L80 190" stroke="#94a3b8" strokeWidth="2" />
                 <ellipse cx="120" cy="80" rx="30" ry="40" fill="#22d3ee" opacity="0.85" />
@@ -1722,6 +1652,20 @@ export const designs: Array<{
                 <polygon points="120,120 117,125 123,125" fill="#0891b2" />
                 <polygon points="90,112 87,117 93,117" fill="#0891b2" />
               </svg>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                fontSize: 26,
+                fontWeight: 800,
+                color: "#0891b2",
+                letterSpacing: 2,
+                marginBottom: 12,
+              }}
+            >
+              {formattedDate.toUpperCase()}
             </div>
 
             <div
@@ -1749,8 +1693,8 @@ export const designs: Array<{
                 height: 4,
                 background: "#06b6d4",
                 alignSelf: "center",
-                marginTop: 25,
-                marginBottom: getDepartmentText(member) ? 16 : 25,
+                marginTop: 20,
+                marginBottom: getDepartmentText(member) ? 16 : 20,
               }}
             />
 
@@ -1763,7 +1707,7 @@ export const designs: Array<{
                   fontWeight: 600,
                   fontStyle: "italic",
                   alignSelf: "center",
-                  marginBottom: 20,
+                  marginBottom: 16,
                 }}
               >
                 {getDepartmentText(member)}
@@ -1773,14 +1717,21 @@ export const designs: Array<{
             <div
               style={{
                 display: "flex",
-                fontSize: 26,
+                fontSize: 25,
                 lineHeight: 1.6,
                 color: "#4b5563",
                 textAlign: "center",
+                marginBottom: 20,
               }}
             >
               {message}
             </div>
+
+            {churchLogoUrl && (
+              <div style={{ display: "flex", justifyContent: "center", marginTop: 15, marginBottom: 10 }}>
+                <img src={churchLogoUrl} alt="Church Logo" height={60} style={{ objectFit: "contain" }} />
+              </div>
+            )}
 
             <div
               style={{
