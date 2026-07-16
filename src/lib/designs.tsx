@@ -8,6 +8,11 @@ export interface DesignProps {
   churchLogoUrl?: string;
 }
 
+function getNameFontSize(name: string, baseSize: number): number {
+  if (name.length <= 12) return baseSize;
+  return Math.max(40, Math.min(baseSize, Math.round(baseSize * (12 / name.length) * 1.15)));
+}
+
 // ---------------------------------------------------------------------------
 // HELPER COMPONENTS
 // ---------------------------------------------------------------------------
@@ -115,7 +120,7 @@ export const designs: Array<{
           <div
             style={{
               display: "flex",
-              fontSize: 82,
+              fontSize: getNameFontSize(getFullName(member), 82),
               color: "white",
               fontWeight: 800,
               lineHeight: 1,
@@ -317,7 +322,7 @@ export const designs: Array<{
           <div
             style={{
               display: "flex",
-              fontSize: 78,
+              fontSize: getNameFontSize(getFullName(member), 78),
               lineHeight: 1,
               fontWeight: 800,
               color: "white",
@@ -462,7 +467,7 @@ export const designs: Array<{
             style={{
               display: "flex",
               textAlign: "center",
-              fontSize: 76,
+              fontSize: getNameFontSize(getFullName(member), 76),
               lineHeight: 1,
               fontWeight: 800,
               color: "white",
@@ -607,7 +612,7 @@ export const designs: Array<{
           <div
             style={{
               display: "flex",
-              fontSize: 80,
+              fontSize: getNameFontSize(getFullName(member), 80),
               lineHeight: 1,
               fontWeight: 800,
               color: "white",
@@ -726,7 +731,7 @@ export const designs: Array<{
           <div
             style={{
               display: "flex",
-              fontSize: 78,
+              fontSize: getNameFontSize(getFullName(member), 78),
               fontWeight: 800,
               lineHeight: 1,
               color: "white",
