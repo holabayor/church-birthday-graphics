@@ -1363,30 +1363,42 @@ export const designs: Array<{
               width: 400,
               height: 620,
               borderRadius: 4,
-              overflow: "hidden",
-              border: "6px double #b89753",
+              border: "2px solid #b89753",
+              padding: 4,
+              background: "transparent",
             }}
           >
-            {member.photo_url ? (
-              <img
-                src={member.photo_url}
-                alt="Member"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  display: "flex",
-                  width: "100%",
-                  height: "100%",
-                  background: "#eae7e2",
-                }}
-              />
-            )}
+            <div
+              style={{
+                display: "flex",
+                width: "100%",
+                height: "100%",
+                borderRadius: 2,
+                border: "2px solid #b89753",
+                overflow: "hidden",
+              }}
+            >
+              {member.photo_url ? (
+                <img
+                  src={member.photo_url}
+                  alt="Member"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    display: "flex",
+                    width: "100%",
+                    height: "100%",
+                    background: "#eae7e2",
+                  }}
+                />
+              )}
+            </div>
           </div>
         </div>
 
