@@ -17,9 +17,19 @@ function getDepartmentText(member: Member): string {
   const primaryUnit = member.units?.[0];
   if (!primaryUnit) return "";
   const role = primaryUnit.role;
-  const name = primaryUnit.name;
-  const unitSuffix = name.toLowerCase().includes("unit") || name.toLowerCase().includes("department") || name.toLowerCase().includes("committee") ? "" : " Department";
-  const displayName = `${name}${unitSuffix}`;
+  const name = primaryUnit.name || "";
+  
+  const toTitleCase = (str: string) => {
+    return str
+      .toLowerCase()
+      .split(" ")
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+  };
+
+  const formattedName = toTitleCase(name);
+  const unitSuffix = formattedName.toLowerCase().includes("unit") || formattedName.toLowerCase().includes("department") || formattedName.toLowerCase().includes("committee") ? "" : " Department";
+  const displayName = `${formattedName}${unitSuffix}`;
   
   if (role === "head") {
     return `HOD - ${displayName}`;
@@ -932,200 +942,207 @@ export const designs: Array<{
 
   {
     name: "Sunset Minimalist",
-    render: ({ member, message, churchLogoUrl }) => (
-      <div
-        style={{
-          display: "flex",
-          width: 1080,
-          height: 1080,
-          background: "#2d141b",
-          overflow: "hidden",
-          fontFamily: "sans-serif",
-          position: "relative",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            position: "absolute",
-            width: 700,
-            height: 700,
-            borderRadius: 350,
-            background: "radial-gradient(circle, rgba(226,186,115,0.06) 0%, transparent 70%)",
-            left: -150,
-            bottom: -150,
-          }}
-        />
+    render: ({ member, message, churchLogoUrl }) => {
+      const rawLastName = (member.last_name || "").trim();
+      const toTitleCase = (str: string) => {
+        return str
+          .toLowerCase()
+          .split(" ")
+          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ");
+      };
+      const lastName = toTitleCase(rawLastName);
+      const firstAndMiddle = [member.first_name, member.middle_name]
+        .map(n => (n || "").trim())
+        .filter(Boolean)
+        .map(n => toTitleCase(n))
+        .join(" ");
 
+      return (
         <div
           style={{
             display: "flex",
-            width: "46%",
-            justifyContent: "center",
-            alignItems: "center",
-            paddingLeft: 60,
+            width: 1080,
+            height: 1080,
+            background: "radial-gradient(circle at center, #3c1e26 0%, #170a0d 100%)",
+            overflow: "hidden",
+            fontFamily: "sans-serif",
+            position: "relative",
           }}
         >
           <div
             style={{
               display: "flex",
-              position: "relative",
-              width: 420,
-              height: 660,
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                top: 20,
-                left: 20,
-                width: 420,
-                height: 660,
-                border: "3px solid #e2ba73",
-                borderRadius: 16,
-              }}
-            />
-            <div
-              style={{
-                display: "flex",
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: 420,
-                height: 660,
-                borderRadius: 16,
-                overflow: "hidden",
-                border: "4px solid #ffffff",
-              }}
-            >
-              {member.photo_url ? (
-                <img
-                  src={member.photo_url}
-                  alt="Member"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                  }}
-                />
-              ) : (
-                <div
-                  style={{
-                    display: "flex",
-                    width: "100%",
-                    height: "100%",
-                    background: "#3c1b24",
-                  }}
-                />
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            width: "54%",
-            flexDirection: "column",
-            justifyContent: "center",
-            paddingLeft: 60,
-            paddingRight: 80,
-            zIndex: 10,
-          }}
-        >
-          {churchLogoUrl && (
-            <div style={{ display: "flex", marginBottom: 40 }}>
-              <img src={churchLogoUrl} alt="Church Logo" height={90} style={{ objectFit: "contain" }} />
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              fontSize: 20,
-              color: "#e2ba73",
-              letterSpacing: 6,
-              marginBottom: 16,
-            }}
-          >
-            HAPPY BIRTHDAY
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              fontSize: getNameFontSize(getDesignFullName(member), 80),
-              lineHeight: 1.1,
-              fontWeight: 800,
-              color: "#ffffff",
-              marginBottom: member.position ? 18 : 28,
-            }}
-          >
-            {getDesignFullName(member)}
-          </div>
-
-          {member.position && (
-            <div style={{ display: "flex", marginBottom: 28 }}>
-              <PositionBadge text={member.position} bg="#3c1b24" color="#e2ba73" />
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              width: 100,
-              height: 4,
-              background: "#e2ba73",
-              marginBottom: getDepartmentText(member) ? 20 : 30,
+              position: "absolute",
+              width: 700,
+              height: 700,
+              borderRadius: 350,
+              background: "radial-gradient(circle, rgba(226,186,115,0.06) 0%, transparent 70%)",
+              left: -150,
+              bottom: -150,
             }}
           />
 
-          {getDepartmentText(member) && (
+          <div
+            style={{
+              display: "flex",
+              width: "44%",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
             <div
               style={{
                 display: "flex",
-                fontSize: 24,
-                color: "#e2ba73",
-                fontWeight: 600,
-                fontStyle: "italic",
-                marginBottom: 20,
+                position: "relative",
+                width: 400,
+                height: 640,
               }}
             >
-              {getDepartmentText(member)}
+              <div
+                style={{
+                  position: "absolute",
+                  top: 16,
+                  left: 16,
+                  width: 400,
+                  height: 640,
+                  border: "3px solid #e2ba73",
+                  borderRadius: 16,
+                }}
+              />
+              <div
+                style={{
+                  display: "flex",
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: 400,
+                  height: 640,
+                  borderRadius: 16,
+                  overflow: "hidden",
+                  border: "4px solid #ffffff",
+                }}
+              >
+                {member.photo_url ? (
+                  <img
+                    src={member.photo_url}
+                    alt="Member"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      display: "flex",
+                      width: "100%",
+                      height: "100%",
+                      background: "#3c1b24",
+                    }}
+                  />
+                )}
+              </div>
             </div>
-          )}
+          </div>
 
           <div
             style={{
               display: "flex",
-              fontSize: 26,
-              lineHeight: 1.6,
-              color: "#dcd2d4",
-              marginBottom: 36,
+              width: "56%",
+              flexDirection: "column",
+              justifyContent: "center",
+              paddingLeft: 50,
+              paddingRight: 80,
+              zIndex: 10,
             }}
           >
-            {message}
-          </div>
+            {churchLogoUrl && (
+              <div style={{ display: "flex", marginBottom: 40 }}>
+                <img src={churchLogoUrl} alt="Church Logo" height={90} style={{ objectFit: "contain" }} />
+              </div>
+            )}
 
-          <div style={{ display: "flex" }}>
             <div
               style={{
                 display: "flex",
-                padding: "12px 32px",
-                background: "#e2ba73",
-                color: "#2d141b",
-                borderRadius: 8,
-                fontSize: 26,
-                fontWeight: 800,
-                letterSpacing: 2,
+                fontSize: 20,
+                color: "#e2ba73",
+                letterSpacing: 6,
+                marginBottom: 20,
+                fontWeight: 700,
               }}
             >
-              {getBirthDate(member)}
+              HAPPY BIRTHDAY  •  {getBirthDate(member).toUpperCase()}
+            </div>
+
+            {lastName && (
+              <div
+                style={{
+                  display: "flex",
+                  fontSize: 66,
+                  lineHeight: 1.1,
+                  fontWeight: 800,
+                  color: "#ffffff",
+                }}
+              >
+                {lastName}
+              </div>
+            )}
+
+            {firstAndMiddle && (
+              <div
+                style={{
+                  display: "flex",
+                  fontSize: 42,
+                  lineHeight: 1.1,
+                  fontWeight: 400,
+                  color: "#f8f4eb",
+                  marginTop: 6,
+                  marginBottom: member.position ? 18 : 28,
+                }}
+              >
+                {firstAndMiddle}
+              </div>
+            )}
+
+            {member.position && (
+              <div style={{ display: "flex", marginBottom: 28 }}>
+                <PositionBadge text={member.position} bg="#3c1b24" color="#e2ba73" />
+              </div>
+            )}
+
+            {getDepartmentText(member) && (
+              <div
+                style={{
+                  display: "flex",
+                  fontSize: 24,
+                  color: "#e2ba73",
+                  fontWeight: 600,
+                  fontStyle: "italic",
+                  marginBottom: 20,
+                }}
+              >
+                {getDepartmentText(member)}
+              </div>
+            )}
+
+            <div
+              style={{
+                display: "flex",
+                fontSize: 26,
+                lineHeight: 1.6,
+                color: "#dcd2d4",
+                marginBottom: 40,
+              }}
+            >
+              {message}
             </div>
           </div>
         </div>
-      </div>
-    ),
+      );
+    }
   },
 
   {

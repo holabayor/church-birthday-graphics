@@ -97,8 +97,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse(new Uint8Array(png), {
       headers: {
         "Content-Type": "image/png",
-        // Cache for 1 hour on CDN/browser; same params = same image
-        "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+        "Cache-Control": "no-store, must-revalidate",
       },
     });
   } catch (err) {
