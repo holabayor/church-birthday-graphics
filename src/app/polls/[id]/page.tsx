@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { HelpCircle, Loader2, Calendar, AlertCircle, ArrowLeft, CheckCircle2, Search } from "lucide-react";
+import { HelpCircle, Loader2, Calendar, AlertCircle, ArrowLeft, CheckCircle2, Search, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { getUnitIcon } from "@/lib/utils";
 import { UnitRole, unitRoleLabels } from "@/lib/unitRoles";
 import Link from "next/link";
+import { PollPrintReport, ChurchSettingsData } from "@/components/polls/poll-print-report";
 
 type Candidate = {
   id: string;
@@ -52,6 +53,7 @@ export default function PublicPollPage() {
   const [selectedCandidate, setSelectedCandidate] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [fingerprint, setFingerprint] = useState("");
+  const [churchSettings, setChurchSettings] = useState<ChurchSettingsData | null>(null);
   const [previewCandidate, setPreviewCandidate] = useState<{
     url: string;
     name: string;
@@ -66,6 +68,11 @@ export default function PublicPollPage() {
       localStorage.setItem("poll_device_fingerprint", fp);
     }
     setFingerprint(fp);
+
+    fetch("/api/church-settings")
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => data && setChurchSettings(data))
+      .catch(e => console.error("Failed to load church settings", e));
   }, []);
 
   const loadPollDetails = async (fpVal = fingerprint) => {
@@ -246,9 +253,22 @@ export default function PublicPollPage() {
                     </p>
                   </div>
                 </div>
-                <span className="text-xs font-bold text-slate-500 font-mono bg-slate-100 border border-slate-200/60 px-3 py-1.5 rounded-xl">
-                  Total Votes: {totalVotes}
-                </span>
+                <div className="flex items-center gap-2">
+                  {(poll.allow_view_results || poll.status === "closed" || isPollExpired) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.print()}
+                      className="h-8 text-xs border-slate-300 bg-white text-slate-700 hover:bg-slate-50 shadow-none font-semibold"
+                    >
+                      <Printer className="h-3.5 w-3.5 mr-1 text-slate-600" />
+                      Print Results
+                    </Button>
+                  )}
+                  <span className="text-xs font-bold text-slate-500 font-mono bg-slate-100 border border-slate-200/60 px-3 py-1.5 rounded-xl">
+                    Total Votes: {totalVotes}
+                  </span>
+                </div>
               </div>
 
               <div className="p-6 md:p-8 space-y-6">
@@ -559,6 +579,16 @@ export default function PublicPollPage() {
           </div> */}
         </DialogContent>
       </Dialog>
+
+      {/* Hidden Printable Poll Report */}
+      {poll && (
+        <PollPrintReport
+          poll={poll}
+          candidates={poll.poll_candidates || []}
+          totalVotes={totalVotes}
+          churchSettings={churchSettings}
+        />
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Search, Share2, Trash2, Play, Square, Users, Vote, Loader2, Calendar, Info } from "lucide-react";
+import { Plus, Search, Share2, Trash2, Play, Square, Users, Vote, Loader2, Calendar, Info, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,8 +23,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MemberSearchAutocomplete } from "@/components/units/member-search-autocomplete";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { PollPrintReport, PrintableCandidate, PrintablePoll, ChurchSettingsData } from "@/components/polls/poll-print-report";
 
-type Candidate = {
+type Candidate = PrintableCandidate & {
   id?: string;
   member_id: string | null;
   display_name: string;
@@ -33,17 +34,12 @@ type Candidate = {
   votes?: number | null;
 };
 
-type Poll = {
-  id: string;
-  title: string;
+type Poll = PrintablePoll & {
   slug?: string | null;
-  description: string | null;
   voter_type: "anyone" | "members" | "workers" | "selected_groups";
   allowed_groups: string[];
   status: "draft" | "active" | "closed";
   allow_view_results: boolean;
-  starts_at: string;
-  ends_at: string;
   created_at: string;
   poll_candidates: Candidate[];
 };
@@ -59,6 +55,11 @@ export default function PollsAdminPage() {
   const [activePoll, setActivePoll] = useState<Poll | null>(null);
   const [pollResults, setPollResults] = useState<{ poll: Poll; totalVotes: number } | null>(null);
   const [loadingResults, setLoadingResults] = useState(false);
+
+  // Print state
+  const [churchSettings, setChurchSettings] = useState<ChurchSettingsData | null>(null);
+  const [printData, setPrintData] = useState<{ poll: Poll; totalVotes: number; candidates: Candidate[] } | null>(null);
+  const [printing, setPrinting] = useState(false);
 
   // Edit Period states
   const [editPeriodOpen, setEditPeriodOpen] = useState(false);
@@ -114,9 +115,22 @@ export default function PollsAdminPage() {
     }
   };
 
+  const fetchChurchSettings = async () => {
+    try {
+      const res = await fetch("/api/church-settings");
+      if (res.ok) {
+        const data = await res.json();
+        setChurchSettings(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch church settings for print", e);
+    }
+  };
+
   useEffect(() => {
     fetchPolls();
     fetchUnits();
+    fetchChurchSettings();
   }, []);
 
   const handleCreatePoll = async (e: React.FormEvent) => {
@@ -293,6 +307,39 @@ export default function PollsAdminPage() {
     toast.success("Voter link copied to clipboard!");
   };
 
+  const handlePrintPollResult = async (pollToPrint: Poll, existingResults?: { poll: Poll; totalVotes: number }) => {
+    try {
+      setPrinting(true);
+      toast.info("Preparing poll results report for printing...");
+      let dataToUse = existingResults;
+      if (!dataToUse || dataToUse.poll.id !== pollToPrint.id) {
+        const res = await fetch(`/api/polls/${pollToPrint.id}`);
+        if (res.ok) {
+          dataToUse = await res.json();
+        }
+      }
+
+      if (dataToUse) {
+        setPrintData({
+          poll: dataToUse.poll,
+          totalVotes: dataToUse.totalVotes,
+          candidates: dataToUse.poll.poll_candidates || [],
+        });
+
+        setTimeout(() => {
+          window.print();
+          setPrinting(false);
+        }, 300);
+      } else {
+        toast.error("Failed to load poll results for printing");
+        setPrinting(false);
+      }
+    } catch {
+      toast.error("Failed to prepare print report");
+      setPrinting(false);
+    }
+  };
+
   const resetForm = () => {
     setTitle("");
     setDescription("");
@@ -461,20 +508,30 @@ export default function PollsAdminPage() {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleViewResults(poll)}
-                        className="w-full border-(--outline-variant) bg-white text-slate-700 hover:bg-(--surface-container)]"
+                        className="w-full border-(--outline-variant) bg-white text-slate-700 hover:bg-(--surface-container) text-xs"
                       >
                         Results
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => handlePrintPollResult(poll)}
+                        className="w-full border-(--outline-variant) bg-white text-slate-700 hover:bg-(--surface-container) text-xs"
+                        title="Print Poll Results"
+                      >
+                        <Printer className="h-3.5 w-3.5 mr-1 text-slate-600" />
+                        Print
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => handleShareLink(poll.slug || poll.id)}
-                        className="w-full border-(--outline-variant) bg-white text-slate-700 hover:bg-(--surface-container)]"
+                        className="w-full border-(--outline-variant) bg-white text-slate-700 hover:bg-(--surface-container) text-xs"
                       >
                         <Share2 className="h-3.5 w-3.5 mr-1" />
                         Share
@@ -943,7 +1000,16 @@ export default function PollsAdminPage() {
             </div>
           )}
 
-          <DialogFooter className="border-t border-(--outline-variant) bg-white p-4">
+          <DialogFooter className="border-t border-(--outline-variant) bg-white p-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => activePoll && handlePrintPollResult(activePoll, pollResults || undefined)}
+              disabled={printing || !pollResults}
+              className="w-full sm:w-auto border-slate-300 text-slate-700 hover:bg-slate-50"
+            >
+              {printing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Printer className="h-4 w-4 mr-2 text-slate-600" />}
+              Print Results
+            </Button>
             <Button onClick={() => setResultsOpen(false)} className="w-full sm:w-auto">
               Close Results
             </Button>
@@ -1017,6 +1083,16 @@ export default function PollsAdminPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Hidden Printable Poll Report */}
+      {printData && (
+        <PollPrintReport
+          poll={printData.poll}
+          candidates={printData.candidates}
+          totalVotes={printData.totalVotes}
+          churchSettings={churchSettings}
+        />
+      )}
     </div>
   );
 }
