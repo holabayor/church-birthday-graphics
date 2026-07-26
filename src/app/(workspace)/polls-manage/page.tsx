@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Search, Share2, Trash2, Play, Square, Users, Vote, Loader2, Calendar, Info, Printer } from "lucide-react";
+import { Plus, Search, Share2, Trash2, Play, Square, Users, Vote, Loader2, Calendar, Info, Printer, Tv } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,6 +60,7 @@ export default function PollsAdminPage() {
   const [churchSettings, setChurchSettings] = useState<ChurchSettingsData | null>(null);
   const [printData, setPrintData] = useState<{ poll: Poll; totalVotes: number; candidates: Candidate[] } | null>(null);
   const [printing, setPrinting] = useState(false);
+  const [tvModalOpen, setTvModalOpen] = useState(false);
 
   // Edit Period states
   const [editPeriodOpen, setEditPeriodOpen] = useState(false);
@@ -310,7 +311,6 @@ export default function PollsAdminPage() {
   const handlePrintPollResult = async (pollToPrint: Poll, existingResults?: { poll: Poll; totalVotes: number }) => {
     try {
       setPrinting(true);
-      toast.info("Preparing poll results report for printing...");
       let dataToUse = existingResults;
       if (!dataToUse || dataToUse.poll.id !== pollToPrint.id) {
         const res = await fetch(`/api/polls/${pollToPrint.id}`);
@@ -325,17 +325,13 @@ export default function PollsAdminPage() {
           totalVotes: dataToUse.totalVotes,
           candidates: dataToUse.poll.poll_candidates || [],
         });
-
-        setTimeout(() => {
-          window.print();
-          setPrinting(false);
-        }, 300);
+        setTvModalOpen(true);
       } else {
-        toast.error("Failed to load poll results for printing");
-        setPrinting(false);
+        toast.error("Failed to load poll results for TV display / printing");
       }
     } catch {
       toast.error("Failed to prepare print report");
+    } finally {
       setPrinting(false);
     }
   };
@@ -1084,15 +1080,38 @@ export default function PollsAdminPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Hidden Printable Poll Report */}
-      {printData && (
-        <PollPrintReport
-          poll={printData.poll}
-          candidates={printData.candidates}
-          totalVotes={printData.totalVotes}
-          churchSettings={churchSettings}
-        />
-      )}
+      {/* TV Broadcast Landscape Result Dialog */}
+      <Dialog open={tvModalOpen} onOpenChange={setTvModalOpen}>
+        <DialogContent className="max-w-6xl w-[95vw] max-h-[92vh] overflow-y-auto bg-[#0B1C30] border border-slate-700 p-0 text-white shadow-2xl rounded-2xl">
+          <DialogHeader className="bg-[#0B1C30] border-b border-slate-800 px-6 py-4 flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Tv className="h-5 w-5 text-amber-400" />
+              <DialogTitle className="text-lg font-bold text-white">
+                TV Broadcast Widescreen Result Display
+              </DialogTitle>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={() => window.print()}
+                className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-bold text-xs shadow-md"
+              >
+                <Printer className="h-4 w-4 mr-1.5" />
+                Print Landscape PDF
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="p-4 sm:p-6 bg-[#0B1C30]">
+            {printData && (
+              <PollPrintReport
+                poll={printData.poll}
+                candidates={printData.candidates}
+                totalVotes={printData.totalVotes}
+                churchSettings={churchSettings}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

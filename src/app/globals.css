@@ -153,43 +153,71 @@ nextjs-portal {
   display: none !important;
 }
 
-/* Global Print Styles */
+/* Global Landscape Print & TV Display Styles */
 @media print {
   @page {
-    size: A4 portrait;
-    margin: 10mm;
+    size: landscape;
+    margin: 0mm;
   }
 
+  html,
   body {
-    background: #ffffff !important;
-    color: #0f172a !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #0b1c30 !important;
+    color: #ffffff !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    overflow: visible !important;
   }
 
-  /* Hide app chrome, sidebars, header navigation, modals, and buttons */
-  body > *:not(#poll-print-report-container),
+  /* Ensure root React div is visible */
+  body > div {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* Hide app chrome, headers, sidebars, dialog overlays, buttons, inputs */
   header,
   aside,
   nav,
   button,
+  input,
+  textarea,
+  select,
   .no-print,
   [data-slot="dialog-overlay"],
-  [data-slot="dialog-content"] {
+  [data-slot="dialog-content"],
+  [data-slot="dialog-portal"],
+  .page-header-container {
     display: none !important;
   }
 
-  /* Force print report container to display full page */
+  /* Position print report container fixed over entire screen in Landscape mode */
   #poll-print-report-container {
-    display: block !important;
-    position: static !important;
-    width: 100% !important;
-    max-width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 9999999 !important;
+    background: #0b1c30 !important;
+    color: #ffffff !important;
+    padding: 1.5rem 2rem !important;
     margin: 0 !important;
-    padding: 0 !important;
     border: none !important;
+    border-radius: 0 !important;
     box-shadow: none !important;
-    background: #ffffff !important;
+    box-sizing: border-box !important;
   }
 }
 

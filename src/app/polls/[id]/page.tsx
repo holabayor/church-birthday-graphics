@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { HelpCircle, Loader2, Calendar, AlertCircle, ArrowLeft, CheckCircle2, Search, Printer } from "lucide-react";
+import { HelpCircle, Loader2, Calendar, AlertCircle, ArrowLeft, CheckCircle2, Search, Printer, Tv } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getUnitIcon } from "@/lib/utils";
 import { UnitRole, unitRoleLabels } from "@/lib/unitRoles";
 import Link from "next/link";
@@ -60,6 +60,7 @@ export default function PublicPollPage() {
     depts: Array<{ name: string; role: string }>;
     position?: string | null;
   } | null>(null);
+  const [tvModalOpen, setTvModalOpen] = useState(false);
 
   useEffect(() => {
     let fp = localStorage.getItem("poll_device_fingerprint");
@@ -258,11 +259,11 @@ export default function PublicPollPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => window.print()}
+                      onClick={() => setTvModalOpen(true)}
                       className="h-8 text-xs border-slate-300 bg-white text-slate-700 hover:bg-slate-50 shadow-none font-semibold"
                     >
-                      <Printer className="h-3.5 w-3.5 mr-1 text-slate-600" />
-                      Print Results
+                      <Tv className="h-3.5 w-3.5 mr-1 text-amber-500" />
+                      TV Display & Print
                     </Button>
                   )}
                   <span className="text-xs font-bold text-slate-500 font-mono bg-slate-100 border border-slate-200/60 px-3 py-1.5 rounded-xl">
@@ -580,15 +581,38 @@ export default function PublicPollPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Hidden Printable Poll Report */}
-      {poll && (
-        <PollPrintReport
-          poll={poll}
-          candidates={poll.poll_candidates || []}
-          totalVotes={totalVotes}
-          churchSettings={churchSettings}
-        />
-      )}
+      {/* TV Broadcast Landscape Result Dialog */}
+      <Dialog open={tvModalOpen} onOpenChange={setTvModalOpen}>
+        <DialogContent className="max-w-6xl w-[95vw] max-h-[92vh] overflow-y-auto bg-[#0B1C30] border border-slate-700 p-0 text-white shadow-2xl rounded-2xl">
+          <DialogHeader className="bg-[#0B1C30] border-b border-slate-800 px-6 py-4 flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Tv className="h-5 w-5 text-amber-400" />
+              <DialogTitle className="text-lg font-bold text-white">
+                TV Broadcast Widescreen Result Display
+              </DialogTitle>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={() => window.print()}
+                className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-bold text-xs shadow-md"
+              >
+                <Printer className="h-4 w-4 mr-1.5" />
+                Print Landscape PDF
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="p-4 sm:p-6 bg-[#0B1C30]">
+            {poll && (
+              <PollPrintReport
+                poll={poll}
+                candidates={poll.poll_candidates || []}
+                totalVotes={totalVotes}
+                churchSettings={churchSettings}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
