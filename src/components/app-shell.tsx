@@ -38,9 +38,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   const isAuthPage = pathname === "/login" || pathname === "/register" || pathname === "/admin" || pathname === "/admin/login";
+  const isTvPage = pathname.endsWith("/tv");
   const isPublicPollRoute = pathname.startsWith("/polls") && !pathname.startsWith("/polls-manage");
 
-  if (isAuthPage) {
+  if (isAuthPage || isTvPage) {
     return <>{children}</>;
   }
 
