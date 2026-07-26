@@ -504,7 +504,7 @@ export default function PollsAdminPage() {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                       <Button
                         variant="outline"
                         size="sm"
@@ -512,6 +512,16 @@ export default function PollsAdminPage() {
                         className="w-full border-(--outline-variant) bg-white text-slate-700 hover:bg-(--surface-container) text-xs"
                       >
                         Results
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(`/polls/${poll.id}/tv`, "_blank")}
+                        className="w-full border-amber-300 bg-amber-50/50 text-amber-950 hover:bg-amber-100 text-xs font-semibold"
+                        title="Open TV Widescreen Broadcast Page (Fit 1 Page)"
+                      >
+                        <Tv className="h-3.5 w-3.5 mr-1 text-amber-600" />
+                        TV Page
                       </Button>
                       <Button
                         variant="outline"
@@ -997,16 +1007,26 @@ export default function PollsAdminPage() {
           )}
 
           <DialogFooter className="border-t border-(--outline-variant) bg-white p-4 flex flex-col sm:flex-row justify-between items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => activePoll && handlePrintPollResult(activePoll, pollResults || undefined)}
-              disabled={printing || !pollResults}
-              className="w-full sm:w-auto border-slate-300 text-slate-700 hover:bg-slate-50"
-            >
-              {printing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Printer className="h-4 w-4 mr-2 text-slate-600" />}
-              Print Results
-            </Button>
-            <Button onClick={() => setResultsOpen(false)} className="w-full sm:w-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Button
+                variant="outline"
+                onClick={() => activePoll && window.open(`/polls/${activePoll.id}/tv`, "_blank")}
+                className="border-amber-300 bg-amber-50 text-amber-950 hover:bg-amber-100 text-xs font-bold"
+              >
+                <Tv className="h-4 w-4 mr-1.5 text-amber-600" />
+                TV Broadcast Page
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => activePoll && handlePrintPollResult(activePoll, pollResults || undefined)}
+                disabled={printing || !pollResults}
+                className="border-slate-300 text-slate-700 hover:bg-slate-50 text-xs"
+              >
+                {printing ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Printer className="h-4 w-4 mr-1.5 text-slate-600" />}
+                Print Results
+              </Button>
+            </div>
+            <Button onClick={() => setResultsOpen(false)} className="w-full sm:w-auto text-xs">
               Close Results
             </Button>
           </DialogFooter>
