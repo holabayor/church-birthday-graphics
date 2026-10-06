@@ -53,6 +53,23 @@ function getDesignFullName(member: Member): string {
   return title ? `${title} ${baseName}` : baseName;
 }
 
+function shouldShowPositionBadge(member: Member): boolean {
+  const posText = (member.position || "").trim();
+  if (!posText) return false;
+
+  const deptText = getDepartmentText(member).trim();
+  if (!deptText) return true;
+
+  const normPos = posText.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const normDept = deptText.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  if (normPos === normDept || normDept.includes(normPos) || normPos.includes(normDept)) {
+    return false;
+  }
+
+  return true;
+}
+
 // ---------------------------------------------------------------------------
 // HELPER COMPONENTS
 // ---------------------------------------------------------------------------
@@ -1791,8 +1808,10 @@ export const designs: Array<{
           .join(" ");
       };
       
+      const titlePrefix = (member.title || "").trim();
       const rawFullName = `${member.first_name || ""} ${member.middle_name || ""} ${member.last_name || ""}`.replace(/\s+/g, ' ').trim();
-      const fullName = toTitleCase(rawFullName);
+      const namesTitleCased = toTitleCase(rawFullName);
+      const fullName = titlePrefix ? `${titlePrefix} ${namesTitleCased}` : namesTitleCased;
 
       return (
         <div
@@ -1878,17 +1897,17 @@ export const designs: Array<{
                   fontWeight: 700,
                   letterSpacing: 4,
                   textTransform: "uppercase",
-                  marginBottom: member.position ? 12 : 20,
+                  marginBottom: shouldShowPositionBadge(member) ? 12 : 20,
                 }}
               >
                 {getDepartmentText(member)}
               </div>
             )}
 
-            {/* Position Badge */}
-            {member.position && (
+            {/* Position Badge (only if distinct from department text) */}
+            {shouldShowPositionBadge(member) && (
               <div style={{ display: "flex", marginBottom: 20 }}>
-                <PositionBadge text={member.position} bg="#eae3d2" color="#a3874b" />
+                <PositionBadge text={member.position!} bg="#eae3d2" color="#a3874b" />
               </div>
             )}
 
@@ -1975,8 +1994,10 @@ export const designs: Array<{
           .join(" ");
       };
       
+      const titlePrefix = (member.title || "").trim();
       const rawFullName = `${member.first_name || ""} ${member.middle_name || ""} ${member.last_name || ""}`.replace(/\s+/g, ' ').trim();
-      const fullName = toTitleCase(rawFullName);
+      const namesTitleCased = toTitleCase(rawFullName);
+      const fullName = titlePrefix ? `${titlePrefix} ${namesTitleCased}` : namesTitleCased;
 
       return (
         <div
@@ -2062,17 +2083,17 @@ export const designs: Array<{
                   fontWeight: 700,
                   letterSpacing: 4,
                   textTransform: "uppercase",
-                  marginBottom: member.position ? 12 : 20,
+                  marginBottom: shouldShowPositionBadge(member) ? 12 : 20,
                 }}
               >
                 {getDepartmentText(member)}
               </div>
             )}
 
-            {/* Position Badge */}
-            {member.position && (
+            {/* Position Badge (only if distinct from department text) */}
+            {shouldShowPositionBadge(member) && (
               <div style={{ display: "flex", marginBottom: 20 }}>
-                <PositionBadge text={member.position} bg="#1e1e24" color="#c5a86a" />
+                <PositionBadge text={member.position!} bg="#1e1e24" color="#c5a86a" />
               </div>
             )}
 
