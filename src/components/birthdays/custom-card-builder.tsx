@@ -118,18 +118,10 @@ export function CustomCardBuilder() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Local data URL preview instantly
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        setPhotoUrl(event.target.result as string);
-      }
-    };
-    reader.readAsDataURL(file);
-
-    // Also attempt remote upload to Supabase Storage if configured
     try {
       setUploading(true);
+      toast.info("Uploading photo file...");
+
       const formData = new FormData();
       formData.append("file", file);
       formData.append("bucket", "avatars");
@@ -140,15 +132,16 @@ export function CustomCardBuilder() {
         body: formData,
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.url) {
-          setPhotoUrl(data.url);
-          toast.success("Photo uploaded successfully!");
-        }
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setPhotoUrl(data.url);
+        toast.success("Photo uploaded successfully!");
+      } else {
+        toast.error(data.error || "Failed to upload photo file.");
       }
     } catch (err) {
-      console.warn("Using local image preview fallback", err);
+      console.error("Photo upload error:", err);
+      toast.error("Failed to upload photo file. Please try again.");
     } finally {
       setUploading(false);
     }
@@ -406,7 +399,7 @@ export function CustomCardBuilder() {
                   </Label>
                   
                   <div className="flex items-center gap-2">
-                    <label className="flex-1 cursor-pointer">
+                    <label className={`flex-1 ${uploading ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}>
                       <div className="h-10 border border-dashed border-slate-300 hover:border-primary bg-slate-50 hover:bg-slate-100 rounded-md px-3 flex items-center justify-center text-xs text-slate-600 font-medium transition-colors">
                         {uploading ? (
                           <RefreshCw className="h-4 w-4 animate-spin text-primary mr-1.5" />
@@ -419,6 +412,7 @@ export function CustomCardBuilder() {
                         type="file"
                         accept="image/*"
                         onChange={handleFileUpload}
+                        disabled={uploading}
                         className="hidden"
                       />
                     </label>
@@ -436,6 +430,13 @@ export function CustomCardBuilder() {
                       </Button>
                     )}
                   </div>
+
+                  <Input
+                    value={photoUrl.startsWith("data:") ? "" : photoUrl}
+                    onChange={(e) => setPhotoUrl(e.target.value)}
+                    placeholder="Or paste photo URL (https://...)"
+                    className="h-8 text-[11px] border-slate-300 font-mono mt-1"
+                  />
                 </div>
               </div>
 

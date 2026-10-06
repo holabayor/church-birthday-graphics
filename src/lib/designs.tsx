@@ -272,8 +272,8 @@ export const designs: Array<{
                 src={member.photo_url}
                 alt=""
                 style={{
-                  width: "100%",
-                  height: "100%",
+                  width: 430,
+                  height: 660,
                   objectFit: "cover",
                 }}
               />
@@ -345,8 +345,9 @@ export const designs: Array<{
                 src={member.photo_url}
                 alt=""
                 style={{
-                  width: "100%",
-                  height: "100%",
+                  width: 430,
+                  height: 640,
+                  borderRadius: 25,
                   objectFit: "cover",
                 }}
               />
@@ -1051,8 +1052,9 @@ export const designs: Array<{
                     src={member.photo_url}
                     alt="Member"
                     style={{
-                      width: "100%",
-                      height: "100%",
+                      width: 400,
+                      height: 640,
+                      borderRadius: 12,
                       objectFit: "cover",
                     }}
                   />
@@ -1335,8 +1337,9 @@ export const designs: Array<{
                 src={member.photo_url}
                 alt="Member"
                 style={{
-                  width: "100%",
-                  height: "100%",
+                  width: 420,
+                  height: 640,
+                  borderRadius: 26,
                   objectFit: "cover",
                 }}
               />
@@ -1406,8 +1409,8 @@ export const designs: Array<{
                   src={member.photo_url}
                   alt="Member"
                   style={{
-                    width: "100%",
-                    height: "100%",
+                    width: 388,
+                    height: 608,
                     objectFit: "cover",
                   }}
                 />
@@ -1633,8 +1636,9 @@ export const designs: Array<{
                   src={member.photo_url}
                   alt="Member"
                   style={{
-                    width: "100%",
-                    height: "100%",
+                    width: 440,
+                    height: 680,
+                    borderRadius: "214px 214px 0 0",
                     objectFit: "cover",
                   }}
                 />
@@ -1961,8 +1965,8 @@ export const designs: Array<{
                   src={member.photo_url}
                   alt="Member"
                   style={{
-                    width: "100%",
-                    height: "100%",
+                    width: 440,
+                    height: 640,
                     objectFit: "cover",
                   }}
                 />
@@ -2147,8 +2151,8 @@ export const designs: Array<{
                   src={member.photo_url}
                   alt="Member"
                   style={{
-                    width: "100%",
-                    height: "100%",
+                    width: 440,
+                    height: 640,
                     objectFit: "cover",
                   }}
                 />
