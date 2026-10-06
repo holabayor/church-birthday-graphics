@@ -10,6 +10,7 @@ import {
   MessageCircle,
   Palette,
   Settings,
+  Sparkles,
   User,
   Users,
   Vote,
@@ -157,7 +158,10 @@ export function Sidebar() {
       ? [{ href: "/outreach", label: "Outreach", icon: MessageCircle, section: "operations" as const }]
       : []),
     ...(can(PERMISSION.BIRTHDAYS_MANAGE)
-      ? [{ href: "/designs", label: "Birthdays", icon: Palette, section: "operations" as const }]
+      ? [
+          { href: "/designs", label: "Birthdays", icon: Palette, section: "operations" as const },
+          { href: "/designs/custom", label: "Custom Card Studio", icon: Sparkles, section: "operations" as const },
+        ]
       : []),
     ...(can(PERMISSION.POLLS_MANAGE)
       ? [{ href: "/polls-manage", label: "Manage Polls", icon: Vote, section: "operations" as const }]

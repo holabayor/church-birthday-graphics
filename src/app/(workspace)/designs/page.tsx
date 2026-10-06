@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { Member } from "@/lib/types";
 import { ADMIN_ROLE, PERMISSION, type AdminRole, type Permission } from "@/lib/adminRoles";
 import { MemberDetailDialog } from "@/components/members/member-detail-dialog";
+import { CustomCardBuilder } from "@/components/birthdays/custom-card-builder";
 
 export default function DesignsPage() {
   // Existing template states
@@ -206,13 +207,20 @@ export default function DesignsPage() {
       <div className="space-y-6 p-4 md:space-y-8 md:p-8">
         <Tabs defaultValue="celebrants" className="w-full gap-6">
           <div className="overflow-x-auto rounded-xl border border-[var(--outline-variant)] bg-white p-2 shadow-sm">
-            <TabsList className="grid h-auto w-full grid-cols-3 gap-1 bg-transparent p-0">
+            <TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-4 gap-1 bg-transparent p-0">
               <TabsTrigger
                 value="celebrants"
                 className="h-11 justify-start rounded-md border border-transparent px-3 text-sm font-medium text-[var(--on-surface-variant)] data-[state=active]:border-[var(--outline-variant)] data-[state=active]:bg-[var(--surface-container)] data-[state=active]:text-primary data-[state=active]:shadow-none"
               >
                 <Gift className="h-4 w-4" />
                 Celebrants
+              </TabsTrigger>
+              <TabsTrigger
+                value="custom-card"
+                className="h-11 justify-start rounded-md border border-transparent px-3 text-sm font-medium text-[var(--on-surface-variant)] data-[state=active]:border-[var(--outline-variant)] data-[state=active]:bg-[var(--surface-container)] data-[state=active]:text-primary data-[state=active]:shadow-none"
+              >
+                <Sparkles className="h-4 w-4 text-amber-500" />
+                Custom Card Studio
               </TabsTrigger>
               <TabsTrigger
                 value="templates"
@@ -584,6 +592,10 @@ export default function DesignsPage() {
                 </div>
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="custom-card" className="mt-0">
+            <CustomCardBuilder />
           </TabsContent>
 
           <TabsContent value="messages" className="mt-0">
