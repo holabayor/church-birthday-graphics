@@ -3,6 +3,7 @@ import type { UnitRole } from "@/lib/unitRoles";
 
 export interface Member {
   id: string;
+  title?: string | null;
   first_name: string;
   middle_name: string | null;
   last_name: string;

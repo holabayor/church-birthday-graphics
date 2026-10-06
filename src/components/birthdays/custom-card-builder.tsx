@@ -30,6 +30,20 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
+const COMMON_TITLES = [
+  "Pastor (Mrs)",
+  "Pastor",
+  "Deacon",
+  "Deaconess",
+  "Dr.",
+  "Elder",
+  "Evang.",
+  "Min.",
+  "Rev.",
+  "Bro.",
+  "Sis.",
+];
+
 const COMMON_POSITIONS = [
   "Protocol Department",
   "Valued Partner & Sponsor",
@@ -43,6 +57,7 @@ const COMMON_POSITIONS = [
 
 export function CustomCardBuilder() {
   // Form states
+  const [title, setTitle] = useState("Pastor (Mrs)");
   const [firstName, setFirstName] = useState("Ibukunoluwa");
   const [middleName, setMiddleName] = useState("Oyejoko");
   const [lastName, setLastName] = useState("OSIJONWO");
@@ -84,6 +99,7 @@ export function CustomCardBuilder() {
   const buildApiParams = () => {
     return new URLSearchParams({
       design: selectedDesign.toString(),
+      title: title.trim(),
       first_name: firstName.trim() || "Celebrant",
       middle_name: middleName.trim(),
       last_name: lastName.trim(),
@@ -150,7 +166,7 @@ export function CustomCardBuilder() {
       const blob = await res.blob();
       const blobUrl = URL.createObjectURL(blob);
 
-      const cleanName = `${lastName || firstName || "Celebrant"}-Birthday-Card`
+      const cleanName = `${title || ""} ${lastName || firstName || "Celebrant"}-Birthday-Card`
         .replace(/[^a-zA-Z0-9-]/g, "_");
 
       const a = document.createElement("a");
@@ -180,6 +196,7 @@ export function CustomCardBuilder() {
 
   // Reset Form
   const handleReset = () => {
+    setTitle("");
     setFirstName("");
     setMiddleName("");
     setLastName("");
@@ -239,6 +256,51 @@ export function CustomCardBuilder() {
             </CardHeader>
             <CardContent className="p-5 space-y-4">
               
+              {/* Title / Honorific Prefix Field */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="cust_title" className="text-xs font-semibold text-slate-700">
+                    Title / Honorific Prefix (e.g. Pastor (Mrs), Pastor, Dr.)
+                  </Label>
+                  <span className="text-[10px] text-slate-400 font-mono">Appended before name</span>
+                </div>
+                <Input
+                  id="cust_title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g. Pastor (Mrs), Pastor, Deaconess, Dr."
+                  className="h-10 text-xs border-slate-300 font-medium"
+                />
+
+                {/* Title Preset Chips */}
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  <span className="text-[10px] font-bold text-slate-400 self-center mr-1">Title Presets:</span>
+                  {COMMON_TITLES.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setTitle(t)}
+                      className={`text-[11px] px-2.5 py-0.5 rounded-md transition-colors ${
+                        title === t
+                          ? "bg-amber-500 text-slate-950 font-bold"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                  {title && (
+                    <button
+                      type="button"
+                      onClick={() => setTitle("")}
+                      className="text-[10px] px-2 py-0.5 rounded-md bg-red-50 text-red-600 hover:bg-red-100 transition-colors font-medium"
+                    >
+                      Clear Title
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {/* Name Fields Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1.5">

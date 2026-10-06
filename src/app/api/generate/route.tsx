@@ -65,6 +65,7 @@ export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
     const designIndex = parseInt(searchParams.get("design") || "0");
+    const title = searchParams.get("title") || searchParams.get("prefix") || "";
     const firstName = searchParams.get("first_name") || "John";
     const middleName = searchParams.get("middle_name") || "";
     const lastName = searchParams.get("last_name") || "Doe";
@@ -77,6 +78,7 @@ export async function GET(req: NextRequest) {
 
     const member: Member = {
       id: "",
+      title: title || null,
       first_name: firstName,
       middle_name: middleName || null,
       last_name: lastName,

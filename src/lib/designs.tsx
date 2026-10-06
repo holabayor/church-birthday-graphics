@@ -41,11 +41,16 @@ function getDepartmentText(member: Member): string {
 }
 
 function getDesignFullName(member: Member): string {
+  const title = (member.title || "").trim();
   const last = (member.last_name || "").trim().toUpperCase();
   const firstAndMiddle = [member.first_name, member.middle_name].map(n => (n || "").trim()).filter(Boolean).join(" ");
-  if (!last) return firstAndMiddle;
-  if (!firstAndMiddle) return last;
-  return `${last}, ${firstAndMiddle}`.trim();
+  
+  let baseName = "";
+  if (!last) baseName = firstAndMiddle;
+  else if (!firstAndMiddle) baseName = last;
+  else baseName = `${last}, ${firstAndMiddle}`.trim();
+
+  return title ? `${title} ${baseName}` : baseName;
 }
 
 // ---------------------------------------------------------------------------
@@ -952,7 +957,8 @@ export const designs: Array<{
           .join(" ");
       };
       const lastName = toTitleCase(rawLastName);
-      const firstAndMiddle = [member.first_name, member.middle_name]
+      const title = (member.title || "").trim();
+      const firstAndMiddle = [title, member.first_name, member.middle_name]
         .map(n => (n || "").trim())
         .filter(Boolean)
         .map(n => toTitleCase(n))
