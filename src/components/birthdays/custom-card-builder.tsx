@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { designs, defaultMessages } from "@/lib/designs";
 import {
   Download,
-  Share2,
   Upload,
   RefreshCw,
   Sparkles,
@@ -17,7 +16,6 @@ import {
   MessageSquare,
   Eye,
   X,
-  UserCheck,
   CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,7 +24,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
@@ -80,7 +77,10 @@ export function CustomCardBuilder() {
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
-  const [previewLoaded, setPreviewLoaded] = useState(false);
+  
+  // Live Blob Preview States
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string>("");
+  const [renderingPreview, setRenderingPreview] = useState(true);
 
   // Fetch preset messages from database
   useEffect(() => {
@@ -95,10 +95,10 @@ export function CustomCardBuilder() {
       .catch(() => setPresetMessages(defaultMessages));
   }, []);
 
-  // Build API Query Parameters for Live Preview & Download
-  const buildApiParams = () => {
-    return new URLSearchParams({
-      design: selectedDesign.toString(),
+  // Build JSON Payload for POST generation
+  const buildCardPayload = () => {
+    return {
+      design: selectedDesign,
       title: title.trim(),
       first_name: firstName.trim() || "Celebrant",
       middle_name: middleName.trim(),
@@ -108,10 +108,45 @@ export function CustomCardBuilder() {
       date_of_birth: dateOfBirth,
       message: message.trim() || defaultMessages[0],
       unit_name: position.trim(),
-    });
+    };
   };
 
-  const previewApiUrl = `/api/generate?${buildApiParams().toString()}`;
+  // Debounced Live Preview Generation via POST /api/generate
+  useEffect(() => {
+    let active = true;
+    setRenderingPreview(true);
+
+    const updatePreview = async () => {
+      try {
+        const res = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(buildCardPayload()),
+        });
+
+        if (!res.ok) throw new Error("Failed to generate card graphic preview");
+
+        const blob = await res.blob();
+        if (active) {
+          const newUrl = URL.createObjectURL(blob);
+          setPreviewBlobUrl((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return newUrl;
+          });
+        }
+      } catch (err) {
+        console.error("Preview render error:", err);
+      } finally {
+        if (active) setRenderingPreview(false);
+      }
+    };
+
+    const timer = setTimeout(updatePreview, 300);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [selectedDesign, title, firstName, middleName, lastName, position, photoUrl, dateOfBirth, message]);
 
   // Handle Photo File Upload
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,7 +170,7 @@ export function CustomCardBuilder() {
       const data = await res.json();
       if (res.ok && data.url) {
         setPhotoUrl(data.url);
-        toast.success("Photo uploaded successfully!");
+        toast.success("Photo processed successfully!");
       } else {
         toast.error(data.error || "Failed to upload photo file.");
       }
@@ -147,13 +182,18 @@ export function CustomCardBuilder() {
     }
   };
 
-  // Download High-Res PNG
+  // Download High-Res PNG via POST
   const handleDownload = async () => {
     try {
       setDownloading(true);
       toast.info("Generating high-resolution PNG birthday card...");
 
-      const res = await fetch(previewApiUrl);
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildCardPayload()),
+      });
+
       if (!res.ok) throw new Error("Failed to render card");
 
       const blob = await res.blob();
@@ -178,9 +218,25 @@ export function CustomCardBuilder() {
     }
   };
 
-  // Copy Image Link
+  // Copy GET Link for non-base64 URLs
   const handleCopyLink = () => {
-    const fullUrl = `${window.location.origin}${previewApiUrl}`;
+    if (photoUrl.startsWith("data:")) {
+      toast.info("Image uses a custom uploaded photo. Use 'Download PNG' to save.");
+      return;
+    }
+    const params = new URLSearchParams({
+      design: selectedDesign.toString(),
+      title: title.trim(),
+      first_name: firstName.trim() || "Celebrant",
+      middle_name: middleName.trim(),
+      last_name: lastName.trim(),
+      position: position.trim(),
+      photo_url: photoUrl.trim(),
+      date_of_birth: dateOfBirth,
+      message: message.trim() || defaultMessages[0],
+      unit_name: position.trim(),
+    });
+    const fullUrl = `${window.location.origin}/api/generate?${params.toString()}`;
     navigator.clipboard.writeText(fullUrl);
     setCopied(true);
     toast.success("Card graphics link copied to clipboard!");
@@ -555,19 +611,25 @@ export function CustomCardBuilder() {
               
               {/* Graphic Canvas Container */}
               <div className="relative w-full aspect-square max-w-[380px] rounded-xl overflow-hidden shadow-2xl border border-slate-800 bg-slate-900 flex items-center justify-center">
-                {!previewLoaded && (
-                  <div className="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center text-slate-400 space-y-2 z-10">
+                {renderingPreview && (
+                  <div className="absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center text-slate-400 space-y-2 z-10 backdrop-blur-xs">
                     <RefreshCw className="h-8 w-8 animate-spin text-amber-400" />
                     <span className="text-xs font-mono">Rendering graphic...</span>
                   </div>
                 )}
 
-                <img
-                  src={previewApiUrl}
-                  alt="Custom Birthday Card Preview"
-                  onLoad={() => setPreviewLoaded(true)}
-                  className="w-full h-full object-cover transition-opacity duration-300"
-                />
+                {previewBlobUrl ? (
+                  <img
+                    src={previewBlobUrl}
+                    alt="Custom Birthday Card Preview"
+                    className="w-full h-full object-cover transition-opacity duration-300"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-slate-500">
+                    <Sparkles className="h-10 w-10 text-slate-600 mb-2" />
+                    <span className="text-xs font-mono">Preparing preview...</span>
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons */}
@@ -617,11 +679,13 @@ export function CustomCardBuilder() {
             </DialogTitle>
           </DialogHeader>
           <div className="p-4 flex items-center justify-center">
-            <img
-              src={previewApiUrl}
-              alt="High-Res Birthday Card"
-              className="w-full max-w-[500px] h-auto rounded-lg border border-slate-800 shadow-2xl"
-            />
+            {previewBlobUrl && (
+              <img
+                src={previewBlobUrl}
+                alt="High-Res Birthday Card"
+                className="w-full max-w-[500px] h-auto rounded-lg border border-slate-800 shadow-2xl"
+              />
+            )}
           </div>
           <div className="p-4 bg-slate-900 border-t border-slate-800 flex justify-end gap-2">
             <Button
