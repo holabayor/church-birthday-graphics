@@ -1823,7 +1823,7 @@ export const designs: Array<{
             display: "flex",
             width: 1080,
             height: 1080,
-            background: "#c3c3c3",
+            background: "#f3f3f3",
             overflow: "hidden",
             fontFamily: "sans-serif",
             position: "relative",
