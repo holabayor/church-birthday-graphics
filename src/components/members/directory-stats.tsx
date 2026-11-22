@@ -1,69 +1,93 @@
 "use client";
 
-import { Users, GraduationCap, BriefcaseBusiness, UserRoundCheck } from "lucide-react";
+import { Users, GraduationCap, BriefcaseBusiness, ShieldCheck } from "lucide-react";
+import { FILTER_VALUE } from "@/lib/filterOptions";
+import { LIFE_STAGE } from "@/lib/memberLifecycle";
 
 type DirectoryStatsProps = {
   total: number;
   students: number;
   working: number;
-  visitors: number;
+  visitors?: number;
+  workers?: number;
+  activeFilter?: string;
+  onFilterSelect?: (filterValue: string) => void;
 };
 
-export function DirectoryStats({ total, students, working, visitors }: DirectoryStatsProps) {
+export function DirectoryStats({
+  total,
+  students,
+  working,
+  workers = 0,
+  activeFilter,
+  onFilterSelect,
+}: DirectoryStatsProps) {
   const cards = [
     {
       title: "Total Members",
       count: total,
+      subtitle: "All records",
       icon: Users,
+      filterValue: FILTER_VALUE.ALL,
       colorClass: "bg-primary/10 text-primary",
-      hoverBorder: "hover:border-primary",
-      badge: "+12%", // Optional growth label matching design
+    },
+    {
+      title: "Church Workers",
+      count: workers,
+      subtitle: "Serving in units",
+      icon: ShieldCheck,
+      filterValue: "workers",
+      colorClass: "bg-amber-500/15 text-amber-600",
     },
     {
       title: "Students",
       count: students,
+      subtitle: "Campus & youth",
       icon: GraduationCap,
-      colorClass: "bg-secondary/15 text-[var(--secondary)]",
-      hoverBorder: "hover:border-[var(--secondary)]",
+      filterValue: LIFE_STAGE.STUDENT,
+      colorClass: "bg-purple-500/10 text-purple-600",
     },
     {
       title: "Working Class",
       count: working,
+      subtitle: "Professionals & NYSC",
       icon: BriefcaseBusiness,
-      colorClass: "bg-[var(--member-emerald)]/10 text-[var(--member-emerald)]",
-      hoverBorder: "hover:border-[var(--member-emerald)]",
-    },
-    {
-      title: "Visitors",
-      count: visitors,
-      icon: UserRoundCheck,
-      colorClass: "bg-primary/10 text-primary",
-      hoverBorder: "hover:border-primary",
+      filterValue: LIFE_STAGE.WORKING_CLASS,
+      colorClass: "bg-emerald-500/10 text-emerald-600",
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-5">
       {cards.map((card, idx) => {
         const Icon = card.icon;
+        const isSelected = activeFilter === card.filterValue;
         return (
-          <div
+          <button
             key={idx}
-            className={`bg-[var(--surface-container-lowest)] p-5 rounded-xl border border-[var(--outline-variant)]/40 shadow-xs group transition-colors cursor-default ${card.hoverBorder}`}
+            type="button"
+            onClick={() => onFilterSelect?.(card.filterValue)}
+            className={`text-left bg-white p-4 sm:p-5 rounded-xl border shadow-2xs transition-all ${
+              isSelected
+                ? "border-primary ring-2 ring-primary/15"
+                : "border-[var(--outline-variant)]/70 hover:border-primary/40"
+            }`}
           >
-            <div className="flex justify-between items-start mb-3">
-              <div className={`p-2 rounded-lg ${card.colorClass}`}>
-                <Icon className="h-5 w-5" />
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-medium text-[var(--on-surface-variant)] truncate">
+                {card.title}
+              </span>
+              <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${card.colorClass}`}>
+                <Icon className="size-4" />
               </div>
-              {card.badge && (
-                <span className="text-[12px] font-mono text-[var(--member-emerald)] uppercase bg-[var(--member-emerald)]/10 px-2 py-0.5 rounded-full font-semibold">
-                  {card.badge}
-                </span>
-              )}
             </div>
-            <p className="text-xs text-[var(--outline)] font-mono uppercase tracking-wider">{card.title}</p>
-            <h3 className="text-2xl font-bold mt-1 text-foreground">{card.count.toLocaleString()}</h3>
-          </div>
+            <div className="mt-3">
+              <div className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                {card.count.toLocaleString()}
+              </div>
+              <p className="mt-1 text-xs text-[var(--outline)] truncate">{card.subtitle}</p>
+            </div>
+          </button>
         );
       })}
     </div>

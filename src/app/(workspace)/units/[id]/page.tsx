@@ -198,101 +198,59 @@ export default function UnitDetailPage() {
 
   return (
     <div className="flex-1 w-full bg-background min-h-screen">
-      {/* Desktop Header */}
-      <div className="hidden md:block">
-        <PageHeader
-          eyebrow="Unit workspace"
-          title={unit.name}
-          description={unit.description || "Manage this unit's members and leadership responsibilities."}
-          actions={
-            <div className="flex items-center gap-3">
-              <Button asChild variant="outline" className="h-10 border-(--outline-variant) bg-white font-semibold">
-                <Link href="/units">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  All Units
-                </Link>
-              </Button>
-              {unit.access.can_manage_members && (
-                <Button
-                  onClick={() => setAddOpen(true)}
-                  className="h-10 bg-amber-500 text-white font-semibold hover:bg-amber-600 border border-transparent shadow-sm shadow-amber-200"
-                >
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Add Member
-                </Button>
-              )}
-            </div>
-          }
-        />
-      </div>
-
-      {/* Mobile Header */}
-      <header className="md:hidden bg-white border-b border-(--outline-variant) sticky top-0 z-40 px-4 py-4 flex items-center justify-between">
-        <div className="flex flex-col">
-          <span className="text-[12px] uppercase tracking-widest text-primary font-bold">Unit Workspace</span>
-          <h1 className="text-2xl font-bold text-slate-900">{unit.name}</h1>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            asChild
-            variant="outline"
-            className="h-10 border-(--outline-variant) bg-white font-semibold"
-            size="icon"
-          >
-            <Link href="/units">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-          </Button>
-          {unit.access.can_manage_members && (
-            <Button
-              onClick={() => setAddOpen(true)}
-              className="bg-amber-500 hover:bg-amber-600 text-white p-2 h-10 w-10 rounded-lg shadow-sm"
-              size="icon"
-            >
-              <UserPlus className="h-5 w-5" />
+      <PageHeader
+        eyebrow="Ministry department"
+        title={unit.name}
+        description={unit.description || "Manage this unit's members and leadership responsibilities."}
+        actions={
+          <div className="flex w-full sm:w-auto items-center gap-2">
+            <Button asChild variant="outline" size="sm" className="h-10 border-[var(--outline-variant)] bg-white font-semibold">
+              <Link href="/units">
+                <ArrowLeft className="mr-1.5 h-4 w-4" />
+                All Units
+              </Link>
             </Button>
-          )}
-        </div>
-      </header>
+            {unit.access.can_manage_members && (
+              <Button
+                onClick={() => setAddOpen(true)}
+                size="sm"
+                variant="secondary"
+                className="h-10 font-bold ml-auto sm:ml-0"
+              >
+                <UserPlus className="mr-1.5 h-4 w-4" />
+                Add Member
+              </Button>
+            )}
+          </div>
+        }
+      />
 
       <main className="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6">
         {/* Workspace Key Stats */}
         <UnitWorkspaceStats unit={unit} />
 
         {/* Roster Listing Card */}
-        <div className="overflow-hidden rounded-2xl md:rounded-xl border border-(--outline-variant) bg-white shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-(--outline-variant)/60 bg-white shadow-2xs">
           {/* Card Header Toolbar */}
-          <div className="p-5 md:p-6 border-b border-(--outline-variant) bg-white gap-5 flex flex-col">
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-1">
-              <div>
-                <h2 className="font-headline text-xl font-bold text-[#0B1C30]">Unit Roster</h2>
-                <p className="text-xs text-(--on-surface-variant) mt-0.5">
-                  {roster.length} of {unit.members.length} members shown
-                </p>
-              </div>
-              <p className="font-mono text-[12px] font-bold uppercase leading-4 tracking-widest text-(--outline)">
-                Operational roster
-              </p>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-[minmax(260px,1fr)_220px]">
+          <div className="p-4 sm:p-5 border-b border-(--outline-variant)/50 bg-white">
+            <div className="grid gap-3 md:grid-cols-[minmax(260px,1fr)_200px]">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-(--outline)" />
+                <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-(--outline)" />
                 <Input
                   type="search"
-                  placeholder="Search members by name..."
+                  placeholder="Search unit members..."
                   value={search}
                   onChange={event => setSearch(event.target.value)}
-                  className="h-11 border-(--outline-variant) bg-(--surface-container-lowest) pl-10"
+                  className="h-10 rounded-xl border-(--outline-variant)/60 bg-(--surface-container-low) pl-10"
                 />
               </div>
               <Select value={sort} onValueChange={value => setSort(value as SortMode)}>
-                <SelectTrigger className="h-11 w-full border-(--outline-variant) bg-white font-medium text-[#0B1C30]">
+                <SelectTrigger className="h-10 w-full rounded-xl border-(--outline-variant)/60 bg-white text-xs font-semibold text-[#0B1C30]">
                   <SelectValue placeholder="Sort roster" />
                 </SelectTrigger>
                 <SelectContent className="border-(--outline-variant)">
-                  <SelectItem value="name-asc">Name, A-Z</SelectItem>
-                  <SelectItem value="name-desc">Name, Z-A</SelectItem>
+                  <SelectItem value="name-asc">Name, A–Z</SelectItem>
+                  <SelectItem value="name-desc">Name, Z–A</SelectItem>
                   <SelectItem value="role">Leadership first</SelectItem>
                 </SelectContent>
               </Select>

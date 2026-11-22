@@ -161,6 +161,7 @@ export async function middleware(request: NextRequest) {
     ];
     const allowedMemberApis = [
       `/api/members/${memberId}`, 
+      "/api/member-dashboard",
       "/api/auth", 
       "/api/upload",
       "/api/units",

@@ -44,8 +44,8 @@
 }
 
 :root {
-  --radius: 0.5rem;
-  --background: #f8f9ff;
+  --radius: 0.75rem;
+  --background: #f5f7fb;
   --foreground: #0b1c30;
   --card: #ffffff;
   --card-foreground: #0b1c30;
@@ -55,13 +55,13 @@
   --primary-foreground: #ffffff;
   --secondary: #f59e0b;
   --secondary-foreground: #0b1c30;
-  --muted: #eff4ff;
-  --muted-foreground: #434655;
+  --muted: #eef3fb;
+  --muted-foreground: #475569;
   --accent: #e5eeff;
-  --accent-foreground: #2563eb;
-  --destructive: #ba1a1a;
-  --border: #c3c6d7;
-  --input: #c3c6d7;
+  --accent-foreground: #1d4ed8;
+  --destructive: #dc2626;
+  --border: #d8e0ef;
+  --input: #cbd5e1;
   --ring: #2563eb;
   --chart-1: #2563eb;
   --chart-2: #10b981;
@@ -72,22 +72,22 @@
   --sidebar-foreground: #0b1c30;
   --sidebar-primary: #2563eb;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e5eeff;
+  --sidebar-accent: #eff4ff;
   --sidebar-accent-foreground: #2563eb;
-  --sidebar-border: #c3c6d7;
+  --sidebar-border: #e2e8f0;
   --sidebar-ring: #2563eb;
-  --surface: #f8f9ff;
+  --surface: #f5f7fb;
   --surface-dim: #cbdbf5;
   --surface-container-lowest: #ffffff;
-  --surface-container-low: #eff4ff;
+  --surface-container-low: #f1f5fd;
   --surface-container: #e5eeff;
   --surface-container-high: #dce9ff;
   --surface-container-highest: #d3e4fe;
-  --on-surface-variant: #434655;
-  --inverse-surface: #213145;
-  --inverse-on-surface: #eaf1ff;
-  --outline: #737686;
-  --outline-variant: #c3c6d7;
+  --on-surface-variant: #475569;
+  --inverse-surface: #0f172a;
+  --inverse-on-surface: #f8fafc;
+  --outline: #64748b;
+  --outline-variant: #d8e0ef;
   --member-amber: #f59e0b;
   --member-emerald: #10b981;
   --lifecycle-student: #7c3aed;
@@ -132,10 +132,15 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    -webkit-tap-highlight-color: transparent;
+  }
+  html {
+    scroll-behavior: smooth;
   }
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-inter), system-ui, sans-serif;
+    overflow-x: hidden;
   }
   h1,
   h2,
@@ -144,8 +149,21 @@
   h5,
   h6 {
     font-family: var(--font-manrope), var(--font-inter), system-ui, sans-serif;
-    letter-spacing: 0;
+    letter-spacing: -0.015em;
   }
+}
+
+/* Mobile-First Utilities */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.pb-safe {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
 
 /* Hide Next.js error overlay portal */
@@ -220,4 +238,3 @@ nextjs-portal {
     box-sizing: border-box !important;
   }
 }
-

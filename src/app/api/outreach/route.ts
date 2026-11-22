@@ -22,18 +22,28 @@ const isBirthdayInRange = (dateOfBirth: string, daysAhead: number) => {
   return birthday >= today && birthday <= end;
 };
 
-const formatMember = (member: any, extra: Record<string, unknown> = {}) => ({
-  id: member.id,
-  first_name: member.first_name,
-  middle_name: member.middle_name,
-  last_name: member.last_name,
-  name: [member.first_name, member.middle_name, member.last_name].filter(Boolean).join(" "),
-  phone_number: member.phone_number,
-  email: member.email,
-  life_stage: normalizeLifeStage(member.life_stage),
-  units: member.units || [],
-  ...extra,
-});
+const formatMember = (member: any, extra: Record<string, unknown> = {}) => {
+  const units = member.units || [];
+  const isWorker =
+    member.member_type === "worker" ||
+    units.length > 0 ||
+    Boolean(member.position && String(member.position).trim());
+
+  return {
+    id: member.id,
+    first_name: member.first_name,
+    middle_name: member.middle_name,
+    last_name: member.last_name,
+    name: [member.first_name, member.middle_name, member.last_name].filter(Boolean).join(" "),
+    phone_number: member.phone_number,
+    email: member.email,
+    position: member.position || null,
+    worker_flag: isWorker ? "Yes" : "No",
+    life_stage: normalizeLifeStage(member.life_stage),
+    units,
+    ...extra,
+  };
+};
 
 export async function GET(req: NextRequest) {
   const { allowed } = await requirePermission(PERMISSION.OUTREACH_VIEW);
@@ -57,8 +67,8 @@ export async function GET(req: NextRequest) {
 
     const membersWithUnits = await attachMemberUnits(supabase, data || []);
     const rows = membersWithUnits
-      .filter(member => member.date_of_birth && isBirthdayInRange(member.date_of_birth, daysAhead))
-      .map(member => formatMember(member, { date_of_birth: member.date_of_birth }));
+      .filter((member) => member.date_of_birth && isBirthdayInRange(member.date_of_birth, daysAhead))
+      .map((member) => formatMember(member, { date_of_birth: member.date_of_birth }));
 
     return NextResponse.json({ data: rows });
   }
@@ -85,14 +95,16 @@ export async function GET(req: NextRequest) {
 
     const rows = (data || [])
       .filter((row: any) => row.members?.phone_number)
-      .map((row: any) => formatMember(
-        { ...row.members, units: unitsByMember.get(row.members.id) || [] },
-        {
-          attendance_status: row.status,
-          follow_up_status: row.absentee_followups?.[0]?.status || FOLLOW_UP_STATUS.PENDING,
-          assigned_to: row.absentee_followups?.[0]?.assigned_to || null,
-        }
-      ));
+      .map((row: any) =>
+        formatMember(
+          { ...row.members, units: unitsByMember.get(row.members.id) || [] },
+          {
+            attendance_status: row.status,
+            follow_up_status: row.absentee_followups?.[0]?.status || FOLLOW_UP_STATUS.PENDING,
+            assigned_to: row.absentee_followups?.[0]?.assigned_to || null,
+          }
+        )
+      );
 
     return NextResponse.json({ data: rows });
   }
@@ -108,9 +120,39 @@ export async function GET(req: NextRequest) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+    const members = (data || []).map((row: any) => row.members).filter(Boolean);
+    const membersWithUnits = await attachMemberUnits(supabase, members);
+    const unitsByMember = new Map(membersWithUnits.map((m: any) => [m.id, m.units || []]));
+
     const rows = (data || [])
       .filter((row: any) => row.members?.phone_number)
-      .map((row: any) => formatMember(row.members, { unit_role: row.role }));
+      .map((row: any) =>
+        formatMember(
+          { ...row.members, units: unitsByMember.get(row.members.id) || [] },
+          { unit_role: row.role }
+        )
+      );
+
+    return NextResponse.json({ data: rows });
+  }
+
+  if (type === OUTREACH_TYPE.WORKERS) {
+    const { data, error } = await supabase
+      .from("members")
+      .select("*")
+      .order("first_name", { ascending: true });
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    const membersWithUnits = await attachMemberUnits(supabase, data || []);
+    const rows = membersWithUnits
+      .filter((member: any) => {
+        const hasUnits = Array.isArray(member.units) && member.units.length > 0;
+        const hasPosition = Boolean(member.position && String(member.position).trim());
+        const isWorkerType = member.member_type === "worker";
+        return hasUnits || hasPosition || isWorkerType;
+      })
+      .map((member) => formatMember(member));
 
     return NextResponse.json({ data: rows });
   }

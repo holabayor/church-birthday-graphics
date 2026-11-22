@@ -2,6 +2,7 @@ export const OUTREACH_TYPE = {
   BIRTHDAYS: "birthdays",
   ABSENTEES: "absentees",
   UNITS: "units",
+  WORKERS: "workers",
 } as const;
 
 export const BIRTHDAY_RANGE = {
@@ -16,7 +17,8 @@ export type BirthdayRange = (typeof BIRTHDAY_RANGE)[keyof typeof BIRTHDAY_RANGE]
 export const outreachTypeOptions = [
   { value: OUTREACH_TYPE.BIRTHDAYS, label: "Birthdays" },
   { value: OUTREACH_TYPE.ABSENTEES, label: "Absentees" },
-  { value: OUTREACH_TYPE.UNITS, label: "Units" },
+  { value: OUTREACH_TYPE.UNITS, label: "By Unit" },
+  { value: OUTREACH_TYPE.WORKERS, label: "All Workers" },
 ] as const;
 
 export const birthdayRangeOptions = [

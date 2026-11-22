@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import { Member } from "./types";
-import { getFullName, getBirthDate } from "./utils";
+import { getBirthDate } from "./utils";
 
 export interface DesignProps {
   member: Member;
@@ -8,9 +8,42 @@ export interface DesignProps {
   churchLogoUrl?: string;
 }
 
-function getNameFontSize(name: string, baseSize: number): number {
-  if (name.length <= 12) return baseSize;
-  return Math.max(40, Math.min(baseSize, Math.round(baseSize * (12 / name.length) * 1.15)));
+function toTitleCase(str: string): string {
+  return str
+    .toLowerCase()
+    .split(" ")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+function formatEditorialName(member: Member): string {
+  const titlePrefix = (member.title || "").trim();
+  const rawFullName = `${member.first_name || ""} ${member.middle_name || ""} ${member.last_name || ""}`
+    .replace(/\s+/g, " ")
+    .trim();
+  const namesTitleCased = toTitleCase(rawFullName);
+  return titlePrefix ? `${titlePrefix} ${namesTitleCased}` : namesTitleCased;
+}
+
+function splitEditorialName(member: Member): { givenLine: string; surnameLine: string } {
+  const titlePrefix = (member.title || "").trim();
+  const firstMid = [member.first_name, member.middle_name]
+    .map((n) => (n || "").trim())
+    .filter(Boolean)
+    .map(toTitleCase)
+    .join(" ");
+  const givenLine = [titlePrefix, firstMid].filter(Boolean).join(" ");
+  const surnameLine = toTitleCase((member.last_name || "").trim());
+  if (!surnameLine) {
+    return { givenLine: "", surnameLine: givenLine || "Celebrant" };
+  }
+  return { givenLine, surnameLine };
+}
+
+function getNameFontSize(name: string, baseSize = 46): number {
+  if (name.length <= 16) return baseSize;
+  return Math.max(34, Math.min(baseSize, Math.round(baseSize * (16 / name.length) * 1.12)));
 }
 
 function getDepartmentText(member: Member): string {
@@ -18,19 +51,20 @@ function getDepartmentText(member: Member): string {
   if (!primaryUnit) return "";
   const role = primaryUnit.role;
   const name = primaryUnit.name || "";
-  
-  const toTitleCase = (str: string) => {
-    return str
-      .toLowerCase()
-      .split(" ")
-      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(" ");
-  };
 
   const formattedName = toTitleCase(name);
-  const unitSuffix = formattedName.toLowerCase().includes("unit") || formattedName.toLowerCase().includes("department") || formattedName.toLowerCase().includes("committee") ? "" : " Department";
+  const unitSuffix =
+    formattedName.toLowerCase().includes("unit") ||
+    formattedName.toLowerCase().includes("department") ||
+    formattedName.toLowerCase().includes("committee") ||
+    formattedName.toLowerCase().includes("team") ||
+    formattedName.toLowerCase().includes("choir") ||
+    formattedName.toLowerCase().includes("partner") ||
+    formattedName.toLowerCase().includes("minister")
+      ? ""
+      : " Department";
   const displayName = `${formattedName}${unitSuffix}`;
-  
+
   if (role === "head") {
     return `HOD - ${displayName}`;
   } else if (role === "assistant") {
@@ -38,19 +72,6 @@ function getDepartmentText(member: Member): string {
   } else {
     return displayName;
   }
-}
-
-function getDesignFullName(member: Member): string {
-  const title = (member.title || "").trim();
-  const last = (member.last_name || "").trim().toUpperCase();
-  const firstAndMiddle = [member.first_name, member.middle_name].map(n => (n || "").trim()).filter(Boolean).join(" ");
-  
-  let baseName = "";
-  if (!last) baseName = firstAndMiddle;
-  else if (!firstAndMiddle) baseName = last;
-  else baseName = `${last}, ${firstAndMiddle}`.trim();
-
-  return title ? `${title} ${baseName}` : baseName;
 }
 
 function shouldShowPositionBadge(member: Member): boolean {
@@ -70,38 +91,23 @@ function shouldShowPositionBadge(member: Member): boolean {
   return true;
 }
 
-// ---------------------------------------------------------------------------
-// HELPER COMPONENTS
-// ---------------------------------------------------------------------------
+function getPrimaryRoleText(member: Member): string {
+  return getDepartmentText(member) || (member.position || "").trim();
+}
 
-// A flexible background pattern component
-const DotPattern = ({ color = "rgba(255,255,255,0.1)" }) => (
-  <div
-    style={{
-      position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundImage: `radial-gradient(${color} 2px, transparent 2px)`,
-      backgroundSize: "30px 30px",
-    }}
-  />
-);
-
-// A simple badge for the position
 const PositionBadge = ({ text, color, bg }: { text: string; color: string; bg: string }) => (
   <div
     style={{
       display: "flex",
-      padding: "8px 24px",
+      padding: "6px 18px",
       backgroundColor: bg,
       color: color,
       borderRadius: 4,
-      fontSize: 24,
-      fontWeight: 600,
+      fontFamily: "Montserrat",
+      fontSize: 16,
+      fontWeight: 700,
       textTransform: "uppercase",
-      letterSpacing: "2px",
+      letterSpacing: "3px",
     }}
   >
     {text}
@@ -109,1713 +115,22 @@ const PositionBadge = ({ text, color, bg }: { text: string; color: string; bg: s
 );
 
 // ---------------------------------------------------------------------------
-// DESIGNS
+// 8 DISTINCT ARCHITECTURAL TEMPLATES (All Powered by Cinzel + Montserrat)
 // ---------------------------------------------------------------------------
 
 export const designs: Array<{
   name: string;
   render: (props: DesignProps) => React.ReactElement;
 }> = [
-  {
-    name: "Midnight Gold",
-    render: ({ member, message, churchLogoUrl }) => (
-      <div
-        style={{
-          display: "flex",
-          width: 1080,
-          height: 1080,
-          background: "#0f1117",
-          overflow: "hidden",
-          position: "relative",
-          fontFamily: "sans-serif",
-        }}
-      >
-        {/* Background Text */}
-        <div
-          style={{
-            display: "flex",
-            position: "absolute",
-            top: -70,
-            left: -40,
-            fontSize: 360,
-            color: "#1b1d24",
-            fontWeight: 900,
-            lineHeight: 0.8,
-          }}
-        >
-          HBD
-        </div>
-
-        {/* Left */}
-        <div
-          style={{
-            display: "flex",
-            width: "54%",
-            flexDirection: "column",
-            justifyContent: "center",
-            padding: 80,
-          }}
-        >
-          {churchLogoUrl && (
-            <div style={{ display: "flex", marginBottom: 45 }}>
-              <img src={churchLogoUrl} alt="" height={100} />
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              color: "#d4af37",
-              letterSpacing: 5,
-              fontSize: 22,
-              marginBottom: 20,
-            }}
-          >
-            HAPPY BIRTHDAY
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              fontSize: getNameFontSize(getDesignFullName(member), 82),
-              color: "white",
-              fontWeight: 800,
-              lineHeight: 1,
-              marginBottom: member.position ? 20 : 28,
-            }}
-          >
-            {getDesignFullName(member)}
-          </div>
-
-          {member.position && (
-            <div style={{ display: "flex", marginBottom: 28 }}>
-              <PositionBadge text={member.position} bg="#1b1d24" color="#d4af37" />
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              width: 130,
-              height: 5,
-              background: "#d4af37",
-              marginBottom: getDepartmentText(member) ? 22 : 35,
-            }}
-          />
-
-          {getDepartmentText(member) && (
-            <div
-              style={{
-                display: "flex",
-                fontSize: 25,
-                color: "#d4af37",
-                fontWeight: 600,
-                fontStyle: "italic",
-                marginBottom: 22,
-              }}
-            >
-              {getDepartmentText(member)}
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              color: "#c8c8c8",
-              fontSize: 28,
-              lineHeight: 1.7,
-              marginBottom: 40,
-            }}
-          >
-            {message}
-          </div>
-
-          <div style={{ display: "flex" }}>
-            <div
-              style={{
-                display: "flex",
-                padding: "12px 32px",
-                background: "#d4af37",
-                color: "#0f1117",
-                borderRadius: 8,
-                fontSize: 28,
-                fontWeight: 800,
-                letterSpacing: 2,
-                textTransform: "uppercase",
-              }}
-            >
-              {getBirthDate(member)}
-            </div>
-          </div>
-        </div>
-
-        {/* Right */}
-        <div
-          style={{
-            display: "flex",
-            width: "46%",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              width: 430,
-              height: 660,
-              overflow: "hidden",
-              border: "4px solid #d4af37",
-            }}
-          >
-            {member.photo_url ? (
-              <img
-                src={member.photo_url}
-                alt=""
-                style={{
-                  width: 430,
-                  height: 660,
-                  objectFit: "cover",
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  display: "flex",
-                  width: "100%",
-                  height: "100%",
-                  background: "#333",
-                }}
-              />
-            )}
-          </div>
-        </div>
-      </div>
-    ),
-  },
-
-  {
-    name: "Emerald Prestige",
-    render: ({ member, message, churchLogoUrl }) => (
-      <div
-        style={{
-          display: "flex",
-          width: 1080,
-          height: 1080,
-          background: "#0f2d24",
-          overflow: "hidden",
-          fontFamily: "sans-serif",
-          position: "relative",
-        }}
-      >
-        {/* Accent Shape */}
-        <div
-          style={{
-            display: "flex",
-            position: "absolute",
-            width: 600,
-            height: 600,
-            borderRadius: 300,
-            background: "#164536",
-            right: -180,
-            top: -180,
-          }}
-        />
-
-        {/* Left */}
-        <div
-          style={{
-            display: "flex",
-            width: "50%",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              width: 430,
-              height: 640,
-              borderRadius: 30,
-              overflow: "hidden",
-              border: "5px solid #d4af37",
-            }}
-          >
-            {member.photo_url ? (
-              <img
-                src={member.photo_url}
-                alt=""
-                style={{
-                  width: 430,
-                  height: 640,
-                  borderRadius: 25,
-                  objectFit: "cover",
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  display: "flex",
-                  width: "100%",
-                  height: "100%",
-                  background: "#333",
-                }}
-              />
-            )}
-          </div>
-        </div>
-
-        {/* Right */}
-        <div
-          style={{
-            display: "flex",
-            width: "50%",
-            flexDirection: "column",
-            justifyContent: "center",
-            paddingRight: 80,
-          }}
-        >
-          {churchLogoUrl && (
-            <div style={{ display: "flex", marginBottom: 45 }}>
-              <img src={churchLogoUrl} alt="" height={100} />
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              color: "#d4af37",
-              letterSpacing: 6,
-              fontSize: 22,
-              marginBottom: 20,
-            }}
-          >
-            HAPPY BIRTHDAY
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              fontSize: getNameFontSize(getDesignFullName(member), 78),
-              lineHeight: 1,
-              fontWeight: 800,
-              color: "white",
-              marginBottom: member.position ? 20 : 30,
-            }}
-          >
-            {getDesignFullName(member)}
-          </div>
-
-          {member.position && (
-            <div style={{ display: "flex", marginBottom: 30 }}>
-              <PositionBadge text={member.position} bg="#164536" color="#d4af37" />
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              width: 120,
-              height: 5,
-              background: "#d4af37",
-              marginBottom: getDepartmentText(member) ? 22 : 35,
-            }}
-          />
-
-          {getDepartmentText(member) && (
-            <div
-              style={{
-                display: "flex",
-                fontSize: 25,
-                color: "#d4af37",
-                fontWeight: 600,
-                fontStyle: "italic",
-                marginBottom: 22,
-              }}
-            >
-              {getDepartmentText(member)}
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              color: "#d1d5db",
-              fontSize: 28,
-              lineHeight: 1.7,
-              marginBottom: 40,
-            }}
-          >
-            {message}
-          </div>
-
-          <div style={{ display: "flex" }}>
-            <div
-              style={{
-                display: "flex",
-                padding: "12px 32px",
-                background: "#d4af37",
-                color: "#0f2d24",
-                borderRadius: 8,
-                fontSize: 28,
-                fontWeight: 800,
-                letterSpacing: 2,
-              }}
-            >
-              {getBirthDate(member)}
-            </div>
-          </div>
-        </div>
-      </div>
-    ),
-  },
-  {
-    name: "Crimson Velvet",
-    render: ({ member, message, churchLogoUrl }) => (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          width: 1080,
-          height: 1080,
-          background: "#310a14",
-          fontFamily: "sans-serif",
-          alignItems: "center",
-          position: "relative",
-        }}
-      >
-        {/* Top Gold Bar */}
-        <div
-          style={{
-            display: "flex",
-            width: "100%",
-            height: 18,
-            background: "#d4af37",
-          }}
-        />
-
-        {/* Content */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            paddingTop: 60,
-            paddingLeft: 80,
-            paddingRight: 80,
-            zIndex: 10,
-          }}
-        >
-          {churchLogoUrl && (
-            <div style={{ display: "flex", marginBottom: 35 }}>
-              <img src={churchLogoUrl} alt="Church Logo" height={90} style={{ objectFit: "contain" }} />
-            </div>
-          )}
-
-          {/* Satori Fix: Applied styles directly to the img tag */}
-          {member.photo_url ? (
-            <img
-              src={member.photo_url}
-              alt="Member"
-              style={{
-                width: 400,
-                height: 400,
-                borderRadius: 200,
-                border: "8px solid #d4af37",
-                objectFit: "cover",
-                marginBottom: 40,
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                display: "flex",
-                width: 400,
-                height: 400,
-                borderRadius: 200,
-                border: "8px solid #d4af37",
-                background: "#4a1220",
-                marginBottom: 40,
-              }}
-            />
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              fontSize: 22,
-              letterSpacing: 5,
-              color: "#e8b943",
-              marginBottom: 20,
-            }}
-          >
-            HAPPY BIRTHDAY
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              textAlign: "center",
-              fontSize: getNameFontSize(getDesignFullName(member), 76),
-              lineHeight: 1,
-              fontWeight: 800,
-              color: "white",
-              marginBottom: member.position ? 20 : 28,
-            }}
-          >
-            {getDesignFullName(member)}
-          </div>
-
-          {member.position && (
-            <div style={{ display: "flex", marginBottom: 28, justifyContent: "center" }}>
-              <PositionBadge text={member.position} bg="#4a1220" color="#e8b943" />
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              width: 120,
-              height: 5,
-              background: "#d4af37",
-              marginBottom: getDepartmentText(member) ? 22 : 35,
-            }}
-          />
-
-          {getDepartmentText(member) && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                textAlign: "center",
-                fontSize: 25,
-                color: "#e8b943",
-                fontWeight: 600,
-                fontStyle: "italic",
-                marginBottom: 22,
-              }}
-            >
-              {getDepartmentText(member)}
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              textAlign: "center",
-              fontSize: 28,
-              lineHeight: 1.7,
-              color: "#e5e7eb",
-              marginBottom: 36,
-            }}
-          >
-            {message}
-          </div>
-
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            <div
-              style={{
-                display: "flex",
-                padding: "12px 32px",
-                background: "#d4af37",
-                color: "#310a14",
-                borderRadius: 8,
-                fontSize: 28,
-                fontWeight: 800,
-                letterSpacing: 2,
-              }}
-            >
-              {getBirthDate(member)}
-            </div>
-          </div>
-        </div>
-      </div>
-    ),
-  },
-
-  {
-    name: "Royal Sapphire",
-    render: ({ member, message, churchLogoUrl }) => (
-      <div
-        style={{
-          display: "flex",
-          width: 1080,
-          height: 1080,
-          background: "#0a192f",
-          fontFamily: "sans-serif",
-          position: "relative",
-        }}
-      >
-        <DotPattern color="rgba(56, 189, 248, 0.05)" />
-
-        {/* Photo Left */}
-        <div
-          style={{
-            display: "flex",
-            width: "48%",
-            justifyContent: "center",
-            alignItems: "center",
-            paddingLeft: 20,
-          }}
-        >
-          {/* Satori Fix: Applied styles directly to the img tag */}
-          {member.photo_url ? (
-            <img
-              src={member.photo_url}
-              alt="Member"
-              style={{
-                width: 440,
-                height: 680,
-                borderRadius: 30,
-                border: "6px solid #38bdf8",
-                objectFit: "cover",
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                display: "flex",
-                width: 440,
-                height: 680,
-                borderRadius: 30,
-                border: "6px solid #38bdf8",
-                background: "#112240",
-              }}
-            />
-          )}
-        </div>
-
-        {/* Text Right */}
-        <div
-          style={{
-            display: "flex",
-            width: "52%",
-            flexDirection: "column",
-            justifyContent: "center",
-            paddingRight: 80,
-            paddingLeft: 30,
-            zIndex: 10,
-          }}
-        >
-          {churchLogoUrl && (
-            <div style={{ display: "flex", marginBottom: 50 }}>
-              <img src={churchLogoUrl} alt="Church Logo" height={100} style={{ objectFit: "contain" }} />
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              fontSize: 22,
-              color: "#38bdf8",
-              letterSpacing: 5,
-              marginBottom: 22,
-            }}
-          >
-            HAPPY BIRTHDAY
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              fontSize: getNameFontSize(getDesignFullName(member), 80),
-              lineHeight: 1,
-              fontWeight: 800,
-              color: "white",
-              marginBottom: member.position ? 20 : 30,
-            }}
-          >
-            {getDesignFullName(member)}
-          </div>
-
-          {member.position && (
-            <div style={{ display: "flex", marginBottom: 30 }}>
-              <PositionBadge text={member.position} bg="#112240" color="#38bdf8" />
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              width: 120,
-              height: 5,
-              background: "#38bdf8",
-              marginBottom: getDepartmentText(member) ? 22 : 35,
-            }}
-          />
-
-          {getDepartmentText(member) && (
-            <div
-              style={{
-                display: "flex",
-                fontSize: 25,
-                color: "#38bdf8",
-                fontWeight: 600,
-                fontStyle: "italic",
-                marginBottom: 22,
-              }}
-            >
-              {getDepartmentText(member)}
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              fontSize: 29,
-              lineHeight: 1.7,
-              color: "#cbd5e1",
-              marginBottom: 40,
-            }}
-          >
-            {message}
-          </div>
-
-          <div style={{ display: "flex" }}>
-            <div
-              style={{
-                display: "flex",
-                padding: "12px 32px",
-                background: "#38bdf8",
-                color: "#0a192f",
-                borderRadius: 8,
-                fontSize: 28,
-                fontWeight: 800,
-                letterSpacing: 2,
-              }}
-            >
-              {getBirthDate(member)}
-            </div>
-          </div>
-        </div>
-      </div>
-    ),
-  },
-
-  {
-    name: "Amethyst Night",
-    render: ({ member, message, churchLogoUrl }) => (
-      <div
-        style={{
-          display: "flex",
-          width: 1080,
-          height: 1080,
-          background: "#1a0b2e",
-          position: "relative",
-          fontFamily: "sans-serif",
-        }}
-      >
-        {/* Decorative Ambient Shapes */}
-        <div
-          style={{
-            display: "flex",
-            position: "absolute",
-            width: 800,
-            height: 800,
-            borderRadius: 400,
-            background: "#2d1b4e",
-            top: -300,
-            right: -200,
-            opacity: 0.8,
-          }}
-        />
-
-        {/* Text Left */}
-        <div
-          style={{
-            display: "flex",
-            width: "56%",
-            flexDirection: "column",
-            justifyContent: "center",
-            padding: 80,
-            zIndex: 10,
-          }}
-        >
-          {churchLogoUrl && (
-            <div style={{ display: "flex", marginBottom: 50 }}>
-              <img src={churchLogoUrl} alt="Church Logo" height={110} style={{ objectFit: "contain" }} />
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              fontSize: 22,
-              letterSpacing: 6,
-              color: "#fbbf24",
-              marginBottom: 24,
-            }}
-          >
-            HAPPY BIRTHDAY
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              fontSize: getNameFontSize(getDesignFullName(member), 78),
-              fontWeight: 800,
-              lineHeight: 1,
-              color: "white",
-              marginBottom: member.position ? 20 : 28,
-            }}
-          >
-            {getDesignFullName(member)}
-          </div>
-
-          {member.position && (
-            <div style={{ display: "flex", marginBottom: 28 }}>
-              <PositionBadge text={member.position} bg="#3b1b54" color="#fbbf24" />
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              width: 120,
-              height: 5,
-              background: "#fbbf24",
-              marginBottom: getDepartmentText(member) ? 22 : 36,
-            }}
-          />
-
-          {getDepartmentText(member) && (
-            <div
-              style={{
-                display: "flex",
-                fontSize: 25,
-                color: "#fbbf24",
-                fontWeight: 600,
-                fontStyle: "italic",
-                marginBottom: 22,
-              }}
-            >
-              {getDepartmentText(member)}
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              fontSize: 29,
-              lineHeight: 1.6,
-              color: "#d1d5db",
-              marginBottom: 36,
-            }}
-          >
-            {message}
-          </div>
-
-          <div style={{ display: "flex" }}>
-            <div
-              style={{
-                display: "flex",
-                padding: "12px 32px",
-                background: "#fbbf24",
-                color: "#1a0b2e",
-                borderRadius: 8,
-                fontSize: 28,
-                fontWeight: 800,
-                letterSpacing: 2,
-              }}
-            >
-              {getBirthDate(member)}
-            </div>
-          </div>
-        </div>
-
-        {/* Arch Photo Right */}
-        <div
-          style={{
-            display: "flex",
-            width: "44%",
-            justifyContent: "center",
-            alignItems: "center",
-            position: "relative",
-            zIndex: 10,
-          }}
-        >
-          {/* Satori Fix: Applied styles directly to the img tag */}
-          {member.photo_url ? (
-            <img
-              src={member.photo_url}
-              alt="Member"
-              style={{
-                width: 420,
-                height: 640,
-                borderRadius: "210px 210px 20px 20px",
-                border: "6px solid #fbbf24",
-                objectFit: "cover",
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                display: "flex",
-                width: 420,
-                height: 640,
-                borderRadius: "210px 210px 20px 20px",
-                border: "6px solid #fbbf24",
-                background: "#3b1b54",
-              }}
-            />
-          )}
-        </div>
-      </div>
-    ),
-  },
-
-  {
-    name: "Sunset Minimalist",
-    render: ({ member, message, churchLogoUrl }) => {
-      const rawLastName = (member.last_name || "").trim();
-      const toTitleCase = (str: string) => {
-        return str
-          .toLowerCase()
-          .split(" ")
-          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-          .join(" ");
-      };
-      const lastName = toTitleCase(rawLastName);
-      const title = (member.title || "").trim();
-      const firstAndMiddle = [title, member.first_name, member.middle_name]
-        .map(n => (n || "").trim())
-        .filter(Boolean)
-        .map(n => toTitleCase(n))
-        .join(" ");
-
-      return (
-        <div
-          style={{
-            display: "flex",
-            width: 1080,
-            height: 1080,
-            background: "radial-gradient(circle at center, #3c1e26 0%, #170a0d 100%)",
-            overflow: "hidden",
-            fontFamily: "sans-serif",
-            position: "relative",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              position: "absolute",
-              width: 700,
-              height: 700,
-              borderRadius: 350,
-              background: "radial-gradient(circle, rgba(226,186,115,0.06) 0%, transparent 70%)",
-              left: -150,
-              bottom: -150,
-            }}
-          />
-
-          <div
-            style={{
-              display: "flex",
-              width: "44%",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                position: "relative",
-                width: 400,
-                height: 640,
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  top: 16,
-                  left: 16,
-                  width: 400,
-                  height: 640,
-                  border: "3px solid #e2ba73",
-                  borderRadius: 16,
-                }}
-              />
-              <div
-                style={{
-                  display: "flex",
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: 400,
-                  height: 640,
-                  borderRadius: 16,
-                  overflow: "hidden",
-                  border: "4px solid #ffffff",
-                }}
-              >
-                {member.photo_url ? (
-                  <img
-                    src={member.photo_url}
-                    alt="Member"
-                    style={{
-                      width: 400,
-                      height: 640,
-                      borderRadius: 12,
-                      objectFit: "cover",
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      display: "flex",
-                      width: "100%",
-                      height: "100%",
-                      background: "#3c1b24",
-                    }}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              width: "56%",
-              flexDirection: "column",
-              justifyContent: "center",
-              paddingLeft: 50,
-              paddingRight: 80,
-              zIndex: 10,
-            }}
-          >
-            {churchLogoUrl && (
-              <div style={{ display: "flex", marginBottom: 40 }}>
-                <img src={churchLogoUrl} alt="Church Logo" height={90} style={{ objectFit: "contain" }} />
-              </div>
-            )}
-
-            <div
-              style={{
-                display: "flex",
-                fontSize: 20,
-                color: "#e2ba73",
-                letterSpacing: 6,
-                marginBottom: 20,
-                fontWeight: 700,
-              }}
-            >
-              HAPPY BIRTHDAY  •  {getBirthDate(member).toUpperCase()}
-            </div>
-
-            {lastName && (
-              <div
-                style={{
-                  display: "flex",
-                  fontSize: 66,
-                  lineHeight: 1.1,
-                  fontWeight: 800,
-                  color: "#ffffff",
-                }}
-              >
-                {lastName}
-              </div>
-            )}
-
-            {firstAndMiddle && (
-              <div
-                style={{
-                  display: "flex",
-                  fontSize: 42,
-                  lineHeight: 1.1,
-                  fontWeight: 400,
-                  color: "#f8f4eb",
-                  marginTop: 6,
-                  marginBottom: member.position ? 18 : 28,
-                }}
-              >
-                {firstAndMiddle}
-              </div>
-            )}
-
-            {member.position && (
-              <div style={{ display: "flex", marginBottom: 28 }}>
-                <PositionBadge text={member.position} bg="#3c1b24" color="#e2ba73" />
-              </div>
-            )}
-
-            {getDepartmentText(member) && (
-              <div
-                style={{
-                  display: "flex",
-                  fontSize: 24,
-                  color: "#e2ba73",
-                  fontWeight: 600,
-                  fontStyle: "italic",
-                  marginBottom: 20,
-                }}
-              >
-                {getDepartmentText(member)}
-              </div>
-            )}
-
-            <div
-              style={{
-                display: "flex",
-                fontSize: 26,
-                lineHeight: 1.6,
-                color: "#dcd2d4",
-                marginBottom: 40,
-              }}
-            >
-              {message}
-            </div>
-          </div>
-        </div>
-      );
-    }
-  },
-
-  {
-    name: "Glow Cyber",
-    render: ({ member, message, churchLogoUrl }) => (
-      <div
-        style={{
-          display: "flex",
-          width: 1080,
-          height: 1080,
-          background: "#070913",
-          overflow: "hidden",
-          fontFamily: "sans-serif",
-          position: "relative",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            position: "absolute",
-            width: 600,
-            height: 600,
-            borderRadius: 300,
-            background: "radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%)",
-            right: -100,
-            top: -100,
-          }}
-        />
-        <div
-          style={{
-            display: "flex",
-            position: "absolute",
-            width: 500,
-            height: 500,
-            borderRadius: 250,
-            background: "radial-gradient(circle, rgba(6,182,212,0.1) 0%, transparent 70%)",
-            left: -100,
-            bottom: -100,
-          }}
-        />
-
-        <div
-          style={{
-            display: "flex",
-            width: "56%",
-            flexDirection: "column",
-            justifyContent: "center",
-            paddingLeft: 80,
-            paddingRight: 40,
-            zIndex: 10,
-          }}
-        >
-          {churchLogoUrl && (
-            <div style={{ display: "flex", marginBottom: 40 }}>
-              <img src={churchLogoUrl} alt="Church Logo" height={90} style={{ objectFit: "contain" }} />
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              fontSize: 20,
-              color: "#06b6d4",
-              letterSpacing: 6,
-              marginBottom: 16,
-            }}
-          >
-            HAPPY BIRTHDAY
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              fontSize: getNameFontSize(getDesignFullName(member), 80),
-              lineHeight: 1.1,
-              fontWeight: 800,
-              color: "#ffffff",
-              marginBottom: member.position ? 18 : 28,
-            }}
-          >
-            {getDesignFullName(member)}
-          </div>
-
-          {member.position && (
-            <div style={{ display: "flex", marginBottom: 28 }}>
-              <PositionBadge text={member.position} bg="#161329" color="#a78bfa" />
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              width: 100,
-              height: 4,
-              background: "linear-gradient(90deg, #8b5cf6, #06b6d4)",
-              marginBottom: getDepartmentText(member) ? 20 : 30,
-            }}
-          />
-
-          {getDepartmentText(member) && (
-            <div
-              style={{
-                display: "flex",
-                fontSize: 24,
-                color: "#06b6d4",
-                fontWeight: 600,
-                fontStyle: "italic",
-                marginBottom: 20,
-              }}
-            >
-              {getDepartmentText(member)}
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              fontSize: 26,
-              lineHeight: 1.6,
-              color: "#9ca3af",
-              marginBottom: 36,
-            }}
-          >
-            {message}
-          </div>
-
-          <div style={{ display: "flex" }}>
-            <div
-              style={{
-                display: "flex",
-                padding: "12px 32px",
-                background: "linear-gradient(90deg, #8b5cf6, #06b6d4)",
-                color: "#ffffff",
-                borderRadius: 8,
-                fontSize: 26,
-                fontWeight: 800,
-                letterSpacing: 2,
-              }}
-            >
-              {getBirthDate(member)}
-            </div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            width: "44%",
-            justifyContent: "center",
-            alignItems: "center",
-            paddingRight: 60,
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              position: "relative",
-              width: 420,
-              height: 640,
-              borderRadius: 30,
-              overflow: "hidden",
-              border: "4px solid #8b5cf6",
-            }}
-          >
-            {member.photo_url ? (
-              <img
-                src={member.photo_url}
-                alt="Member"
-                style={{
-                  width: 420,
-                  height: 640,
-                  borderRadius: 26,
-                  objectFit: "cover",
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  display: "flex",
-                  width: "100%",
-                  height: "100%",
-                  background: "#161329",
-                }}
-              />
-            )}
-          </div>
-        </div>
-      </div>
-    ),
-  },
-
-  {
-    name: "Ivory Luxury",
-    render: ({ member, message, churchLogoUrl }) => (
-      <div
-        style={{
-          display: "flex",
-          width: 1080,
-          height: 1080,
-          background: "#fcfbfa",
-          overflow: "hidden",
-          fontFamily: "sans-serif",
-          position: "relative",
-          border: "24px solid #b89753",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            width: "46%",
-            justifyContent: "center",
-            alignItems: "center",
-            paddingLeft: 40,
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              width: 400,
-              height: 620,
-              borderRadius: 4,
-              border: "2px solid #b89753",
-              padding: 4,
-              background: "transparent",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                width: "100%",
-                height: "100%",
-                borderRadius: 2,
-                border: "2px solid #b89753",
-                overflow: "hidden",
-              }}
-            >
-              {member.photo_url ? (
-                <img
-                  src={member.photo_url}
-                  alt="Member"
-                  style={{
-                    width: 388,
-                    height: 608,
-                    objectFit: "cover",
-                  }}
-                />
-              ) : (
-                <div
-                  style={{
-                    display: "flex",
-                    width: "100%",
-                    height: "100%",
-                    background: "#eae7e2",
-                  }}
-                />
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            width: "54%",
-            flexDirection: "column",
-            justifyContent: "center",
-            paddingLeft: 60,
-            paddingRight: 60,
-            zIndex: 10,
-          }}
-        >
-          {churchLogoUrl && (
-            <div style={{ display: "flex", marginBottom: 40 }}>
-              <img src={churchLogoUrl} alt="Church Logo" height={90} style={{ objectFit: "contain" }} />
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              fontSize: 20,
-              color: "#b89753",
-              letterSpacing: 6,
-              fontWeight: 700,
-              marginBottom: 16,
-            }}
-          >
-            HAPPY BIRTHDAY
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              fontSize: getNameFontSize(getDesignFullName(member), 80),
-              lineHeight: 1.1,
-              fontWeight: 800,
-              color: "#1e2022",
-              marginBottom: member.position ? 18 : 28,
-            }}
-          >
-            {getDesignFullName(member)}
-          </div>
-
-          {member.position && (
-            <div style={{ display: "flex", marginBottom: 28 }}>
-              <PositionBadge text={member.position} bg="#f5efdf" color="#b89753" />
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              width: 100,
-              height: 4,
-              background: "#b89753",
-              marginBottom: getDepartmentText(member) ? 20 : 30,
-            }}
-          />
-
-          {getDepartmentText(member) && (
-            <div
-              style={{
-                display: "flex",
-                fontSize: 24,
-                color: "#b89753",
-                fontWeight: 600,
-                fontStyle: "italic",
-                marginBottom: 20,
-              }}
-            >
-              {getDepartmentText(member)}
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              fontSize: 26,
-              lineHeight: 1.6,
-              color: "#4a4a4a",
-              marginBottom: 36,
-            }}
-          >
-            {message}
-          </div>
-
-          <div style={{ display: "flex" }}>
-            <div
-              style={{
-                display: "flex",
-                padding: "12px 32px",
-                background: "#b89753",
-                color: "#fcfbfa",
-                borderRadius: 4,
-                fontSize: 26,
-                fontWeight: 800,
-                letterSpacing: 2,
-              }}
-            >
-              {getBirthDate(member)}
-            </div>
-          </div>
-        </div>
-      </div>
-    ),
-  },
-
-  {
-    name: "Triptych Teal",
-    render: ({ member, message, churchLogoUrl }) => {
-      const formattedDate = (() => {
-        const dob = new Date(member.date_of_birth);
-        const day = dob.getDate();
-        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        return `${day} ${monthNames[dob.getMonth()] || "Feb"}`;
-      })();
-
-      return (
-        <div
-          style={{
-            display: "flex",
-            width: 1080,
-            height: 1080,
-            background: "#ffffff",
-            overflow: "hidden",
-            fontFamily: "sans-serif",
-            position: "relative",
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "56%",
-              height: "100%",
-              background: "#f0f2f5",
-              display: "flex",
-            }}
-          />
-
-          <div
-            style={{
-              position: "absolute",
-              width: 580,
-              height: 580,
-              borderRadius: 290,
-              background: "#e4e7eb",
-              left: 30,
-              top: 150,
-              display: "flex",
-            }}
-          />
-
-          <div
-            style={{
-              position: "absolute",
-              width: 50,
-              height: 50,
-              borderRadius: 25,
-              background: "radial-gradient(circle, #06b6d4 0%, #0891b2 100%)",
-              left: 60,
-              top: 60,
-              display: "flex",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              width: 24,
-              height: 24,
-              borderRadius: 12,
-              background: "#facc15",
-              left: 120,
-              top: 120,
-              display: "flex",
-            }}
-          />
-
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              width: "56%",
-              height: "100%",
-              justifyContent: "center",
-              alignItems: "center",
-              paddingTop: 40,
-              zIndex: 10,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                position: "relative",
-                width: 440,
-                height: 680,
-                borderRadius: "220px 220px 0 0",
-                overflow: "hidden",
-                border: "6px solid #ffffff",
-                boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
-              }}
-            >
-              {member.photo_url ? (
-                <img
-                  src={member.photo_url}
-                  alt="Member"
-                  style={{
-                    width: 440,
-                    height: 680,
-                    borderRadius: "214px 214px 0 0",
-                    objectFit: "cover",
-                  }}
-                />
-              ) : (
-                <div
-                  style={{
-                    display: "flex",
-                    width: "100%",
-                    height: "100%",
-                    background: "#0891b2",
-                  }}
-                />
-              )}
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                fontSize: getNameFontSize(getDesignFullName(member), 42),
-                fontWeight: 900,
-                color: "#111827",
-                marginTop: 35,
-                textAlign: "center",
-              }}
-            >
-              {getDesignFullName(member)}
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              width: "44%",
-              flexDirection: "column",
-              justifyContent: "center",
-              paddingLeft: 60,
-              paddingRight: 60,
-              zIndex: 10,
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
-              <svg width="130" height="150" viewBox="0 0 180 240" fill="none" style={{ display: "flex" }}>
-                <ellipse cx="60" cy="80" rx="30" ry="40" fill="#3b82f6" opacity="0.85" />
-                <path d="M60 120 L80 190" stroke="#94a3b8" strokeWidth="2" />
-                <ellipse cx="120" cy="80" rx="30" ry="40" fill="#22d3ee" opacity="0.85" />
-                <path d="M120 120 L100 190" stroke="#94a3b8" strokeWidth="2" />
-                <ellipse cx="90" cy="70" rx="32" ry="42" fill="#06b6d4" />
-                <path d="M90 112 L90 195" stroke="#64748b" strokeWidth="2" />
-                <polygon points="60,120 57,125 63,125" fill="#2563eb" />
-                <polygon points="120,120 117,125 123,125" fill="#0891b2" />
-                <polygon points="90,112 87,117 93,117" fill="#0891b2" />
-              </svg>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                fontSize: 26,
-                fontWeight: 800,
-                color: "#0891b2",
-                letterSpacing: 2,
-                marginBottom: 12,
-              }}
-            >
-              {formattedDate.toUpperCase()}
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                textAlign: "center",
-                width: "100%",
-              }}
-            >
-              <span style={{ fontSize: 44, fontWeight: 300, color: "#1f2937", lineHeight: 1.1 }}>Happy</span>
-              <span style={{ fontSize: 62, fontWeight: 900, color: "#111827", letterSpacing: 2, lineHeight: 1 }}>BIRTHDAY</span>
-              {member.position && (
-                <span style={{ fontSize: 44, fontWeight: 800, color: "#0891b2", textTransform: "uppercase", marginTop: 4 }}>
-                  {member.position}
-                </span>
-              )}
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                width: 100,
-                height: 4,
-                background: "#06b6d4",
-                alignSelf: "center",
-                marginTop: 20,
-                marginBottom: getDepartmentText(member) ? 16 : 20,
-              }}
-            />
-
-            {getDepartmentText(member) && (
-              <div
-                style={{
-                  display: "flex",
-                  fontSize: 22,
-                  color: "#0891b2",
-                  fontWeight: 600,
-                  fontStyle: "italic",
-                  alignSelf: "center",
-                  marginBottom: 16,
-                }}
-              >
-                {getDepartmentText(member)}
-              </div>
-            )}
-
-            <div
-              style={{
-                display: "flex",
-                fontSize: 25,
-                lineHeight: 1.6,
-                color: "#4b5563",
-                textAlign: "center",
-                marginBottom: 20,
-              }}
-            >
-              {message}
-            </div>
-
-            {churchLogoUrl && (
-              <div style={{ display: "flex", justifyContent: "center", marginTop: 15, marginBottom: 10 }}>
-                <img src={churchLogoUrl} alt="Church Logo" height={60} style={{ objectFit: "contain" }} />
-              </div>
-            )}
-
-            <div
-              style={{
-                position: "absolute",
-                width: 20,
-                height: 20,
-                borderRadius: 10,
-                background: "#facc15",
-                right: 140,
-                bottom: 80,
-                display: "flex",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                background: "radial-gradient(circle, #06b6d4 0%, #0891b2 100%)",
-                right: 60,
-                bottom: 40,
-                display: "flex",
-              }}
-            />
-          </div>
-        </div>
-      );
-    }
-  },
+  // =========================================================================
+  // 1. Classic Alabaster — Signature 50/50 Light Gallery Split
+  // =========================================================================
   {
     name: "Classic Alabaster",
     render: ({ member, message, churchLogoUrl }) => {
-      const toTitleCase = (str: string) => {
-        return str
-          .toLowerCase()
-          .split(" ")
-          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-          .join(" ");
-      };
-      
-      const titlePrefix = (member.title || "").trim();
-      const rawFullName = `${member.first_name || ""} ${member.middle_name || ""} ${member.last_name || ""}`.replace(/\s+/g, ' ').trim();
-      const namesTitleCased = toTitleCase(rawFullName);
-      const fullName = titlePrefix ? `${titlePrefix} ${namesTitleCased}` : namesTitleCased;
+      const fullName = formatEditorialName(member);
+      const deptText = getDepartmentText(member);
+      const showPos = shouldShowPositionBadge(member);
 
       return (
         <div
@@ -1823,13 +138,11 @@ export const designs: Array<{
             display: "flex",
             width: 1080,
             height: 1080,
-            background: "#f3f4f6",
+            background: "#f3f3f3",
             overflow: "hidden",
-            fontFamily: "sans-serif",
             position: "relative",
           }}
         >
-          {/* Left Column (The Text Stack - perfectly left-aligned) */}
           <div
             style={{
               display: "flex",
@@ -1847,7 +160,6 @@ export const designs: Array<{
               </div>
             )}
 
-            {/* Date at the top of the stack */}
             <div
               style={{
                 display: "flex",
@@ -1862,7 +174,6 @@ export const designs: Array<{
               {getBirthDate(member).toUpperCase()}
             </div>
 
-            {/* HAPPY BIRTHDAY Header */}
             <div
               style={{
                 display: "flex",
@@ -1871,11 +182,23 @@ export const designs: Array<{
                 marginBottom: 18,
               }}
             >
-              <span style={{ fontSize: 44, fontWeight: 700, color: "#c5a86a", letterSpacing: 4, lineHeight: 1 }}>HAPPY</span>
-              <span style={{ fontSize: 32, fontWeight: 400, color: "#c5a86a", letterSpacing: 6, lineHeight: 1, marginTop: 4 }}>BIRTHDAY</span>
+              <span style={{ fontSize: 44, fontWeight: 700, color: "#c5a86a", letterSpacing: 4, lineHeight: 1 }}>
+                HAPPY
+              </span>
+              <span
+                style={{
+                  fontSize: 32,
+                  fontWeight: 400,
+                  color: "#c5a86a",
+                  letterSpacing: 6,
+                  lineHeight: 1,
+                  marginTop: 4,
+                }}
+              >
+                BIRTHDAY
+              </span>
             </div>
 
-            {/* Celebrant Name */}
             <div
               style={{
                 display: "flex",
@@ -1890,8 +213,7 @@ export const designs: Array<{
               {fullName}
             </div>
 
-            {/* Department Label */}
-            {getDepartmentText(member) && (
+            {deptText && (
               <div
                 style={{
                   display: "flex",
@@ -1901,21 +223,19 @@ export const designs: Array<{
                   fontWeight: 700,
                   letterSpacing: 4,
                   textTransform: "uppercase",
-                  marginBottom: shouldShowPositionBadge(member) ? 12 : 20,
+                  marginBottom: showPos ? 12 : 20,
                 }}
               >
-                {getDepartmentText(member)}
+                {deptText}
               </div>
             )}
 
-            {/* Position Badge (only if distinct from department text) */}
-            {shouldShowPositionBadge(member) && (
+            {showPos && (
               <div style={{ display: "flex", marginBottom: 20 }}>
                 <PositionBadge text={member.position!} bg="#eae3d2" color="#a3874b" />
               </div>
             )}
 
-            {/* Thin Divider Line */}
             <div
               style={{
                 display: "flex",
@@ -1926,7 +246,6 @@ export const designs: Array<{
               }}
             />
 
-            {/* Prayer/Wish Copy */}
             <div
               style={{
                 display: "flex",
@@ -1940,7 +259,6 @@ export const designs: Array<{
             </div>
           </div>
 
-          {/* Right Column (Clean framed photo with drop shadow) */}
           <div
             style={{
               display: "flex",
@@ -1964,44 +282,27 @@ export const designs: Array<{
                 <img
                   src={member.photo_url}
                   alt="Member"
-                  style={{
-                    width: 440,
-                    height: 640,
-                    objectFit: "cover",
-                  }}
+                  style={{ width: 440, height: 640, objectFit: "cover" }}
                 />
               ) : (
-                <div
-                  style={{
-                    display: "flex",
-                    width: "100%",
-                    height: "100%",
-                    background: "#eae7e2",
-                  }}
-                />
+                <div style={{ display: "flex", width: "100%", height: "100%", background: "#eae7e2" }} />
               )}
             </div>
           </div>
         </div>
       );
-    }
+    },
   },
 
+  // =========================================================================
+  // 2. Obsidian Gold — Signature 50/50 Dark Gallery Split
+  // =========================================================================
   {
     name: "Obsidian Gold",
     render: ({ member, message, churchLogoUrl }) => {
-      const toTitleCase = (str: string) => {
-        return str
-          .toLowerCase()
-          .split(" ")
-          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-          .join(" ");
-      };
-      
-      const titlePrefix = (member.title || "").trim();
-      const rawFullName = `${member.first_name || ""} ${member.middle_name || ""} ${member.last_name || ""}`.replace(/\s+/g, ' ').trim();
-      const namesTitleCased = toTitleCase(rawFullName);
-      const fullName = titlePrefix ? `${titlePrefix} ${namesTitleCased}` : namesTitleCased;
+      const fullName = formatEditorialName(member);
+      const deptText = getDepartmentText(member);
+      const showPos = shouldShowPositionBadge(member);
 
       return (
         <div
@@ -2011,11 +312,9 @@ export const designs: Array<{
             height: 1080,
             background: "#0b0d17",
             overflow: "hidden",
-            fontFamily: "sans-serif",
             position: "relative",
           }}
         >
-          {/* Left Column (The Text Stack - perfectly left-aligned) */}
           <div
             style={{
               display: "flex",
@@ -2033,7 +332,6 @@ export const designs: Array<{
               </div>
             )}
 
-            {/* Date at the top of the stack */}
             <div
               style={{
                 display: "flex",
@@ -2048,7 +346,6 @@ export const designs: Array<{
               {getBirthDate(member).toUpperCase()}
             </div>
 
-            {/* HAPPY BIRTHDAY Header */}
             <div
               style={{
                 display: "flex",
@@ -2057,11 +354,23 @@ export const designs: Array<{
                 marginBottom: 18,
               }}
             >
-              <span style={{ fontSize: 44, fontWeight: 700, color: "#c5a86a", letterSpacing: 4, lineHeight: 1 }}>HAPPY</span>
-              <span style={{ fontSize: 32, fontWeight: 400, color: "#c5a86a", letterSpacing: 6, lineHeight: 1, marginTop: 4 }}>BIRTHDAY</span>
+              <span style={{ fontSize: 44, fontWeight: 700, color: "#c5a86a", letterSpacing: 4, lineHeight: 1 }}>
+                HAPPY
+              </span>
+              <span
+                style={{
+                  fontSize: 32,
+                  fontWeight: 400,
+                  color: "#c5a86a",
+                  letterSpacing: 6,
+                  lineHeight: 1,
+                  marginTop: 4,
+                }}
+              >
+                BIRTHDAY
+              </span>
             </div>
 
-            {/* Celebrant Name */}
             <div
               style={{
                 display: "flex",
@@ -2076,8 +385,7 @@ export const designs: Array<{
               {fullName}
             </div>
 
-            {/* Department Label */}
-            {getDepartmentText(member) && (
+            {deptText && (
               <div
                 style={{
                   display: "flex",
@@ -2087,21 +395,19 @@ export const designs: Array<{
                   fontWeight: 700,
                   letterSpacing: 4,
                   textTransform: "uppercase",
-                  marginBottom: shouldShowPositionBadge(member) ? 12 : 20,
+                  marginBottom: showPos ? 12 : 20,
                 }}
               >
-                {getDepartmentText(member)}
+                {deptText}
               </div>
             )}
 
-            {/* Position Badge (only if distinct from department text) */}
-            {shouldShowPositionBadge(member) && (
+            {showPos && (
               <div style={{ display: "flex", marginBottom: 20 }}>
                 <PositionBadge text={member.position!} bg="#1e1e24" color="#c5a86a" />
               </div>
             )}
 
-            {/* Thin Divider Line */}
             <div
               style={{
                 display: "flex",
@@ -2112,7 +418,6 @@ export const designs: Array<{
               }}
             />
 
-            {/* Prayer/Wish Copy */}
             <div
               style={{
                 display: "flex",
@@ -2126,7 +431,6 @@ export const designs: Array<{
             </div>
           </div>
 
-          {/* Right Column (Clean framed photo with drop shadow) */}
           <div
             style={{
               display: "flex",
@@ -2150,34 +454,1173 @@ export const designs: Array<{
                 <img
                   src={member.photo_url}
                   alt="Member"
-                  style={{
-                    width: 440,
-                    height: 640,
-                    objectFit: "cover",
-                  }}
+                  style={{ width: 440, height: 640, objectFit: "cover" }}
                 />
               ) : (
-                <div
-                  style={{
-                    display: "flex",
-                    width: "100%",
-                    height: "100%",
-                    background: "#1e1e24",
-                  }}
-                />
+                <div style={{ display: "flex", width: "100%", height: "100%", background: "#1e1e24" }} />
               )}
             </div>
           </div>
         </div>
       );
-    }
+    },
+  },
+
+  // =========================================================================
+  // 3. Emerald Prestige — Two-Tone Architectural Pillar & Editorial Quote Block
+  // =========================================================================
+  {
+    name: "Emerald Prestige",
+    render: ({ member, message, churchLogoUrl }) => {
+      const fullName = formatEditorialName(member);
+      const primaryRole = getPrimaryRoleText(member);
+
+      return (
+        <div
+          style={{
+            display: "flex",
+            width: 1080,
+            height: 1080,
+            background: "#09221b",
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
+          {/* Full-Height Left Architectural Pillar */}
+          <div
+            style={{
+              display: "flex",
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: 310,
+              height: 1080,
+              background: "#10352a",
+              borderRight: "2px solid #d4b46e",
+            }}
+          />
+
+          {/* Left Portrait Overlapping the Architectural Seam */}
+          <div
+            style={{
+              display: "flex",
+              width: "48%",
+              justifyContent: "center",
+              alignItems: "center",
+              paddingLeft: 40,
+              zIndex: 10,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                padding: 10,
+                border: "2px solid #d4b46e",
+                background: "#09221b",
+                boxShadow: "0 20px 45px rgba(0,0,0,0.35)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  width: 410,
+                  height: 620,
+                  border: "6px solid #ffffff",
+                  overflow: "hidden",
+                  background: "#10352a",
+                }}
+              >
+                {member.photo_url ? (
+                  <img
+                    src={member.photo_url}
+                    alt="Member"
+                    style={{ width: 410, height: 620, objectFit: "cover" }}
+                  />
+                ) : (
+                  <div style={{ display: "flex", width: "100%", height: "100%", background: "#10352a" }} />
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Editorial Column */}
+          <div
+            style={{
+              display: "flex",
+              width: "52%",
+              flexDirection: "column",
+              justifyContent: "center",
+              paddingLeft: 36,
+              paddingRight: 76,
+              zIndex: 10,
+            }}
+          >
+            {churchLogoUrl && (
+              <div style={{ display: "flex", marginBottom: 36 }}>
+                <img src={churchLogoUrl} alt="Church Logo" height={84} style={{ objectFit: "contain" }} />
+              </div>
+            )}
+
+            {/* Flanking Line Date Header */}
+            <div style={{ display: "flex", alignItems: "center", marginBottom: 16 }}>
+              <div style={{ display: "flex", width: 44, height: 2, background: "#d4b46e", marginRight: 14 }} />
+              <span
+                style={{
+                  fontFamily: "Montserrat",
+                  fontSize: 17,
+                  fontWeight: 700,
+                  color: "#d4b46e",
+                  letterSpacing: 5,
+                }}
+              >
+                {getBirthDate(member).toUpperCase()}
+              </span>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                fontFamily: "Cinzel",
+                fontSize: 34,
+                fontWeight: 700,
+                color: "#d4b46e",
+                letterSpacing: 5,
+                marginBottom: 12,
+              }}
+            >
+              HAPPY BIRTHDAY
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                fontFamily: "Cinzel",
+                fontSize: getNameFontSize(fullName, 48),
+                fontWeight: 700,
+                color: "#ffffff",
+                lineHeight: 1.18,
+                marginBottom: 18,
+              }}
+            >
+              {fullName}
+            </div>
+
+            {primaryRole && (
+              <div style={{ display: "flex", marginBottom: 28 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    padding: "8px 20px",
+                    background: "#10352a",
+                    border: "1px solid #d4b46e",
+                    color: "#d4b46e",
+                    fontFamily: "Montserrat",
+                    fontSize: 16,
+                    fontWeight: 700,
+                    letterSpacing: 3,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {primaryRole}
+                </div>
+              </div>
+            )}
+
+            {/* Left-Bordered Editorial Quote Block for Prayer */}
+            <div
+              style={{
+                display: "flex",
+                borderLeft: "4px solid #d4b46e",
+                paddingLeft: 24,
+                paddingTop: 4,
+                paddingBottom: 4,
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "Montserrat",
+                  fontSize: 25,
+                  lineHeight: 1.6,
+                  color: "#d1fae5",
+                }}
+              >
+                {message}
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+    },
+  },
+
+  // =========================================================================
+  // 4. Royal Sapphire — Inset Architectural Border & Two-Tier Name Lockup
+  // =========================================================================
+  {
+    name: "Royal Sapphire",
+    render: ({ member, message, churchLogoUrl }) => {
+      const { givenLine, surnameLine } = splitEditorialName(member);
+      const primaryRole = getPrimaryRoleText(member);
+
+      return (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            width: 1080,
+            height: 1080,
+            background: "#0a1526",
+            padding: 36,
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          {/* Inset Double-Line Architectural Frame */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              width: "100%",
+              height: "100%",
+              border: "2px solid #c5a86a",
+              padding: 44,
+              justifyContent: "space-between",
+            }}
+          >
+            {/* Top Header Strip */}
+            <div
+              style={{
+                display: "flex",
+                width: "100%",
+                justifyContent: "space-between",
+                alignItems: "center",
+                borderBottom: "1px solid rgba(197,168,106,0.3)",
+                paddingBottom: 24,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center" }}>
+                {churchLogoUrl ? (
+                  <img src={churchLogoUrl} alt="Church Logo" height={72} style={{ objectFit: "contain" }} />
+                ) : (
+                  <span
+                    style={{
+                      fontFamily: "Cinzel",
+                      fontSize: 22,
+                      fontWeight: 700,
+                      color: "#c5a86a",
+                      letterSpacing: 4,
+                    }}
+                  >
+                    BIRTHDAY CELEBRATION
+                  </span>
+                )}
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  padding: "8px 22px",
+                  border: "1px solid #c5a86a",
+                  fontFamily: "Montserrat",
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: "#c5a86a",
+                  letterSpacing: 4,
+                }}
+              >
+                {getBirthDate(member).toUpperCase()}
+              </div>
+            </div>
+
+            {/* Center Body */}
+            <div
+              style={{
+                display: "flex",
+                width: "100%",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingTop: 20,
+                paddingBottom: 20,
+              }}
+            >
+              {/* Left Portrait */}
+              <div
+                style={{
+                  display: "flex",
+                  width: 390,
+                  height: 550,
+                  border: "8px solid #ffffff",
+                  boxShadow: "0 15px 35px rgba(0,0,0,0.4)",
+                  overflow: "hidden",
+                  background: "#13233f",
+                }}
+              >
+                {member.photo_url ? (
+                  <img
+                    src={member.photo_url}
+                    alt="Member"
+                    style={{ width: 390, height: 550, objectFit: "cover" }}
+                  />
+                ) : (
+                  <div style={{ display: "flex", width: "100%", height: "100%", background: "#13233f" }} />
+                )}
+              </div>
+
+              {/* Right Stacked Typography */}
+              <div
+                style={{
+                  display: "flex",
+                  width: 480,
+                  flexDirection: "column",
+                  justifyContent: "center",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    fontFamily: "Montserrat",
+                    fontSize: 17,
+                    fontWeight: 700,
+                    color: "#c5a86a",
+                    letterSpacing: 6,
+                    marginBottom: 18,
+                  }}
+                >
+                  HAPPY BIRTHDAY
+                </div>
+
+                {givenLine && (
+                  <div
+                    style={{
+                      display: "flex",
+                      fontFamily: "Montserrat",
+                      fontSize: 26,
+                      fontWeight: 400,
+                      color: "#e2e8f0",
+                      letterSpacing: 1,
+                      marginBottom: 6,
+                    }}
+                  >
+                    {givenLine}
+                  </div>
+                )}
+
+                <div
+                  style={{
+                    display: "flex",
+                    fontFamily: "Cinzel",
+                    fontSize: getNameFontSize(surnameLine, 54),
+                    fontWeight: 700,
+                    color: "#ffffff",
+                    lineHeight: 1.1,
+                    marginBottom: 16,
+                  }}
+                >
+                  {surnameLine}
+                </div>
+
+                {primaryRole && (
+                  <div
+                    style={{
+                      display: "flex",
+                      fontFamily: "Montserrat",
+                      fontSize: 17,
+                      fontWeight: 700,
+                      color: "#c5a86a",
+                      letterSpacing: 4,
+                      textTransform: "uppercase",
+                      marginBottom: 22,
+                    }}
+                  >
+                    {primaryRole}
+                  </div>
+                )}
+
+                {/* Ornamental Diamond Rule */}
+                <div style={{ display: "flex", alignItems: "center", marginBottom: 22 }}>
+                  <div style={{ display: "flex", width: 70, height: 2, background: "#c5a86a" }} />
+                  <div
+                    style={{
+                      display: "flex",
+                      width: 8,
+                      height: 8,
+                      background: "#c5a86a",
+                      marginLeft: 10,
+                      marginRight: 10,
+                    }}
+                  />
+                  <div style={{ display: "flex", width: 70, height: 2, background: "#c5a86a" }} />
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    fontFamily: "Montserrat",
+                    fontSize: 24,
+                    lineHeight: 1.6,
+                    color: "#cbd5e1",
+                  }}
+                >
+                  {message}
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Subtle Footer Rule */}
+            <div
+              style={{
+                display: "flex",
+                width: "100%",
+                justifyContent: "center",
+                borderTop: "1px solid rgba(197,168,106,0.3)",
+                paddingTop: 16,
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "Montserrat",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: "#c5a86a",
+                  letterSpacing: 6,
+                }}
+              >
+                GOD BLESS YOUR NEW AGE
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+    },
+  },
+
+  // =========================================================================
+  // 5. Ivory Luxury — Warm Two-Tone Sandstone Backdrop & Framed Prayer Card
+  // =========================================================================
+  {
+    name: "Ivory Luxury",
+    render: ({ member, message, churchLogoUrl }) => {
+      const fullName = formatEditorialName(member);
+      const primaryRole = getPrimaryRoleText(member);
+
+      return (
+        <div
+          style={{
+            display: "flex",
+            width: 1080,
+            height: 1080,
+            background: "#faf7f2",
+            border: "18px solid #b89753",
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
+          {/* Right Sandstone Architectural Backdrop */}
+          <div
+            style={{
+              display: "flex",
+              position: "absolute",
+              top: 0,
+              right: 0,
+              width: 390,
+              height: 1080,
+              background: "#ede5d5",
+              borderLeft: "2px solid #b89753",
+            }}
+          />
+
+          {/* Left Editorial Column */}
+          <div
+            style={{
+              display: "flex",
+              width: "54%",
+              flexDirection: "column",
+              justifyContent: "center",
+              paddingLeft: 68,
+              paddingRight: 36,
+              zIndex: 10,
+            }}
+          >
+            {churchLogoUrl && (
+              <div style={{ display: "flex", marginBottom: 34 }}>
+                <img src={churchLogoUrl} alt="Church Logo" height={82} style={{ objectFit: "contain" }} />
+              </div>
+            )}
+
+            <div
+              style={{
+                display: "flex",
+                fontFamily: "Montserrat",
+                fontSize: 17,
+                fontWeight: 700,
+                color: "#9c7c38",
+                letterSpacing: 5,
+                marginBottom: 10,
+              }}
+            >
+              CELEBRATING YOU • {getBirthDate(member).toUpperCase()}
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                fontFamily: "Cinzel",
+                fontSize: 42,
+                fontWeight: 700,
+                color: "#b89753",
+                letterSpacing: 4,
+                lineHeight: 1.1,
+                marginBottom: 14,
+              }}
+            >
+              HAPPY BIRTHDAY
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                fontFamily: "Cinzel",
+                fontSize: getNameFontSize(fullName, 46),
+                fontWeight: 700,
+                color: "#1e1b18",
+                lineHeight: 1.2,
+                marginBottom: 12,
+              }}
+            >
+              {fullName}
+            </div>
+
+            {primaryRole && (
+              <div
+                style={{
+                  display: "flex",
+                  fontFamily: "Montserrat",
+                  fontSize: 17,
+                  color: "#9c7c38",
+                  fontWeight: 700,
+                  letterSpacing: 4,
+                  textTransform: "uppercase",
+                  marginBottom: 24,
+                }}
+              >
+                {primaryRole}
+              </div>
+            )}
+
+            {/* Framed Editorial Callout Card for Prayer */}
+            <div
+              style={{
+                display: "flex",
+                background: "#ffffff",
+                border: "1px solid #dfd3bc",
+                borderLeft: "4px solid #b89753",
+                padding: "24px 28px",
+                boxShadow: "0 10px 25px rgba(184,151,83,0.08)",
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "Montserrat",
+                  fontSize: 24,
+                  lineHeight: 1.6,
+                  color: "#3f3a34",
+                }}
+              >
+                {message}
+              </span>
+            </div>
+          </div>
+
+          {/* Right Double-Matted Portrait */}
+          <div
+            style={{
+              display: "flex",
+              width: "46%",
+              justifyContent: "center",
+              alignItems: "center",
+              paddingRight: 44,
+              zIndex: 10,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                padding: 10,
+                background: "#faf7f2",
+                border: "2px solid #b89753",
+                boxShadow: "0 20px 40px rgba(0,0,0,0.12)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  width: 400,
+                  height: 610,
+                  border: "8px solid #ffffff",
+                  overflow: "hidden",
+                  background: "#e5dec9",
+                }}
+              >
+                {member.photo_url ? (
+                  <img
+                    src={member.photo_url}
+                    alt="Member"
+                    style={{ width: 400, height: 610, objectFit: "cover" }}
+                  />
+                ) : (
+                  <div style={{ display: "flex", width: "100%", height: "100%", background: "#e5dec9" }} />
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    },
+  },
+
+  // =========================================================================
+  // 6. Amethyst Royal — Floor-Anchored Cathedral Arch Portrait
+  // =========================================================================
+  {
+    name: "Amethyst Royal",
+    render: ({ member, message, churchLogoUrl }) => {
+      const fullName = formatEditorialName(member);
+      const primaryRole = getPrimaryRoleText(member);
+
+      return (
+        <div
+          style={{
+            display: "flex",
+            width: 1080,
+            height: 1080,
+            background: "#140921",
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
+          {/* Top Gold Ribbon Bar */}
+          <div
+            style={{
+              display: "flex",
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: 1080,
+              height: 12,
+              background: "#dfb968",
+            }}
+          />
+
+          {/* Left Editorial Stack */}
+          <div
+            style={{
+              display: "flex",
+              width: "52%",
+              flexDirection: "column",
+              justifyContent: "center",
+              paddingLeft: 80,
+              paddingRight: 30,
+              zIndex: 10,
+            }}
+          >
+            {churchLogoUrl && (
+              <div style={{ display: "flex", marginBottom: 38 }}>
+                <img src={churchLogoUrl} alt="Church Logo" height={88} style={{ objectFit: "contain" }} />
+              </div>
+            )}
+
+            {/* Gold Pill Date Badge */}
+            <div style={{ display: "flex", marginBottom: 20 }}>
+              <div
+                style={{
+                  display: "flex",
+                  padding: "7px 20px",
+                  borderRadius: 30,
+                  background: "#24113b",
+                  border: "1px solid #dfb968",
+                  fontFamily: "Montserrat",
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: "#dfb968",
+                  letterSpacing: 4,
+                }}
+              >
+                {getBirthDate(member).toUpperCase()}
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                fontFamily: "Cinzel",
+                marginBottom: 18,
+              }}
+            >
+              <span style={{ fontSize: 46, fontWeight: 700, color: "#dfb968", letterSpacing: 4, lineHeight: 1 }}>
+                HAPPY
+              </span>
+              <span
+                style={{
+                  fontSize: 32,
+                  fontWeight: 400,
+                  color: "#dfb968",
+                  letterSpacing: 6,
+                  lineHeight: 1,
+                  marginTop: 4,
+                }}
+              >
+                BIRTHDAY
+              </span>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                fontFamily: "Cinzel",
+                fontSize: getNameFontSize(fullName, 46),
+                fontWeight: 700,
+                color: "#ffffff",
+                lineHeight: 1.2,
+                marginBottom: 14,
+              }}
+            >
+              {fullName}
+            </div>
+
+            {primaryRole && (
+              <div
+                style={{
+                  display: "flex",
+                  fontFamily: "Montserrat",
+                  fontSize: 18,
+                  color: "#dfb968",
+                  fontWeight: 700,
+                  letterSpacing: 4,
+                  textTransform: "uppercase",
+                  marginBottom: 22,
+                }}
+              >
+                {primaryRole}
+              </div>
+            )}
+
+            <div
+              style={{
+                display: "flex",
+                width: 120,
+                height: 2,
+                background: "#dfb968",
+                marginBottom: 24,
+              }}
+            />
+
+            <div
+              style={{
+                display: "flex",
+                fontFamily: "Montserrat",
+                fontSize: 25,
+                lineHeight: 1.6,
+                color: "#d8cfe3",
+              }}
+            >
+              {message}
+            </div>
+          </div>
+
+          {/* Right Floor-Anchored Cathedral Arch Portrait */}
+          <div
+            style={{
+              display: "flex",
+              width: "48%",
+              height: "100%",
+              justifyContent: "center",
+              alignItems: "flex-end",
+              paddingRight: 50,
+              zIndex: 10,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                position: "relative",
+                width: 440,
+                height: 820,
+              }}
+            >
+              {/* Offset Gold Arch Wireframe */}
+              <div
+                style={{
+                  display: "flex",
+                  position: "absolute",
+                  top: -18,
+                  left: -18,
+                  width: 440,
+                  height: 838,
+                  borderRadius: "220px 220px 0 0",
+                  border: "2px solid #dfb968",
+                }}
+              />
+              <div
+                style={{
+                  display: "flex",
+                  width: 440,
+                  height: 820,
+                  borderRadius: "220px 220px 0 0",
+                  borderTop: "8px solid #ffffff",
+                  borderLeft: "8px solid #ffffff",
+                  borderRight: "8px solid #ffffff",
+                  overflow: "hidden",
+                  background: "#24113b",
+                  boxShadow: "0 -10px 40px rgba(0,0,0,0.4)",
+                }}
+              >
+                {member.photo_url ? (
+                  <img
+                    src={member.photo_url}
+                    alt="Member"
+                    style={{
+                      width: 440,
+                      height: 820,
+                      borderRadius: "212px 212px 0 0",
+                      objectFit: "cover",
+                    }}
+                  />
+                ) : (
+                  <div style={{ display: "flex", width: "100%", height: "100%", background: "#24113b" }} />
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    },
+  },
+
+  // =========================================================================
+  // 7. Sunset Bronze — Offset Double-Frame Portrait with Floating Date Plaque
+  // =========================================================================
+  {
+    name: "Sunset Bronze",
+    render: ({ member, message, churchLogoUrl }) => {
+      const { givenLine, surnameLine } = splitEditorialName(member);
+      const primaryRole = getPrimaryRoleText(member);
+
+      return (
+        <div
+          style={{
+            display: "flex",
+            width: 1080,
+            height: 1080,
+            background: "radial-gradient(circle at center, #2b1712 0%, #140a08 100%)",
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
+          {/* Left Portrait with Offset Frame & Floating Bottom Date Plaque */}
+          <div
+            style={{
+              display: "flex",
+              width: "46%",
+              justifyContent: "center",
+              alignItems: "center",
+              paddingLeft: 40,
+              zIndex: 10,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                position: "relative",
+                width: 410,
+                height: 630,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  position: "absolute",
+                  top: 18,
+                  left: 18,
+                  width: 410,
+                  height: 630,
+                  border: "2px solid #d9b372",
+                  borderRadius: 12,
+                }}
+              />
+              <div
+                style={{
+                  display: "flex",
+                  width: 410,
+                  height: 630,
+                  borderRadius: 12,
+                  border: "8px solid #ffffff",
+                  overflow: "hidden",
+                  background: "#2b1712",
+                  boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
+                }}
+              >
+                {member.photo_url ? (
+                  <img
+                    src={member.photo_url}
+                    alt="Member"
+                    style={{ width: 410, height: 630, borderRadius: 6, objectFit: "cover" }}
+                  />
+                ) : (
+                  <div style={{ display: "flex", width: "100%", height: "100%", background: "#2b1712" }} />
+                )}
+              </div>
+
+              {/* Floating Date Plaque Overlapping Portrait Bottom */}
+              <div
+                style={{
+                  display: "flex",
+                  position: "absolute",
+                  bottom: -22,
+                  left: 65,
+                  width: 280,
+                  height: 48,
+                  background: "#d9b372",
+                  color: "#140a08",
+                  borderRadius: 6,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  fontFamily: "Montserrat",
+                  fontSize: 17,
+                  fontWeight: 700,
+                  letterSpacing: 4,
+                  boxShadow: "0 8px 20px rgba(0,0,0,0.35)",
+                }}
+              >
+                {getBirthDate(member).toUpperCase()}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Editorial Stack */}
+          <div
+            style={{
+              display: "flex",
+              width: "54%",
+              flexDirection: "column",
+              justifyContent: "center",
+              paddingLeft: 40,
+              paddingRight: 76,
+              zIndex: 10,
+            }}
+          >
+            {churchLogoUrl && (
+              <div style={{ display: "flex", marginBottom: 38 }}>
+                <img src={churchLogoUrl} alt="Church Logo" height={86} style={{ objectFit: "contain" }} />
+              </div>
+            )}
+
+            <div
+              style={{
+                display: "flex",
+                fontFamily: "Montserrat",
+                fontSize: 18,
+                fontWeight: 700,
+                color: "#d9b372",
+                letterSpacing: 6,
+                marginBottom: 16,
+              }}
+            >
+              HAPPY BIRTHDAY
+            </div>
+
+            {givenLine && (
+              <div
+                style={{
+                  display: "flex",
+                  fontFamily: "Cinzel",
+                  fontSize: 30,
+                  fontWeight: 400,
+                  color: "#f5ebe6",
+                  lineHeight: 1.2,
+                  marginBottom: 4,
+                }}
+              >
+                {givenLine}
+              </div>
+            )}
+
+            <div
+              style={{
+                display: "flex",
+                fontFamily: "Cinzel",
+                fontSize: getNameFontSize(surnameLine, 54),
+                fontWeight: 700,
+                color: "#ffffff",
+                lineHeight: 1.1,
+                marginBottom: 16,
+              }}
+            >
+              {surnameLine}
+            </div>
+
+            {primaryRole && (
+              <div style={{ display: "flex", marginBottom: 24 }}>
+                <PositionBadge text={primaryRole} bg="#2b1712" color="#d9b372" />
+              </div>
+            )}
+
+            <div
+              style={{
+                display: "flex",
+                width: 110,
+                height: 2,
+                background: "#d9b372",
+                marginBottom: 24,
+              }}
+            />
+
+            <div
+              style={{
+                display: "flex",
+                fontFamily: "Montserrat",
+                fontSize: 25,
+                lineHeight: 1.6,
+                color: "#dfd5d0",
+              }}
+            >
+              {message}
+            </div>
+          </div>
+        </div>
+      );
+    },
+  },
+
+  // =========================================================================
+  // 8. Crimson Velvet — Regal Medallion Crest & Centered Serif Typography
+  // =========================================================================
+  {
+    name: "Crimson Velvet",
+    render: ({ member, message, churchLogoUrl }) => {
+      const fullName = formatEditorialName(member);
+      const primaryRole = getPrimaryRoleText(member);
+
+      return (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            width: 1080,
+            height: 1080,
+            background: "#260810",
+            alignItems: "center",
+            justifyContent: "center",
+            position: "relative",
+            border: "16px solid #c5a86a",
+            paddingLeft: 100,
+            paddingRight: 100,
+          }}
+        >
+          {churchLogoUrl && (
+            <div style={{ display: "flex", marginBottom: 22 }}>
+              <img src={churchLogoUrl} alt="Church Logo" height={74} style={{ objectFit: "contain" }} />
+            </div>
+          )}
+
+          {/* Outer Gold Ring + Circular Gallery Medallion Portrait */}
+          <div
+            style={{
+              display: "flex",
+              padding: 10,
+              borderRadius: 190,
+              border: "2px solid #dfb968",
+              marginBottom: 26,
+            }}
+          >
+            {member.photo_url ? (
+              <img
+                src={member.photo_url}
+                alt="Member"
+                style={{
+                  width: 330,
+                  height: 330,
+                  borderRadius: 165,
+                  border: "8px solid #ffffff",
+                  boxShadow: "0 15px 35px rgba(0,0,0,0.35)",
+                  objectFit: "cover",
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  display: "flex",
+                  width: 330,
+                  height: 330,
+                  borderRadius: 165,
+                  border: "8px solid #ffffff",
+                  background: "#3d0f1b",
+                }}
+              />
+            )}
+          </div>
+
+          {/* Flanked Date Eyebrow */}
+          <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
+            <div style={{ display: "flex", width: 50, height: 1, background: "#dfb968", marginRight: 16 }} />
+            <span
+              style={{
+                fontFamily: "Montserrat",
+                fontSize: 17,
+                fontWeight: 700,
+                letterSpacing: 6,
+                color: "#dfb968",
+              }}
+            >
+              HAPPY BIRTHDAY • {getBirthDate(member).toUpperCase()}
+            </span>
+            <div style={{ display: "flex", width: 50, height: 1, background: "#dfb968", marginLeft: 16 }} />
+          </div>
+
+          {/* Celebrant Name in Cinzel */}
+          <div
+            style={{
+              display: "flex",
+              textAlign: "center",
+              justifyContent: "center",
+              fontFamily: "Cinzel",
+              fontSize: getNameFontSize(fullName, 48),
+              lineHeight: 1.2,
+              fontWeight: 700,
+              color: "#ffffff",
+              marginBottom: 12,
+            }}
+          >
+            {fullName}
+          </div>
+
+          {/* Primary Role / Department Pill */}
+          {primaryRole && (
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 22 }}>
+              <PositionBadge text={primaryRole} bg="#3d0f1b" color="#dfb968" />
+            </div>
+          )}
+
+          {/* Prayer / Greeting Copy */}
+          <div
+            style={{
+              display: "flex",
+              textAlign: "center",
+              justifyContent: "center",
+              fontFamily: "Montserrat",
+              fontSize: 25,
+              lineHeight: 1.6,
+              color: "#e5e7eb",
+            }}
+          >
+            {message}
+          </div>
+        </div>
+      );
+    },
   },
 ];
 
 export const defaultMessages = [
-  // "Wishing you a wonderful birthday filled with God's grace and blessings. May this new year of your life be filled with joy, peace, and abundant love!",
   "May the Lord continue to bless you and keep you. May His face shine upon you and give you peace throughout this new year.",
-  // "On your special day, we celebrate the gift you are to our church family. May God's blessings overflow in your life today and always!",
-  // "Rejoice, for this is the day the Lord has made! Happy Birthday! May you be blessed with good health, happiness, and divine favor.",
-  // "Happy Birthday! As you mark another year of God's faithfulness, may you continue to grow in grace and in the knowledge of our Lord Jesus Christ.",
 ];

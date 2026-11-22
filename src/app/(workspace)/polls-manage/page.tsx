@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Search, Share2, Trash2, Play, Square, Users, Vote, Loader2, Calendar, Info, Printer, Tv } from "lucide-react";
+import Link from "next/link";
+import { Plus, Search, Share2, Trash2, Play, Square, Users, Vote, Loader2, Calendar, Info, Printer, Tv, MoreVertical, SquarePen } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +12,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -396,45 +404,82 @@ export default function PollsAdminPage() {
   };
 
   const filteredPolls = polls.filter(poll => poll.title.toLowerCase().includes(searchQuery.toLowerCase()));
+  const activeCount = polls.filter(p => p.status === "active").length;
+  const closedCount = polls.filter(p => p.status === "closed").length;
+  const totalCandidatesCount = polls.reduce((acc, p) => acc + (p.poll_candidates?.length || 0), 0);
 
   return (
-    <div className="flex-1 w-full bg-(--background)] min-h-screen">
+    <div className="flex-1 w-full bg-[var(--background)] min-h-screen">
       <PageHeader
         eyebrow="Congregation Engagement"
         title="Polls & Voting"
         description="Create and manage voting polls for selecting the best workers, leaders, or other congregational decisions."
         actions={
-          <Button
-            onClick={() => {
-              resetForm();
-              setCreateOpen(true);
-            }}
-            variant="secondary"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Create Poll
-          </Button>
+          <div className="flex w-full sm:w-auto flex-wrap items-center gap-2">
+            <Button asChild variant="outline" size="sm" className="h-10 bg-white border-[var(--outline-variant)] font-semibold">
+              <Link href="/polls">
+                <Vote className="mr-1.5 h-4 w-4 text-primary" />
+                Voter Portal
+              </Link>
+            </Button>
+            <Button
+              onClick={() => {
+                resetForm();
+                setCreateOpen(true);
+              }}
+              variant="secondary"
+              size="sm"
+              className="h-10 font-bold ml-auto sm:ml-0"
+            >
+              <Plus className="mr-1.5 h-4 w-4" />
+              Create Poll
+            </Button>
+          </div>
         }
       />
 
-      <main className="space-y-6 p-4 md:p-8">
+      <main className="space-y-6 p-4 md:space-y-8 md:p-8">
+        {/* 4-Card Polls KPI Strip */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[var(--outline-variant)]/60 shadow-2xs">
+            <p className="text-xs font-medium text-[var(--on-surface-variant)]">Total Polls</p>
+            <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight mt-2">{polls.length}</p>
+            <p className="mt-1 text-xs text-[var(--on-surface-variant)]">All voting sessions</p>
+          </div>
+          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[var(--outline-variant)]/60 shadow-2xs">
+            <p className="text-xs font-medium text-[var(--on-surface-variant)]">Active Live</p>
+            <p className="text-2xl sm:text-3xl font-extrabold text-emerald-700 tracking-tight mt-2">{activeCount}</p>
+            <p className="mt-1 text-xs text-[var(--on-surface-variant)]">Currently open for votes</p>
+          </div>
+          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[var(--outline-variant)]/60 shadow-2xs">
+            <p className="text-xs font-medium text-[var(--on-surface-variant)]">Concluded</p>
+            <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight mt-2">{closedCount}</p>
+            <p className="mt-1 text-xs text-[var(--on-surface-variant)]">Closed polls</p>
+          </div>
+          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[var(--outline-variant)]/60 shadow-2xs">
+            <p className="text-xs font-medium text-[var(--on-surface-variant)]">Total Nominees</p>
+            <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight mt-2">{totalCandidatesCount}</p>
+            <p className="mt-1 text-xs text-[var(--on-surface-variant)]">Candidates across polls</p>
+          </div>
+        </div>
+
         {/* Search Bar */}
         <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-(--outline)]" />
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--outline)]" />
           <Input
             type="search"
             placeholder="Search polls..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="h-11 border-(--outline-variant) bg-white pl-10 shadow-sm"
+            className="h-10 border-[var(--outline-variant)]/60 bg-white pl-10 rounded-xl shadow-2xs"
           />
         </div>
 
         {/* Directory Listing */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {[1, 2, 3].map(i => (
-              <Card key={i} className="border-(--outline-variant) bg-white">
+              <Card key={i} className="border-(--outline-variant)/60 bg-white">
                 <CardHeader>
                   <Skeleton className="h-5 w-40 mb-2" />
                   <Skeleton className="h-4 w-60" />
@@ -447,173 +492,159 @@ export default function PollsAdminPage() {
             ))}
           </div>
         ) : filteredPolls.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-xl border border-(--outline-variant) shadow-sm">
-            <div className="h-16 w-16 bg-slate-50 border border-dashed rounded-full flex items-center justify-center mb-4 border-(--outline-variant)">
-              <Vote className="h-8 w-8 text-slate-400" />
+          <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-2xl border border-(--outline-variant)/60 shadow-2xs">
+            <div className="h-14 w-14 bg-[var(--surface-container-low)] rounded-full flex items-center justify-center mb-3">
+              <Vote className="h-7 w-7 text-[var(--outline)]" />
             </div>
-            <h3 className="font-semibold text-lg text-[#0B1C30]">No polls found</h3>
-            <p className="text-slate-500 text-sm max-w-xs mt-1">
+            <h3 className="font-semibold text-base text-foreground">No polls found</h3>
+            <p className="text-[var(--on-surface-variant)] text-xs max-w-xs mt-1">
               Create a new poll to gather feedback or vote for workers of the month.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredPolls.map(poll => {
-              const start = new Date(poll.starts_at).toLocaleDateString();
-              const end = new Date(poll.ends_at).toLocaleDateString();
+              const start = new Date(poll.starts_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+              const end = new Date(poll.ends_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
               const isActivePoll = poll.status === "active";
               const isClosedPoll = poll.status === "closed";
+
+              const openEditPoll = () => {
+                if (poll.status === "draft") {
+                  handleStartEditDraft(poll);
+                } else {
+                  const localStart = new Date(
+                    new Date(poll.starts_at).getTime() - new Date().getTimezoneOffset() * 60000,
+                  )
+                    .toISOString()
+                    .slice(0, 16);
+                  const localEnd = new Date(
+                    new Date(poll.ends_at).getTime() - new Date().getTimezoneOffset() * 60000,
+                  )
+                    .toISOString()
+                    .slice(0, 16);
+                  setEditingPoll(poll);
+                  setEditStartsAt(localStart);
+                  setEditEndsAt(localEnd);
+                  setEditAllowViewResults(poll.allow_view_results);
+                  setEditPeriodOpen(true);
+                }
+              };
 
               return (
                 <Card
                   key={poll.id}
-                  className="border-(--outline-variant) bg-white flex flex-col justify-between shadow-xs rounded-xl hover:border-primary/50 hover:shadow-sm transition-all duration-200"
+                  className="border-(--outline-variant)/60 bg-white flex flex-col justify-between shadow-2xs rounded-2xl hover:border-primary/40 transition-colors"
                 >
-                  <CardHeader className="pb-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <Badge
-                        variant="outline"
-                        className={
-                          isActivePoll
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
-                            : isClosedPoll
-                              ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-50"
-                              : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-50"
-                        }
-                      >
-                        {poll.status.toUpperCase()}
-                      </Badge>
-                      <span className="text-xs text-slate-400 flex items-center gap-1 font-mono">
-                        <Calendar className="h-3 w-3" />
-                        {start} - {end}
-                      </span>
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-center gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] font-semibold capitalize px-2 py-0.5 ${
+                            isActivePoll
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : isClosedPoll
+                                ? "bg-slate-100 text-slate-600 border-slate-200"
+                                : "bg-amber-50 text-amber-800 border-amber-200"
+                          }`}
+                        >
+                          {poll.status}
+                        </Badge>
+                        <span className="text-xs text-[var(--on-surface-variant)]">
+                          {start} – {end}
+                        </span>
+                      </div>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8 rounded-lg text-[var(--on-surface-variant)]"
+                            title="More options"
+                          >
+                            <MoreVertical className="size-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-44">
+                          <DropdownMenuItem onClick={() => window.open(`/polls/${poll.id}/tv`, "_blank")}>
+                            <Tv className="mr-2 size-4 text-amber-600" />
+                            TV Broadcast Page
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handlePrintPollResult(poll)}>
+                            <Printer className="mr-2 size-4" />
+                            Print Report
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={openEditPoll}>
+                            <SquarePen className="mr-2 size-4" />
+                            Edit Poll
+                          </DropdownMenuItem>
+                          {isActivePoll && (
+                            <DropdownMenuItem onClick={() => togglePollStatus(poll, "closed")}>
+                              <Square className="mr-2 size-4 text-amber-600" />
+                              Close Voting
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            disabled={isActivePoll}
+                            onClick={() => handleDeletePoll(poll.id)}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="mr-2 size-4" />
+                            Delete Poll
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                    <CardTitle className="line-clamp-1 text-[#0B1C30] font-semibold text-lg">{poll.title}</CardTitle>
-                    <CardDescription className="line-clamp-2 mt-1 text-(--on-surface-variant) text-sm">
-                      {poll.description || "No description provided."}
-                    </CardDescription>
+                    <CardTitle className="line-clamp-1 text-foreground font-semibold text-base">{poll.title}</CardTitle>
+                    {poll.description && (
+                      <CardDescription className="line-clamp-2 mt-1 text-(--on-surface-variant) text-xs">
+                        {poll.description}
+                      </CardDescription>
+                    )}
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between text-xs border-t border-(--outline-variant)/60 pt-3 text-(--on-surface-variant)">
-                      <span className="flex items-center gap-1 font-medium capitalize">
-                        <Users className="h-3.5 w-3.5 text-(--secondary)]" />
+
+                  <CardContent className="space-y-3.5">
+                    <div className="flex items-center justify-between text-xs border-t border-[var(--outline-variant)]/40 pt-3 text-[var(--on-surface-variant)]">
+                      <span className="capitalize">
                         {poll.voter_type.replace("_", " ")}
                       </span>
-                      <span className="font-semibold text-[#0B1C30] font-mono">
-                        {poll.poll_candidates.length} Nominees
+                      <span className="font-medium text-foreground">
+                        {poll.poll_candidates.length} {poll.poll_candidates.length === 1 ? "nominee" : "nominees"}
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleViewResults(poll)}
-                        className="w-full border-(--outline-variant) bg-white text-slate-700 hover:bg-(--surface-container) text-xs"
-                      >
-                        Results
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(`/polls/${poll.id}/tv`, "_blank")}
-                        className="w-full border-amber-300 bg-amber-50/50 text-amber-950 hover:bg-amber-100 text-xs font-semibold"
-                        title="Open TV Widescreen Broadcast Page (Fit 1 Page)"
-                      >
-                        <Tv className="h-3.5 w-3.5 mr-1 text-amber-600" />
-                        TV Page
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePrintPollResult(poll)}
-                        className="w-full border-(--outline-variant) bg-white text-slate-700 hover:bg-(--surface-container) text-xs"
-                        title="Print Poll Results"
-                      >
-                        <Printer className="h-3.5 w-3.5 mr-1 text-slate-600" />
-                        Print
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleShareLink(poll.slug || poll.id)}
-                        className="w-full border-(--outline-variant) bg-white text-slate-700 hover:bg-(--surface-container) text-xs"
-                      >
-                        <Share2 className="h-3.5 w-3.5 mr-1" />
-                        Share
-                      </Button>
-                    </div>
-
-                    <div className="flex items-center gap-2 pt-2 border-t border-(--outline-variant)/60">
-                      {poll.status === "draft" && (
+                    <div className="grid grid-cols-2 gap-2">
+                      {poll.status === "draft" ? (
                         <Button
                           variant="secondary"
                           size="sm"
                           onClick={() => togglePollStatus(poll, "active")}
-                          className="flex-1 bg-emerald-500 text-white hover:bg-emerald-600 border border-transparent shadow-xs"
+                          className="h-9 bg-emerald-600 text-white hover:bg-emerald-700 text-xs font-semibold"
                         >
-                          <Play className="h-3.5 w-3.5 mr-1" />
-                          Launch
-                        </Button>
-                      )}
-                      {poll.status === "active" && (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => togglePollStatus(poll, "closed")}
-                          className="flex-1 bg-amber-500 text-white hover:bg-amber-600 border border-transparent shadow-xs"
-                        >
-                          <Square className="h-3.5 w-3.5 mr-1" />
-                          Close Poll
-                        </Button>
-                      )}
-                      {poll.status === "draft" ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleStartEditDraft(poll)}
-                          className="border-(--outline-variant) bg-white text-slate-700 hover:bg-(--surface-container) text-xs"
-                        >
-                          Edit Poll
+                          <Play className="h-3.5 w-3.5 mr-1.5" />
+                          Launch Poll
                         </Button>
                       ) : (
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => {
-                            const localStart = new Date(
-                              new Date(poll.starts_at).getTime() - new Date().getTimezoneOffset() * 60000,
-                            )
-                              .toISOString()
-                              .slice(0, 16);
-                            const localEnd = new Date(
-                              new Date(poll.ends_at).getTime() - new Date().getTimezoneOffset() * 60000,
-                            )
-                              .toISOString()
-                              .slice(0, 16);
-                            setEditingPoll(poll);
-                            setEditStartsAt(localStart);
-                            setEditEndsAt(localEnd);
-                            setEditAllowViewResults(poll.allow_view_results);
-                            setEditPeriodOpen(true);
-                          }}
-                          className={`border-(--outline-variant) bg-white text-slate-700 hover:bg-(--surface-container) text-xs ${poll.status === "closed" ? "flex-1" : ""}`}
+                          onClick={() => handleViewResults(poll)}
+                          className="h-9 border-(--outline-variant)/70 bg-white text-foreground hover:bg-(--surface-container-low) text-xs font-semibold"
                         >
-                          Edit Poll
+                          View Results
                         </Button>
                       )}
                       <Button
                         variant="outline"
                         size="sm"
-                        disabled={poll.status === "active"}
-                        onClick={() => handleDeletePoll(poll.id)}
-                        className={
-                          poll.status === "active"
-                            ? "text-slate-300 border-slate-100 cursor-not-allowed"
-                            : "text-red-500 border-red-100 hover:bg-red-50 hover:text-red-600"
-                        }
+                        onClick={() => handleShareLink(poll.slug || poll.id)}
+                        className="h-9 border-(--outline-variant)/70 bg-white text-foreground hover:bg-(--surface-container-low) text-xs font-semibold"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Share2 className="h-3.5 w-3.5 mr-1.5 text-primary" />
+                        Share Link
                       </Button>
                     </div>
                   </CardContent>
@@ -632,12 +663,12 @@ export default function PollsAdminPage() {
           if (!open) resetForm();
         }}
       >
-        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-hidden border-(--outline-variant) bg-(--surface-container-lowest) p-0 sm:max-w-2xl">
-          <DialogHeader className="border-b border-(--outline-variant) bg-(--surface-container-lowest) px-8 py-6 text-left">
-            <DialogTitle className="font-headline text-2xl font-bold text-[#0B1C30]">
+        <DialogContent className="max-h-[calc(100dvh-2rem)] w-[calc(100vw-1.25rem)] overflow-hidden border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-0 sm:max-w-2xl rounded-2xl">
+          <DialogHeader className="border-b border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-5 py-4 sm:px-8 sm:py-6 text-left">
+            <DialogTitle className="font-headline text-xl sm:text-2xl font-bold text-[#0B1C30]">
               {editingPoll ? "Edit Poll" : "Create New Poll"}
             </DialogTitle>
-            <DialogDescription className="text-sm text-(--on-surface-variant)">
+            <DialogDescription className="text-xs sm:text-sm text-[var(--on-surface-variant)]">
               {editingPoll
                 ? `Modify the details, nominees, and metadata for "${editingPoll.title}".`
                 : "Initialize a new dynamic voting poll, define voter access criteria, and nominate candidates."}
@@ -648,7 +679,7 @@ export default function PollsAdminPage() {
             onSubmit={handleCreatePoll}
             className="flex max-h-[calc(100dvh-10rem)] min-h-0 flex-col overflow-hidden"
           >
-            <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-8 py-6">
+            <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 py-5 sm:px-8 sm:py-6">
               {/* Basic Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2 md:col-span-2">

@@ -44,13 +44,25 @@ export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  // Initialize query, optimizing unit_id filtering through PostgREST embedded joins
+  // Initialize query, optimizing unit_id and worker filtering
   let query;
   if (unitId && unitId !== FILTER_VALUE.ALL) {
     query = supabase
       .from("members")
       .select("*, church_unit_members!inner(unit_id)", { count: "exact" })
       .eq("church_unit_members.unit_id", unitId)
+      .order(sort, { ascending: order === "asc" });
+  } else if (lifeStage === "workers") {
+    const { data: unitRows } = await supabase.from("church_unit_members").select("member_id");
+    const workerIds = Array.from(new Set((unitRows || []).map((r: any) => r.member_id).filter(Boolean)));
+    query = supabase
+      .from("members")
+      .select("*", { count: "exact" })
+      .or(
+        workerIds.length > 0
+          ? `id.in.(${workerIds.join(",")}),member_type.eq.worker,not.position.is.null`
+          : `member_type.eq.worker,not.position.is.null`
+      )
       .order(sort, { ascending: order === "asc" });
   } else {
     query = supabase
@@ -65,7 +77,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  if (lifeStage && lifeStage !== FILTER_VALUE.ALL) {
+  if (lifeStage && lifeStage !== FILTER_VALUE.ALL && lifeStage !== "workers") {
     query = query.eq("life_stage", normalizeLifeStage(lifeStage));
   }
 
@@ -76,18 +88,38 @@ export async function GET(req: NextRequest) {
 
   // Server-side caching for statistics counts
   const { value: stats } = await getCached(cacheKeys.memberStats, 60, async () => {
-    const [{ count: totalCount }, { count: studentCount }, { count: workingCount }, { count: visitorCount }] =
-      await Promise.all([
-        supabase.from("members").select("*", { count: "exact", head: true }),
-        supabase.from("members").select("*", { count: "exact", head: true }).eq("life_stage", LIFE_STAGE.STUDENT),
-        supabase.from("members").select("*", { count: "exact", head: true }).in("life_stage", workingLifeStages),
-        supabase.from("members").select("*", { count: "exact", head: true }).eq("life_stage", LIFE_STAGE.VISITOR),
-      ]);
+    const [
+      { count: totalCount },
+      { count: studentCount },
+      { count: workingCount },
+      { count: visitorCount },
+      { data: unitMemberRows },
+      { data: positionedRows },
+    ] = await Promise.all([
+      supabase.from("members").select("*", { count: "exact", head: true }),
+      supabase.from("members").select("*", { count: "exact", head: true }).eq("life_stage", LIFE_STAGE.STUDENT),
+      supabase.from("members").select("*", { count: "exact", head: true }).in("life_stage", workingLifeStages),
+      supabase.from("members").select("*", { count: "exact", head: true }).eq("life_stage", LIFE_STAGE.VISITOR),
+      supabase.from("church_unit_members").select("member_id"),
+      supabase.from("members").select("id, position, member_type").or("member_type.eq.worker,not.position.is.null"),
+    ]);
+
+    const workerSet = new Set<string>();
+    (unitMemberRows || []).forEach((r: any) => {
+      if (r.member_id) workerSet.add(r.member_id);
+    });
+    (positionedRows || []).forEach((r: any) => {
+      if (r.id && (r.member_type === "worker" || (r.position && String(r.position).trim()))) {
+        workerSet.add(r.id);
+      }
+    });
+
     return {
       total: totalCount || 0,
       students: studentCount || 0,
       working: workingCount || 0,
       visitors: visitorCount || 0,
+      workers: workerSet.size,
     };
   });
 

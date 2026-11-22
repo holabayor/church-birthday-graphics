@@ -32,6 +32,17 @@ import { MemberDetailDialog } from "@/components/members/member-detail-dialog";
 import { CustomCardBuilder } from "@/components/birthdays/custom-card-builder";
 
 export default function DesignsPage() {
+  const [activeTab, setActiveTab] = useState("celebrants");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const tabParam = new URLSearchParams(window.location.search).get("tab");
+      if (tabParam && ["celebrants", "custom-card", "templates", "messages"].includes(tabParam)) {
+        setActiveTab(tabParam);
+      }
+    }
+  }, []);
+
   // Existing template states
   const [loadingIdx, setLoadingIdx] = useState<number | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -188,24 +199,18 @@ export default function DesignsPage() {
     <div className="flex-1 w-full bg-[var(--background)] min-h-screen">
       <PageHeader
         eyebrow="Celebration workflow"
-        title="Birthday Management"
-        description="Manage birthday templates, greeting messages, and celebration assets."
-        meta={
-          <div className="flex items-center gap-2 rounded-full border border-[var(--outline-variant)] bg-[var(--surface-container-low)] px-3 py-1.5">
-            <LayoutTemplate className="h-4 w-4 text-[var(--secondary)]" />
-            <span className="text-sm font-medium text-foreground">{designs.length} Templates Active</span>
-          </div>
-        }
+        title="Birthdays & Cards"
+        description="Manage birthday celebrants, custom cards, templates, and greeting messages."
         actions={
-          <Button onClick={triggerSend} variant="secondary" className="w-full sm:w-auto">
-            <Send className="mr-2 h-4 w-4" />
-            Send Today's Greetings
+          <Button onClick={triggerSend} variant="secondary" size="sm" className="h-10 font-bold w-full sm:w-auto">
+            <Send className="mr-1.5 h-4 w-4" />
+            Send Today&apos;s Greetings
           </Button>
         }
       />
 
       <div className="space-y-6 p-4 md:space-y-8 md:p-8">
-        <Tabs defaultValue="celebrants" className="w-full gap-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full gap-6">
           <div className="overflow-x-auto rounded-xl border border-[var(--outline-variant)] bg-white p-2 shadow-sm">
             <TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-4 gap-1 bg-transparent p-0">
               <TabsTrigger
@@ -245,14 +250,14 @@ export default function DesignsPage() {
               <div className="lg:col-span-7 xl:col-span-8 space-y-6">
                 <Card className="shadow-sm border-slate-200">
                   <CardHeader className="pb-4 border-b border-slate-100 bg-slate-50/50">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Filter By:</span>
-                        <div className="flex rounded-lg border border-slate-200 p-0.5 bg-white">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider shrink-0">Filter:</span>
+                        <div className="flex rounded-xl border border-slate-200 p-0.5 bg-white shrink-0">
                           <button
                             type="button"
                             onClick={() => setCelebrantFilter("today")}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
                               celebrantFilter === "today" ? "bg-primary text-primary-foreground" : "text-slate-600 hover:bg-slate-100"
                             }`}
                           >
@@ -261,7 +266,7 @@ export default function DesignsPage() {
                           <button
                             type="button"
                             onClick={() => setCelebrantFilter("week")}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
                               celebrantFilter === "week" ? "bg-primary text-primary-foreground" : "text-slate-600 hover:bg-slate-100"
                             }`}
                           >
@@ -270,7 +275,7 @@ export default function DesignsPage() {
                           <button
                             type="button"
                             onClick={() => setCelebrantFilter("month")}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
                               celebrantFilter === "month" ? "bg-primary text-primary-foreground" : "text-slate-600 hover:bg-slate-100"
                             }`}
                           >
@@ -279,7 +284,7 @@ export default function DesignsPage() {
                           <button
                             type="button"
                             onClick={() => setCelebrantFilter("custom")}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
                               celebrantFilter === "custom" ? "bg-primary text-primary-foreground" : "text-slate-600 hover:bg-slate-100"
                             }`}
                           >
@@ -397,24 +402,54 @@ export default function DesignsPage() {
                     <CardContent className="p-0">
                       {celebrantPreviewUrl ? (
                         <div className="flex flex-col">
-                          <div className="relative group bg-muted/10 p-4 border-b border-slate-100">
-                            <div className="relative rounded-lg overflow-hidden border shadow-sm aspect-square md:aspect-auto flex justify-center items-center">
+                          <div className="relative bg-slate-950 p-4 border-b border-slate-100">
+                            <div className="relative rounded-xl overflow-hidden border border-slate-800 shadow-sm aspect-square flex justify-center items-center bg-slate-900">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={celebrantPreviewUrl}
                                 alt="Birthday preview"
-                                className="w-full h-auto max-h-[500px] object-contain rounded-lg"
+                                className="w-full h-full object-contain rounded-lg"
                                 onLoad={() => setGenerating(null)}
                               />
-                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm rounded-lg">
-                                <Button asChild variant="secondary" className="shadow-lg">
-                                  <a href={celebrantPreviewUrl} download={`${activeMember?.first_name || "birthday"}-graphic.png`}>
-                                    <Download className="mr-2 h-4 w-4" />
-                                    Download High-Res
-                                  </a>
-                                </Button>
-                              </div>
                             </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 p-3.5 bg-white border-b border-slate-100">
+                            <Button asChild className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-10">
+                              <a href={celebrantPreviewUrl} download={`${activeMember?.first_name || "birthday"}-graphic.png`}>
+                                <Download className="mr-1.5 h-4 w-4" />
+                                Download PNG
+                              </a>
+                            </Button>
+                            {activeMember && getWhatsAppHref(activeMember.phone_number) ? (
+                              <Button
+                                asChild
+                                variant="outline"
+                                className="w-full border-emerald-600/30 bg-emerald-50/50 text-[#007D55] hover:bg-emerald-100 font-bold text-xs h-10"
+                              >
+                                <a
+                                  href={
+                                    getWhatsAppHref(
+                                      activeMember.phone_number,
+                                      `Happy Birthday ${activeMember.first_name}! 🎉 We celebrate God's grace upon your life!`
+                                    ) || "#"
+                                  }
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  <WhatsAppIcon className="mr-1.5 h-4 w-4" />
+                                  WhatsApp
+                                </a>
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                onClick={() => activeMember && setViewingMember(activeMember)}
+                                className="w-full text-xs h-10"
+                              >
+                                View Profile
+                              </Button>
+                            )}
                           </div>
                           
                           {/* Design Customizer Controls */}
@@ -554,26 +589,28 @@ export default function DesignsPage() {
                     </CardHeader>
                     <CardContent className="p-0">
                       {previewUrl ? (
-                        <div className="group relative bg-muted/10 p-4">
-                          <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-lg border shadow-sm md:aspect-auto">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={previewUrl}
-                              alt="Design preview"
-                              className="h-auto max-h-[500px] w-full rounded-lg object-contain"
-                              onLoad={() => setLoadingIdx(null)}
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/60 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
-                              <Button asChild variant="secondary" className="shadow-lg">
-                                <a href={previewUrl} download={`design-${selectedDesign}.png`}>
-                                  <Download className="mr-2 h-4 w-4" />
-                                  Download High-Res
-                                </a>
-                              </Button>
+                        <div className="flex flex-col">
+                          <div className="bg-slate-950 p-4">
+                            <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-xl border border-slate-800 shadow-sm bg-slate-900">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={previewUrl}
+                                alt="Design preview"
+                                className="h-full w-full object-contain"
+                                onLoad={() => setLoadingIdx(null)}
+                              />
                             </div>
                           </div>
-                          <div className="mt-3 text-center">
-                            <p className="text-xs text-muted-foreground">Preview generated with sample member data</p>
+                          <div className="p-3.5 bg-white border-t border-slate-100 flex flex-col gap-2">
+                            <Button asChild className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-10">
+                              <a href={previewUrl} download={`design-${selectedDesign}.png`}>
+                                <Download className="mr-1.5 h-4 w-4" />
+                                Download Sample PNG
+                              </a>
+                            </Button>
+                            <p className="text-[11px] text-center text-muted-foreground">
+                              Preview generated with sample member data
+                            </p>
                           </div>
                         </div>
                       ) : (
@@ -641,53 +678,66 @@ function BirthdayCard({
   generatePreview: (m: Member) => void;
   onViewProfile: (m: Member) => void;
 }) {
+  const units = member.units || [];
+  const primaryRole = member.position?.trim() || units[0]?.name || member.phone_number || "Member";
+  const birthDateLabel = new Date(member.date_of_birth).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+
   return (
-    <div className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border bg-card hover:bg-accent/40 transition-colors">
-      <div className="flex items-center gap-4">
-        <Avatar className="h-12 w-12 border-2 border-background shadow-sm">
-          <AvatarImage src={member.photo_url || ""} alt={member.first_name} />
-          <AvatarFallback className="bg-primary/5 text-primary font-medium">
-            {member.first_name[0]}{member.last_name[0]}
+    <div className="group flex items-center justify-between gap-3 p-3.5 rounded-xl border border-[var(--outline-variant)]/60 bg-white hover:border-primary/40 transition-colors">
+      <button
+        type="button"
+        onClick={() => onViewProfile(member)}
+        className="flex items-center gap-3 min-w-0 flex-1 text-left focus:outline-none"
+      >
+        <Avatar className="h-10 w-10 border border-[var(--outline-variant)]/60 shadow-2xs shrink-0">
+          <AvatarImage src={member.photo_url || ""} alt={member.first_name} className="object-cover" />
+          <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
+            {member.first_name?.[0]}{member.last_name?.[0]}
           </AvatarFallback>
         </Avatar>
-        <div>
-          <p className="font-semibold text-foreground text-base">
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-foreground text-sm truncate group-hover:text-primary transition-colors">
             {member.first_name} {member.middle_name ? member.middle_name + " " : ""}
             {member.last_name}
           </p>
-          <div className="flex items-center gap-2 mt-1">
-            {member.position ? (
-              <Badge variant="secondary" className="font-normal text-xs px-2 py-0">
-                {member.position}
-              </Badge>
-            ) : null}
-            <span className="text-xs font-semibold text-amber-600">
-              {new Date(member.date_of_birth).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-            </span>
-          </div>
+          <p className="mt-0.5 text-xs text-[var(--on-surface-variant)] truncate">
+            🎂 {birthDateLabel} · {primaryRole}
+          </p>
         </div>
-      </div>
-      <div className="flex items-center gap-2 w-full sm:w-auto">
+      </button>
+
+      <div className="flex items-center gap-1.5 shrink-0">
+        {getWhatsAppHref(member.phone_number) && (
+          <a
+            href={getWhatsAppHref(member.phone_number, `Happy Birthday ${member.first_name}! 🎉`) || "#"}
+            target="_blank"
+            rel="noreferrer"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-600/25 bg-emerald-50/70 text-[#007D55] hover:bg-emerald-600 hover:text-white transition-colors"
+            title="Send WhatsApp greeting"
+          >
+            <WhatsAppIcon className="h-3.5 w-3.5" />
+          </a>
+        )}
         <Button
-          variant="outline"
-          onClick={() => onViewProfile(member)}
-          className="flex-1 sm:flex-initial shadow-sm"
-        >
-          View Profile
-        </Button>
-        <Button
+          size="sm"
           variant={generating === member.id ? "secondary" : "outline"}
           onClick={() => generatePreview(member)}
           disabled={generating === member.id}
-          className="flex-1 sm:flex-initial shadow-sm"
+          className="h-8 px-3 text-xs font-semibold rounded-lg border-[var(--outline-variant)]/70"
         >
           {generating === member.id ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generating
+              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              Rendering
             </>
           ) : (
-            "Preview Graphic"
+            <>
+              <Sparkles className="mr-1.5 h-3.5 w-3.5 text-primary" />
+              Preview
+            </>
           )}
         </Button>
       </div>

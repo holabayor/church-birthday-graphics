@@ -34,105 +34,99 @@ export function UnitDirectoryTable({
   onDelete,
 }: UnitDirectoryTableProps) {
   return (
-    <div className="hidden overflow-x-auto md:block bg-white rounded-xl border border-[var(--outline-variant)] shadow-sm">
+    <div className="hidden overflow-x-auto md:block bg-white">
       <Table className="w-full text-left border-collapse">
-        <TableHeader className="bg-slate-50">
-          <TableRow className="border-b border-[var(--outline-variant)]">
-            <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Unit Name</th>
-            <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Member Count</th>
-            <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Leadership (HOD / Assistant)</th>
-            <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Status</th>
-            <th className="px-6 py-4 text-right text-[11px] font-bold text-slate-500 uppercase tracking-widest">Actions</th>
+        <TableHeader className="bg-[var(--surface-container-low)]">
+          <TableRow className="border-b border-[var(--outline-variant)]/50">
+            <th className="px-6 py-3.5 text-xs font-semibold text-[var(--on-surface-variant)]">Unit Name</th>
+            <th className="px-6 py-3.5 text-xs font-semibold text-[var(--on-surface-variant)]">Members</th>
+            <th className="px-6 py-3.5 text-xs font-semibold text-[var(--on-surface-variant)]">Unit Head (HOD)</th>
+            <th className="px-6 py-3.5 text-xs font-semibold text-[var(--on-surface-variant)]">Assistant</th>
+            <th className="px-6 py-3.5 text-right text-xs font-semibold text-[var(--on-surface-variant)]">Actions</th>
           </TableRow>
         </TableHeader>
-        <TableBody className="divide-y divide-slate-100">
-          {units.map((unit, index) => {
+        <TableBody className="divide-y divide-[var(--outline-variant)]/40">
+          {units.map((unit) => {
             const hod = getUnitLeader(unit.members, UNIT_ROLE.HEAD);
             const assistant = getUnitLeader(unit.members, UNIT_ROLE.ASSISTANT);
             
             return (
               <TableRow
                 key={unit.id}
-                className="hover:bg-slate-50 transition-colors group border-b border-slate-100"
+                className="hover:bg-[var(--surface-container-low)]/60 transition-colors"
               >
                 {/* Unit Name & Description */}
-                <TableCell className="px-6 py-5">
-                  <div className="flex items-center">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center mr-3 shrink-0 ${getIconBgClass(index)}`}>
-                      <Building2 className="w-5 h-5" />
+                <TableCell className="px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <Building2 className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
                       <Link
                         href={`/units/${unit.id}`}
-                        className="text-sm font-semibold text-slate-900 hover:text-primary transition-colors block truncate"
+                        className="text-sm font-semibold text-foreground hover:text-primary transition-colors block truncate"
                       >
                         {unit.name}
                       </Link>
-                      <p className="text-xs text-slate-400 truncate max-w-[280px]">
-                        {unit.description || "No description provided"}
-                      </p>
+                      {unit.description && (
+                        <p className="text-xs text-[var(--on-surface-variant)] truncate max-w-[280px]">
+                          {unit.description}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </TableCell>
 
                 {/* Member Count */}
-                <TableCell className="px-6 py-5">
-                  <div className="flex items-center text-sm text-slate-600 font-medium">
-                    <Users className="w-4 h-4 mr-2 text-slate-400 shrink-0" />
-                    {unit.stats.total_members} {unit.stats.total_members === 1 ? "Member" : "Members"}
+                <TableCell className="px-6 py-4">
+                  <div className="flex items-center text-sm text-foreground font-medium">
+                    <Users className="w-3.5 h-3.5 mr-1.5 text-[var(--outline)] shrink-0" />
+                    {unit.stats.total_members}
                   </div>
                 </TableCell>
 
-                {/* Leadership (HOD / AST) */}
-                <TableCell className="px-6 py-5">
-                  <div className="space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-slate-700 truncate max-w-[150px]">
-                        {hod ? getUnitMemberName(hod) : "No HOD assigned"}
-                      </span>
-                      <span className="px-1.5 py-0.5 bg-blue-100 text-[9px] font-bold text-blue-700 rounded uppercase tracking-wider shrink-0">
-                        HOD
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-slate-500 truncate max-w-[150px]">
-                        {assistant ? getUnitMemberName(assistant) : "No Assistant assigned"}
-                      </span>
-                      <span className="px-1.5 py-0.5 bg-slate-100 text-[9px] font-bold text-slate-500 rounded uppercase tracking-wider shrink-0">
-                        AST
-                      </span>
-                    </div>
-                  </div>
+                {/* HOD */}
+                <TableCell className="px-6 py-4">
+                  {hod ? (
+                    <span className="text-sm font-medium text-foreground">
+                      {getUnitMemberName(hod)}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-[var(--outline)]">Unassigned</span>
+                  )}
                 </TableCell>
 
-                {/* Status */}
-                <TableCell className="px-6 py-5">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5"></span>
-                    Active
-                  </span>
+                {/* Assistant */}
+                <TableCell className="px-6 py-4">
+                  {assistant ? (
+                    <span className="text-sm text-[var(--on-surface-variant)]">
+                      {getUnitMemberName(assistant)}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-[var(--outline)]">—</span>
+                  )}
                 </TableCell>
 
                 {/* Actions */}
-                <TableCell className="px-6 py-5 text-right">
-                  <div className="flex items-center justify-end space-x-2">
+                <TableCell className="px-6 py-4 text-right">
+                  <div className="flex items-center justify-end gap-1.5">
                     <Button
                       asChild
                       variant="outline"
                       size="sm"
-                      className="h-8 px-3 text-xs font-semibold text-blue-600 bg-blue-50 border-transparent hover:bg-blue-100 hover:text-blue-700 transition-colors"
+                      className="h-8 px-3 text-xs font-semibold border-[var(--outline-variant)]/70"
                     >
-                      <Link href={`/units/${unit.id}`}>View</Link>
+                      <Link href={`/units/${unit.id}`}>Open</Link>
                     </Button>
                     
                     {canManageUnits && (
                       <>
                         <Button
                           type="button"
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
                           onClick={() => onEdit(unit)}
-                          className="h-8 px-3 text-xs font-semibold text-slate-600 bg-slate-50 border-transparent hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                          className="h-8 px-2.5 text-xs font-medium text-[var(--on-surface-variant)]"
                         >
                           Edit
                         </Button>
@@ -140,7 +134,7 @@ export function UnitDirectoryTable({
                           type="button"
                           onClick={() => onDelete(unit)}
                           disabled={saving}
-                          className="p-1.5 text-slate-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50 disabled:opacity-50"
+                          className="p-1.5 text-[var(--outline)] hover:text-red-600 transition-colors rounded-lg hover:bg-red-50 disabled:opacity-50"
                           title="Delete Unit"
                         >
                           <Trash2 className="w-4 h-4" />

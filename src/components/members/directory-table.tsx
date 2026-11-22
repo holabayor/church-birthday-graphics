@@ -20,6 +20,7 @@ import {
   usesNyscProfile,
   workingLifeStages,
 } from "@/lib/memberLifecycle";
+import { unitRoleLabels, type UnitRole } from "@/lib/unitRoles";
 
 type DirectoryTableProps = {
   members: Member[];
@@ -33,53 +34,57 @@ function getMemberName(member: Member) {
   return [member.first_name, member.middle_name, member.last_name].filter(Boolean).join(" ");
 }
 
-function getUnitRoleLabel(member: Member) {
-  const primaryUnit = member.units?.[0];
-  if (!primaryUnit) return "-";
-  const roleLabel = primaryUnit.role ? primaryUnit.role.charAt(0).toUpperCase() + primaryUnit.role.slice(1) : "Member";
-  return `${primaryUnit.name} / ${roleLabel}`;
+function getRoleAndUnitsLabel(member: Member) {
+  const units = member.units || [];
+  const parts: string[] = [];
+  if (member.position && member.position.trim()) {
+    parts.push(member.position.trim());
+  }
+  if (units.length > 0) {
+    const first = units[0];
+    const roleLabel = first.role ? (unitRoleLabels[first.role as UnitRole] || first.role) : "Member";
+    const unitStr = first.role && first.role !== "member" ? `${first.name} (${roleLabel})` : first.name;
+    parts.push(units.length > 1 ? `${unitStr} +${units.length - 1}` : unitStr);
+  }
+  return parts.length > 0 ? parts.join(" · ") : "—";
 }
 
 export function DirectoryTable({ members, onView, onEdit, onDelete, canManageMembers }: DirectoryTableProps) {
   return (
     <div className="hidden md:block w-full overflow-x-auto">
       <Table className="min-w-[800px] w-full text-left border-collapse">
-        <TableHeader className="bg-(--surface-container-low)">
-          <TableRow className="border-b border-(--outline-variant) hover:bg-(--surface-container-low)">
-            <TableHead className="px-6 py-4 text-xs font-mono uppercase tracking-wider text-(--outline) font-medium">
+        <TableHeader className="bg-[var(--surface-container-low)]/60">
+          <TableRow className="border-b border-[var(--outline-variant)]/60 hover:bg-transparent">
+            <TableHead className="px-5 py-3 text-xs font-medium text-[var(--outline)]">
               Name
             </TableHead>
-            <TableHead className="px-6 py-4 text-xs font-mono uppercase tracking-wider text-(--outline) font-medium">
-              Phone Number
+            <TableHead className="px-5 py-3 text-xs font-medium text-[var(--outline)]">
+              Phone
             </TableHead>
-            <TableHead className="px-6 py-4 text-xs font-mono uppercase tracking-wider text-(--outline) font-medium">
+            <TableHead className="px-5 py-3 text-xs font-medium text-[var(--outline)]">
+              Unit & Position
+            </TableHead>
+            <TableHead className="px-5 py-3 text-xs font-medium text-[var(--outline)]">
               Life Stage
             </TableHead>
-            <TableHead className="px-6 py-4 text-xs font-mono uppercase tracking-wider text-(--outline) font-medium">
-              Unit/Role
-            </TableHead>
-            <TableHead className="px-6 py-4 text-xs font-mono uppercase tracking-wider text-(--outline) font-medium">
+            <TableHead className="px-5 py-3 text-xs font-medium text-[var(--outline)]">
               Status
             </TableHead>
-            <th className="px-6 py-4 text-xs font-mono uppercase tracking-wider text-(--outline) text-right font-medium">
+            <th className="px-5 py-3 text-xs font-medium text-[var(--outline)] text-right">
               Actions
             </th>
           </TableRow>
         </TableHeader>
-        <TableBody className="divide-y divide-(--outline-variant)/40 bg-(--surface-container-lowest)">
-          {members.map(m => {
-            // Life Stage Badge Style Logic
-            let badgeStyle = "bg-(--surface-container) text-foreground border border-(--outline-variant)/30";
+        <TableBody className="divide-y divide-[var(--outline-variant)]/40 bg-white">
+          {members.map((m) => {
+            let badgeStyle = "bg-[var(--surface-container-low)] text-foreground";
             const lifeStage = normalizeLifeStage(m.life_stage);
             if (workingLifeStages.includes(lifeStage)) {
-              badgeStyle = "bg-primary/10 text-primary border border-primary/20";
+              badgeStyle = "bg-emerald-50 text-emerald-700";
             } else if (lifeStage === LIFE_STAGE.STUDENT) {
-              badgeStyle = "bg-(--surface-container-highest) text-primary border border-primary/10";
+              badgeStyle = "bg-purple-50 text-purple-700";
             } else if (usesNyscProfile(lifeStage)) {
-              badgeStyle = "bg-secondary/15 text-(--secondary-foreground) border border-secondary/20";
-            } else if (lifeStage === LIFE_STAGE.VISITOR) {
-              badgeStyle =
-                "bg-(--member-emerald)/10 text-(--member-emerald) border border-(--member-emerald)/20";
+              badgeStyle = "bg-amber-50 text-amber-800";
             }
 
             const isActive = isAvailableMember(m.membership_status, m.is_active);
@@ -88,68 +93,53 @@ export function DirectoryTable({ members, onView, onEdit, onDelete, canManageMem
               <TableRow
                 key={m.id}
                 onClick={() => onView(m)}
-                className="hover:bg-(--surface-container-low)/50 transition-colors cursor-pointer group border-b border-(--outline-variant)/30"
+                className="hover:bg-[var(--surface-container-low)]/40 transition-colors cursor-pointer group border-b border-[var(--outline-variant)]/30"
               >
-                {/* Name */}
-                <TableCell className="px-6 py-4" onClick={e => e.stopPropagation()}>
-                  <div className="flex items-center gap-3" onClick={() => onView(m)}>
-                    <Avatar className="w-9 h-9 border border-(--outline-variant)/40 shadow-xs">
+                <TableCell className="px-5 py-3.5">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-9 h-9 border border-[var(--outline-variant)]/50">
                       <AvatarImage src={m.photo_url || ""} className="object-cover" />
-                      <AvatarFallback className="bg-primary/5 text-primary font-bold text-xs font-sans">
+                      <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
                         {m.first_name?.[0]}
                         {m.last_name?.[0]}
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
-                      <p className="text-sm font-bold text-foreground truncate">{getMemberName(m)}</p>
-                      <p className="text-xs text-(--outline) italic truncate">{m.email || "No email"}</p>
+                      <p className="text-sm font-semibold text-foreground truncate">{getMemberName(m)}</p>
+                      {m.email && <p className="text-xs text-[var(--outline)] truncate">{m.email}</p>}
                     </div>
                   </div>
                 </TableCell>
 
-                {/* Phone */}
-                <TableCell className="px-6 py-4 text-sm text-(--on-surface-variant) font-mono">
-                  {m.phone_number || "Not provided"}
+                <TableCell className="px-5 py-3.5 text-sm text-[var(--on-surface-variant)] font-mono">
+                  {m.phone_number || "—"}
                 </TableCell>
 
-                {/* Type */}
-                <TableCell className="px-6 py-4">
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-[12px] font-bold uppercase tracking-wider ${badgeStyle}`}
-                  >
+                <TableCell className="px-5 py-3.5 text-sm text-[var(--on-surface-variant)] truncate max-w-[220px]">
+                  {getRoleAndUnitsLabel(m)}
+                </TableCell>
+
+                <TableCell className="px-5 py-3.5">
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${badgeStyle}`}>
                     {getLifeStageLabel(lifeStage)}
                   </span>
                 </TableCell>
 
-                {/* Unit/Role */}
-                <TableCell className="px-6 py-4 text-sm text-(--on-surface-variant) truncate max-w-[180px]">
-                  {getUnitRoleLabel(m)}
+                <TableCell className="px-5 py-3.5">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--on-surface-variant)]">
+                    <span className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-emerald-500" : "bg-slate-400"}`} />
+                    {getMembershipStatusLabel(m.membership_status, m.is_active)}
+                  </span>
                 </TableCell>
 
-                {/* Status */}
-                <TableCell className="px-6 py-4">
-                  {isActive ? (
-                    <span className="flex items-center gap-1.5 text-xs font-semibold text-(--member-emerald)">
-                      <span className="w-1.5 h-1.5 rounded-full bg-(--member-emerald) animate-pulse"></span>{" "}
-                      {getMembershipStatusLabel(m.membership_status, m.is_active)}
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1.5 text-xs font-semibold text-(--outline)">
-                      <span className="w-1.5 h-1.5 rounded-full bg-(--outline)"></span>{" "}
-                      {getMembershipStatusLabel(m.membership_status, m.is_active)}
-                    </span>
-                  )}
-                </TableCell>
-
-                {/* Actions */}
-                <TableCell className="px-6 py-4 text-right" onClick={e => e.stopPropagation()}>
+                <TableCell className="px-5 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-1">
                     <Button
                       variant="ghost"
                       onClick={() => onView(m)}
-                      className="px-3 h-8 text-xs font-bold text-primary hover:bg-primary/10 hover:text-primary rounded-lg transition-colors"
+                      className="px-2.5 h-8 text-xs font-semibold text-primary hover:bg-primary/10 hover:text-primary rounded-lg"
                     >
-                      View Profile
+                      View
                     </Button>
 
                     <DropdownMenu>
@@ -157,20 +147,20 @@ export function DirectoryTable({ members, onView, onEdit, onDelete, canManageMem
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-(--outline) hover:text-foreground rounded-lg"
+                          className="h-8 w-8 text-[var(--outline)] hover:text-foreground rounded-lg"
                         >
                           <MoreVertical className="h-4 w-4" />
                           <span className="sr-only">Open options</span>
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="border-(--outline-variant)">
+                      <DropdownMenuContent align="end" className="border-[var(--outline-variant)]">
                         <DropdownMenuItem onClick={() => onView(m)} className="gap-2 cursor-pointer text-sm">
-                          <Eye className="h-4 w-4 text-(--outline)" />
+                          <Eye className="h-4 w-4 text-[var(--outline)]" />
                           View Profile
                         </DropdownMenuItem>
                         {canManageMembers && (
                           <DropdownMenuItem onClick={() => onEdit(m)} className="gap-2 cursor-pointer text-sm">
-                            <Edit2 className="h-4 w-4 text-(--outline)" />
+                            <Edit2 className="h-4 w-4 text-[var(--outline)]" />
                             Edit Details
                           </DropdownMenuItem>
                         )}

@@ -1,22 +1,21 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Building2,
   CalendarCheck,
+  Gift,
   Home,
   LogOut,
   MessageCircle,
-  Palette,
   Settings,
-  Sparkles,
   User,
   Users,
   Vote,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
 
 import {
   Sidebar as ShadcnSidebar,
@@ -32,188 +31,213 @@ import {
   SidebarMenuSkeleton,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { PERMISSION, type Permission } from "@/lib/adminRoles";
-import { AUTH_ACTION } from "@/lib/authActions";
-import { SESSION_KIND, type SessionKind } from "@/lib/sessionKinds";
+import { PERMISSION } from "@/lib/adminRoles";
+import { SESSION_KIND } from "@/lib/sessionKinds";
+import { useWorkspace } from "@/components/workspace-provider";
 
-type NavSection = "personal" | "operations" | "system";
+type NavSection = "ministry" | "account";
 
 type NavItem = {
   href: string;
+  matchPrefixes?: string[];
   label: string;
   icon: LucideIcon;
   section: NavSection;
 };
 
 const navSections: Array<{ key: NavSection; label: string }> = [
-  { key: "personal", label: "Personal" },
-  { key: "operations", label: "Operations" },
-  { key: "system", label: "System" },
+  { key: "ministry", label: "Church Ministry" },
+  { key: "account", label: "Account & System" },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const [sessionKind, setSessionKind] = useState<SessionKind | null>(null);
-  const [hasMemberProfile, setHasMemberProfile] = useState(false);
-  const [permissions, setPermissions] = useState<Permission[]>([]);
-  const [memberUnitLeadership, setMemberUnitLeadership] = useState<Array<{ id: string; name: string; role: string }>>(
-    [],
-  );
-  const [loading, setLoading] = useState(true);
-  const [hasActivePolls, setHasActivePolls] = useState(false);
+  const [memberTab, setMemberTab] = useState("overview");
+  const {
+    loading,
+    sessionKind,
+    hasMemberProfile,
+    permissions,
+    memberUnitLeadership,
+    churchIdentity,
+    displayName,
+    role,
+    can,
+    logout,
+  } = useWorkspace();
 
   useEffect(() => {
-    async function checkSession() {
-      try {
-        const res = await fetch("/api/auth");
-        if (res.ok) {
-          const data = await res.json();
-          const isLoggedIn = Boolean(data.user || data.memberId || data.member);
-          if (data.user) {
-            setSessionKind(SESSION_KIND.SUPER_ADMIN);
-            setHasMemberProfile(Boolean(data.memberId));
-          } else if (data.memberId || data.member) {
-            setSessionKind(SESSION_KIND.MEMBER);
-            setHasMemberProfile(true);
-          }
-          setPermissions(data.permissions || data.user?.permissions || data.member?.permissions || []);
-          setMemberUnitLeadership(data.memberUnitLeadership || []);
-
-          if (isLoggedIn) {
-            let fp = "";
-            if (typeof window !== "undefined") {
-              fp = localStorage.getItem("poll_device_fingerprint") || "";
-            }
-            const fpParam = fp ? `?fingerprint=${fp}` : "";
-            const pollsRes = await fetch(`/api/polls${fpParam}`);
-            if (pollsRes.ok) {
-              const pollsData = await pollsRes.json();
-              const activeEligible = (pollsData.data || []).some(
-                (p: any) => p.status === "active" || p.is_eligible !== false
-              );
-              setHasActivePolls(activeEligible);
-            }
-          } else {
-            setHasActivePolls(false);
-          }
-        } else {
-          setHasActivePolls(false);
-        }
-      } catch (e) {
-        console.error("Failed to check auth session:", e);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    checkSession();
-
-    if (typeof window !== "undefined") {
-      window.addEventListener("auth-change", checkSession);
-      return () => {
-        window.removeEventListener("auth-change", checkSession);
-      };
-    }
+    const syncTab = () => {
+      if (typeof window === "undefined") return;
+      const tab = new URLSearchParams(window.location.search).get("tab") || "overview";
+      setMemberTab(tab);
+    };
+    syncTab();
+    window.addEventListener("popstate", syncTab);
+    window.addEventListener("member-tab-change", syncTab);
+    return () => {
+      window.removeEventListener("popstate", syncTab);
+      window.removeEventListener("member-tab-change", syncTab);
+    };
   }, [pathname]);
 
-  const handleLogout = async () => {
-    await fetch("/api/auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: AUTH_ACTION.LOGOUT }),
-    });
-    router.push(sessionKind === SESSION_KIND.SUPER_ADMIN ? "/admin" : "/login");
-    router.refresh();
+  const isMemberOnly = !can(PERMISSION.DASHBOARD_VIEW) && hasMemberProfile;
+
+  const isActive = (item: NavItem & { tabKey?: string }) => {
+    if (item.tabKey && pathname.startsWith("/profile")) {
+      return memberTab === item.tabKey;
+    }
+    if (item.href === "/") return pathname === "/";
+    if (item.matchPrefixes?.some((prefix) => pathname.startsWith(prefix))) return true;
+    return pathname.startsWith(item.href.split("?")[0]);
   };
 
-  const can = (permission: Permission) => permissions.includes(permission);
-  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
-  const workspaceLabel =
-    permissions.length > 0 || memberUnitLeadership.length > 0 ? "Ministry workspace" : "Member workspace";
+  const portalLabel =
+    permissions.length > 0 || memberUnitLeadership.length > 0 ? "Ministry Portal" : "Member Portal";
   const hasAdminCapability = permissions.length > 0;
+  const churchName = churchIdentity.church_name || "Kinship";
 
-  const activeLinks: NavItem[] = [
-    ...(hasMemberProfile ? [{ href: "/profile", label: "My Profile", icon: User, section: "personal" as const }] : []),
-    ...(can(PERMISSION.DASHBOARD_VIEW)
-      ? [{ href: "/", label: "Dashboard", icon: Home, section: "operations" as const }]
-      : []),
-    ...(can(PERMISSION.MEMBERS_VIEW)
-      ? [{ href: "/members", label: "Members", icon: Users, section: "operations" as const }]
-      : []),
-    ...(can(PERMISSION.ATTENDANCE_VIEW)
-      ? [{ href: "/attendance", label: "Attendance", icon: CalendarCheck, section: "operations" as const }]
-      : []),
-    ...(can(PERMISSION.UNITS_VIEW) || can(PERMISSION.UNITS_MANAGE) || memberUnitLeadership.length > 0
-      ? [
-          {
-            href: "/units",
-            label: "Ministry Units",
-            icon: Building2,
-            section: "operations" as const,
-          },
-        ]
-      : []),
-    ...(can(PERMISSION.OUTREACH_VIEW)
-      ? [{ href: "/outreach", label: "Outreach", icon: MessageCircle, section: "operations" as const }]
-      : []),
-    ...(can(PERMISSION.BIRTHDAYS_MANAGE)
-      ? [
-          { href: "/designs", label: "Birthdays", icon: Palette, section: "operations" as const },
-          { href: "/designs/custom", label: "Custom Card Studio", icon: Sparkles, section: "operations" as const },
-        ]
-      : []),
-    ...(can(PERMISSION.POLLS_MANAGE)
-      ? [{ href: "/polls-manage", label: "Manage Polls", icon: Vote, section: "operations" as const }]
-      : []),
-    ...(hasActivePolls
-      ? [{ href: "/polls", label: "Polls", icon: Vote, section: "operations" as const }]
-      : []),
-    ...(can(PERMISSION.SETTINGS_MANAGE) || can(PERMISSION.ADMINS_MANAGE)
-      ? [{ href: "/settings", label: "Settings", icon: Settings, section: "system" as const }]
-      : []),
-  ];
+  const canManagePolls = can(PERMISSION.POLLS_MANAGE);
+
+  const activeLinks: Array<NavItem & { tabKey?: string }> = isMemberOnly
+    ? [
+        {
+          href: "/profile?tab=overview",
+          tabKey: "overview",
+          label: "Home",
+          icon: Home,
+          section: "ministry" as const,
+        },
+        {
+          href: "/profile?tab=units",
+          tabKey: "units",
+          label: "My Units",
+          icon: Building2,
+          section: "ministry" as const,
+        },
+        ...(memberUnitLeadership.length > 0
+          ? [
+              {
+                href: "/units",
+                label: "Unit Leadership",
+                icon: Users,
+                section: "ministry" as const,
+              },
+            ]
+          : []),
+        {
+          href: "/profile?tab=edit",
+          tabKey: "edit",
+          label: "My Profile",
+          icon: User,
+          section: "account" as const,
+        },
+      ]
+    : [
+        ...(can(PERMISSION.DASHBOARD_VIEW)
+          ? [{ href: "/", label: "Dashboard", icon: Home, section: "ministry" as const }]
+          : []),
+        ...(can(PERMISSION.MEMBERS_VIEW)
+          ? [{ href: "/members", label: "Members", icon: Users, section: "ministry" as const }]
+          : []),
+        ...(can(PERMISSION.UNITS_VIEW) || can(PERMISSION.UNITS_MANAGE) || memberUnitLeadership.length > 0
+          ? [
+              {
+                href: "/units",
+                label: "Ministry Units",
+                icon: Building2,
+                section: "ministry" as const,
+              },
+            ]
+          : []),
+        ...(can(PERMISSION.ATTENDANCE_VIEW)
+          ? [{ href: "/attendance", label: "Attendance", icon: CalendarCheck, section: "ministry" as const }]
+          : []),
+        ...(can(PERMISSION.BIRTHDAYS_MANAGE)
+          ? [
+              {
+                href: "/designs",
+                matchPrefixes: ["/designs"],
+                label: "Birthdays & Cards",
+                icon: Gift,
+                section: "ministry" as const,
+              },
+            ]
+          : []),
+        ...(canManagePolls
+          ? [
+              {
+                href: "/polls-manage",
+                matchPrefixes: ["/polls-manage", "/polls"],
+                label: "Polls & Voting",
+                icon: Vote,
+                section: "ministry" as const,
+              },
+            ]
+          : []),
+        ...(hasMemberProfile
+          ? [{ href: "/profile", label: "My Profile", icon: User, section: "account" as const }]
+          : []),
+        ...(can(PERMISSION.SETTINGS_MANAGE) || can(PERMISSION.ADMINS_MANAGE)
+          ? [{ href: "/settings", label: "Church Settings", icon: Settings, section: "account" as const }]
+          : []),
+      ];
 
   return (
-    <ShadcnSidebar collapsible="icon" className="border-sidebar-border bg-sidebar text-sidebar-foreground">
+    <ShadcnSidebar collapsible="icon" className="hidden md:flex border-sidebar-border bg-sidebar text-sidebar-foreground">
       <SidebarHeader className="border-b border-sidebar-border p-3">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
-              className="h-14 gap-3 rounded-lg px-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent"
-              tooltip="Kinship Management"
+              className="h-14 gap-3 rounded-xl px-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent"
+              tooltip={churchName}
             >
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--primary)] text-base font-bold text-white shadow-[0_10px_24px_rgba(37,99,235,0.18)]">
-                K
+              <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--primary)] text-base font-bold text-white shadow-[0_8px_20px_rgba(37,99,235,0.2)]">
+                {churchIdentity.logo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={churchIdentity.logo_url} alt="" className="size-full object-contain p-1 bg-white" />
+                ) : (
+                  churchName.charAt(0).toUpperCase()
+                )}
               </div>
               <div className="grid flex-1 text-left leading-tight">
-                <span className="font-mono text-[12px] font-medium uppercase leading-4 tracking-[0.05em] text-sidebar-foreground/60">
-                  Kinship
+                <span className="font-mono text-[10px] font-semibold uppercase leading-4 tracking-[0.06em] text-primary">
+                  Church Portal
                 </span>
-                <span className="truncate font-[var(--font-manrope)] text-[20px] font-semibold leading-7 text-sidebar-foreground">
-                  Management
+                <span className="truncate font-[var(--font-manrope)] text-base font-bold leading-5 text-sidebar-foreground">
+                  {churchName}
                 </span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
 
-        <div className="rounded-lg border border-sidebar-border bg-sidebar-accent px-3 py-2 group-data-[collapsible=icon]:hidden">
-          <p className="font-mono text-[12px] font-medium uppercase leading-4 tracking-[0.05em] text-[var(--primary)]">
-            {sessionKind === SESSION_KIND.SUPER_ADMIN ? "Super admin" : workspaceLabel}
+        <div className="rounded-xl border border-sidebar-border bg-sidebar-accent/70 px-3 py-2.5 group-data-[collapsible=icon]:hidden">
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-mono text-[11px] font-semibold uppercase leading-4 tracking-[0.05em] text-[var(--primary)] truncate">
+              {sessionKind === SESSION_KIND.SUPER_ADMIN ? "Super Admin" : portalLabel}
+            </p>
+            {role && (
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold capitalize text-primary">
+                {role.replace(/_/g, " ")}
+              </span>
+            )}
+          </div>
+          <p className="mt-1 truncate text-xs font-medium text-sidebar-foreground/80">
+            {displayName}
           </p>
-          <p className="mt-1 text-sm leading-5 text-sidebar-foreground/80">
+          <p className="text-[11px] leading-4 text-sidebar-foreground/60">
             {sessionKind === SESSION_KIND.SUPER_ADMIN
-              ? "Restricted console"
+              ? "Full administrative console"
               : hasAdminCapability
-                ? "Member access with assigned permissions"
-                : "Your congregation space"}
+                ? "Assigned ministry permissions"
+                : "Congregation member portal"}
           </p>
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="gap-1 px-1 py-3">
+      <SidebarContent className="gap-1 px-1.5 py-3">
         {loading ? (
           <SidebarGroup>
             <SidebarGroupContent>
@@ -225,32 +249,41 @@ export function Sidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         ) : (
-          navSections.map(section => {
-            const links = activeLinks.filter(link => link.section === section.key);
+          navSections.map((section) => {
+            const links = activeLinks.filter((link) => link.section === section.key);
             if (links.length === 0) return null;
 
             return (
               <SidebarGroup key={section.key} className="py-1">
-                <SidebarGroupLabel className="font-mono text-[12px] font-medium uppercase tracking-[0.05em] text-sidebar-foreground/50">
+                <SidebarGroupLabel className="font-mono text-[11px] font-semibold uppercase tracking-[0.05em] text-sidebar-foreground/45">
                   {section.label}
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
-                    {links.map(({ href, label, icon: Icon }) => {
-                      const active = isActive(href);
+                    {links.map((item) => {
+                      const { href, label, icon: Icon } = item;
+                      const active = isActive(item);
 
                       return (
                         <SidebarMenuItem key={href} className="relative">
                           {active && (
-                            <div className="absolute left-[-4px] top-[12px] bottom-[12px] w-1 rounded-r bg-[var(--primary)]" />
+                            <div className="absolute left-[-6px] top-[10px] bottom-[10px] w-1 rounded-r bg-[var(--primary)]" />
                           )}
                           <SidebarMenuButton
                             asChild
                             isActive={active}
                             tooltip={label}
-                            className="min-h-10 rounded-lg text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground [&>svg]:text-sidebar-foreground data-[active=true]:[&>svg]:text-[var(--primary)]"
+                            className="min-h-10 rounded-xl text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:font-semibold data-[active=true]:text-sidebar-accent-foreground [&>svg]:text-sidebar-foreground/70 data-[active=true]:[&>svg]:text-[var(--primary)]"
                           >
-                            <Link href={href} aria-current={active ? "page" : undefined}>
+                            <Link
+                              href={href}
+                              aria-current={active ? "page" : undefined}
+                              onClick={() => {
+                                if (item.tabKey && typeof window !== "undefined") {
+                                  setTimeout(() => window.dispatchEvent(new Event("member-tab-change")), 10);
+                                }
+                              }}
+                            >
                               <Icon />
                               <span>{label}</span>
                             </Link>
@@ -270,12 +303,12 @@ export function Sidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              onClick={handleLogout}
-              tooltip="Logout"
-              className="min-h-10 rounded-lg text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground [&>svg]:text-sidebar-foreground"
+              onClick={logout}
+              tooltip="Sign Out"
+              className="min-h-10 rounded-xl text-sm font-medium text-destructive hover:bg-destructive/10 hover:text-destructive [&>svg]:text-destructive"
             >
               <LogOut />
-              <span>Logout</span>
+              <span>Sign Out</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

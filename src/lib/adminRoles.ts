@@ -64,7 +64,7 @@ export type PageAccessDefinition = {
 };
 
 export const permissionDefinitions: PermissionDefinition[] = [
-  { key: PERMISSION.DASHBOARD_VIEW, label: "View Dashboard", description: "Access the workspace dashboard and overview metrics.", group: "Dashboard" },
+  { key: PERMISSION.DASHBOARD_VIEW, label: "View Dashboard", description: "Access the church portal dashboard and overview metrics.", group: "Dashboard" },
   { key: PERMISSION.MEMBERS_VIEW, label: "View Members", description: "Open member directory and basic member records.", group: "Members" },
   { key: PERMISSION.MEMBERS_MANAGE, label: "Manage Members", description: "Create, edit, delete, import, and export member profiles.", group: "Members" },
   { key: PERMISSION.ATTENDANCE_VIEW, label: "View Attendance", description: "View attendance sessions, records, reports, and trends.", group: "Attendance" },
@@ -86,7 +86,7 @@ export const pageAccessDefinitions: PageAccessDefinition[] = [
     key: "dashboard",
     label: "Dashboard",
     path: "/",
-    description: "Workspace overview, summaries, and operational metrics.",
+    description: "Church portal overview, summaries, and ministry metrics.",
     group: "Operations",
     visibilityPermissions: [PERMISSION.DASHBOARD_VIEW],
     enablePermission: PERMISSION.DASHBOARD_VIEW,
@@ -113,7 +113,7 @@ export const pageAccessDefinitions: PageAccessDefinition[] = [
     key: "units",
     label: "Unit Management",
     path: "/units",
-    description: "Unit list, unit roster views, and unit workspace access.",
+    description: "Unit list, unit roster views, and department management access.",
     group: "Operations",
     visibilityPermissions: [PERMISSION.UNITS_VIEW, PERMISSION.UNITS_MANAGE],
     enablePermission: PERMISSION.UNITS_VIEW,

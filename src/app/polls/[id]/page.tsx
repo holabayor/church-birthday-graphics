@@ -484,7 +484,7 @@ export default function PublicPollPage() {
               </div>
 
               {/* Floating / Sticky Action Vote Bar */}
-              <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-t border-slate-200/80 px-6 py-4 flex flex-col sm:flex-row justify-between items-center max-w-4xl mx-auto rounded-t-3xl shadow-lg md:bottom-4 md:rounded-3xl md:left-4 md:right-4 md:border">
+              <div className="fixed bottom-16 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-5 py-3.5 flex flex-col sm:flex-row justify-between items-center max-w-4xl mx-auto shadow-lg md:bottom-4 md:rounded-3xl md:left-4 md:right-4 md:border">
                 <div className="hidden sm:block text-left min-w-0 pr-4">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
                     Active Vote Selection

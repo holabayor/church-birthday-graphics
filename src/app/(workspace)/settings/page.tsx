@@ -687,7 +687,7 @@ export default function SettingsPage() {
               Visibility & Access Control
             </CardTitle>
             <CardDescription>
-              Choose the workspace pages each role can see. Action-level permissions remain available in the role permissions section below.
+              Choose the portal pages each role can see. Action-level permissions remain available in the role permissions section below.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -823,7 +823,7 @@ export default function SettingsPage() {
               Role Permissions
             </CardTitle>
             <CardDescription>
-              Control what each church role can see and do across the workspace. These permissions drive sidebar links, pages, APIs, and detail visibility.
+              Control what each church role can see and do across the church portal. These permissions drive sidebar links, pages, APIs, and detail visibility.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">

@@ -16,6 +16,7 @@ import {
   FileUp,
   Loader2,
   SquarePen,
+  Copy,
 } from "lucide-react";
 
 import { ADMIN_ROLE, PERMISSION, type AdminRole, type Permission } from "@/lib/adminRoles";
@@ -96,8 +97,11 @@ export default function MembersPage() {
   const [month, setMonth] = useState("");
   const [memberType, setMemberType] = useState<string>(FILTER_VALUE.ALL);
   const [unitId, setUnitId] = useState<string>(FILTER_VALUE.ALL);
-  const [stats, setStats] = useState({ total: 0, students: 0, working: 0, visitors: 0 });
+  const [stats, setStats] = useState({ total: 0, students: 0, working: 0, visitors: 0, workers: 0 });
   const [showForm, setShowForm] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState<"summary" | "full">("summary");
+  const [exportScope, setExportScope] = useState<"all" | "workers" | "filtered">("all");
   const [editing, setEditing] = useState<Member | null>(null);
   const [viewing, setViewing] = useState<Member | null>(null);
   const [viewer, setViewer] = useState<{ role: AdminRole | null; permissions: Permission[] }>({
@@ -362,8 +366,28 @@ export default function MembersPage() {
     }
   };
 
+  const handleCopyPhones = async () => {
+    const phones = members.map((m) => m.phone_number?.trim()).filter(Boolean);
+    if (phones.length === 0) {
+      toast.info("No phone numbers found in current view");
+      return;
+    }
+    await navigator.clipboard.writeText(phones.join("\n"));
+    toast.success(`Copied ${phones.length} phone numbers`);
+  };
+
   const handleExport = () => {
-    window.location.href = "/api/members/export";
+    const params = new URLSearchParams({ format: exportFormat });
+    if (exportScope === "workers") {
+      params.set("workers_only", "true");
+    } else if (exportScope === "filtered") {
+      if (memberType && memberType !== FILTER_VALUE.ALL) params.set("life_stage", memberType);
+      if (unitId && unitId !== FILTER_VALUE.ALL) params.set("unit_id", unitId);
+      if (month && month !== FILTER_VALUE.ALL) params.set("month", month);
+    }
+    window.location.href = `/api/members/export?${params.toString()}`;
+    setExportOpen(false);
+    toast.success("Downloading CSV export...");
   };
 
   const handleImportSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -401,9 +425,9 @@ export default function MembersPage() {
       <PageHeader
         eyebrow="People operations"
         title="Member Directory"
-        description="Manage your congregation and view member details."
+        description="Manage your congregation, church workers, and lifecycle details."
         actions={
-          <>
+          <div className="flex w-full sm:w-auto flex-wrap items-center gap-2">
             <input
               ref={importInputRef}
               type="file"
@@ -411,54 +435,62 @@ export default function MembersPage() {
               onChange={handleImportSelect}
               className="hidden"
             />
+            {canManage && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => importInputRef.current?.click()}
+                disabled={importing}
+                className="h-10 border-[var(--outline-variant)] bg-white text-foreground hover:bg-[var(--surface-container-low)]"
+              >
+                {importing ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <FileUp className="mr-1.5 h-4 w-4 text-primary" />}
+                Import
+              </Button>
+            )}
             <Button
               type="button"
               variant="outline"
-              onClick={() => importInputRef.current?.click()}
-              disabled={importing}
-              className="hidden h-10 border-[var(--outline-variant)] bg-white text-primary hover:bg-[var(--surface-container)] hover:text-primary/90"
+              size="sm"
+              onClick={handleCopyPhones}
+              className="h-10 border-[var(--outline-variant)] bg-white text-foreground hover:bg-[var(--surface-container-low)] font-medium"
             >
-              {importing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileUp className="mr-2 h-4 w-4" />}
-              Import CSV
+              <Copy className="mr-1.5 h-4 w-4 text-primary" />
+              Copy Phones
             </Button>
             <Button
               type="button"
               variant="outline"
-              onClick={handleExport}
-              className="max-md:hidden h-10 border-[var(--outline-variant)] bg-white text-primary hover:bg-[var(--surface-container)] hover:text-primary/90"
+              size="sm"
+              onClick={() => setExportOpen(true)}
+              className="h-10 border-[var(--outline-variant)] bg-white text-primary hover:bg-[var(--surface-container-low)] font-semibold"
             >
-              <Download className="mr-2 h-4 w-4" />
+              <Download className="mr-1.5 h-4 w-4" />
               Export CSV
             </Button>
-            <Button onClick={openAdd} variant="secondary">
-              <Plus className="mr-2 h-4 w-4" />
+            <Button onClick={openAdd} variant="secondary" size="sm" className="h-10 font-bold ml-auto sm:ml-0">
+              <Plus className="mr-1.5 h-4 w-4" />
               Add Member
             </Button>
-          </>
+          </div>
         }
       />
 
-      <div className="space-y-8 p-4 md:p-8">
+      <div className="space-y-6 p-4 md:space-y-8 md:p-8">
         <DirectoryStats
           total={stats.total}
           students={stats.students}
           working={stats.working}
           visitors={stats.visitors}
+          workers={stats.workers}
+          activeFilter={memberType}
+          onFilterSelect={(val) => {
+            setMemberType(val);
+            setPage(1);
+          }}
         />
 
-        <Card className="overflow-hidden border-[var(--outline-variant)] bg-white shadow-sm">
-          <CardHeader className="gap-5 border-b border-[var(--outline-variant)] bg-white pb-5">
-            <div className="flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
-              <div className="space-y-1">
-                <CardTitle className="font-[var(--font-manrope)] text-xl text-[#0B1C30]">All Members</CardTitle>
-                <CardDescription>Showing basic directory data for {total} members</CardDescription>
-              </div>
-              <p className="font-mono text-[12px] font-medium uppercase leading-4 tracking-[0.05em] text-[var(--outline)]">
-                Directory table
-              </p>
-            </div>
-          </CardHeader>
-
+        <Card className="overflow-hidden border-[var(--outline-variant)]/70 bg-white">
           <DirectoryFilters
             search={search}
             onSearchChange={val => {
@@ -572,14 +604,94 @@ export default function MembersPage() {
           )}
         </Card>
 
+        {/* Export CSV Builder Modal */}
+        <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+          <DialogContent className="sm:max-w-md border-[var(--outline-variant)] bg-white p-0 overflow-hidden rounded-2xl">
+            <DialogHeader className="border-b border-[var(--outline-variant)]/60 bg-[var(--surface-container-low)]/40 px-5 py-4 text-left">
+              <DialogTitle className="font-[var(--font-manrope)] text-lg font-bold text-foreground">
+                Export Member Directory CSV
+              </DialogTitle>
+              <DialogDescription className="text-xs text-[var(--on-surface-variant)]">
+                Choose the columns and audience segment to export.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="p-5 space-y-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase tracking-wider text-[var(--outline)]">
+                  1. CSV Column Format
+                </Label>
+                <div className="grid grid-cols-1 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setExportFormat("summary")}
+                    className={`p-3.5 rounded-xl border text-left transition-all ${
+                      exportFormat === "summary"
+                        ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                        : "border-[var(--outline-variant)] bg-white hover:bg-[var(--surface-container-low)]/40"
+                    }`}
+                  >
+                    <p className="text-sm font-bold text-foreground">
+                      Quick Summary (Full Name, Phone, Worker Flag, Position)
+                    </p>
+                    <p className="text-xs text-[var(--on-surface-variant)] mt-0.5">
+                      4 clean columns ideal for quick phone/worker lists and attendance sheets.
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setExportFormat("full")}
+                    className={`p-3.5 rounded-xl border text-left transition-all ${
+                      exportFormat === "full"
+                        ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                        : "border-[var(--outline-variant)] bg-white hover:bg-[var(--surface-container-low)]/40"
+                    }`}
+                  >
+                    <p className="text-sm font-bold text-foreground">
+                      Full ChMS Directory (All 25 Profile & Lifecycle Columns)
+                    </p>
+                    <p className="text-xs text-[var(--on-surface-variant)] mt-0.5">
+                      Complete database backup including academic, NYSC, employment, and guardian records.
+                    </p>
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase tracking-wider text-[var(--outline)]">
+                  2. Members to Include
+                </Label>
+                <Select value={exportScope} onValueChange={(v) => setExportScope(v as "all" | "workers" | "filtered")}>
+                  <SelectTrigger className="h-11 bg-[var(--surface-container-low)] border-[var(--outline-variant)]">
+                    <SelectValue placeholder="Select scope" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Congregation Members ({stats.total})</SelectItem>
+                    <SelectItem value="workers">Church Workers Only ({stats.workers})</SelectItem>
+                    <SelectItem value="filtered">Current Active Directory Filters ({total})</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter className="border-t border-[var(--outline-variant)]/60 bg-[var(--surface-container-low)]/30 px-5 py-3.5 flex-row justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setExportOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="button" onClick={handleExport} className="font-bold">
+                <Download className="mr-1.5 h-4 w-4" />
+                Download CSV
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* Add/Edit Modal */}
         <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-hidden border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-0 sm:max-w-3xl flex flex-col">
-            <DialogHeader className="border-b border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-8 py-6 text-left">
-              <DialogTitle className="font-headline text-2xl font-bold text-[#0B1C30]">
+          <DialogContent className="max-h-[calc(100dvh-2rem)] w-[calc(100vw-1.25rem)] overflow-hidden border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-0 sm:max-w-3xl flex flex-col rounded-2xl">
+            <DialogHeader className="border-b border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-5 py-4 sm:px-8 sm:py-6 text-left">
+              <DialogTitle className="font-headline text-xl sm:text-2xl font-bold text-[#0B1C30]">
                 {editing ? "Edit Member Details" : "Add New Member"}
               </DialogTitle>
-              <DialogDescription className="text-sm text-[var(--on-surface-variant)] mt-1">
+              <DialogDescription className="text-xs sm:text-sm text-[var(--on-surface-variant)] mt-1">
                 {editing
                   ? "Modify this member's contact info, cell affiliation, and lifecycle details."
                   : "Enter details to register a new member in the Kinship community directory."}
@@ -587,7 +699,7 @@ export default function MembersPage() {
             </DialogHeader>
 
             <form onSubmit={handleSubmit} className="flex max-h-[calc(100dvh-10rem)] min-h-0 flex-col overflow-hidden">
-              <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-8 py-6">
+              <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 py-5 sm:px-8 sm:py-6">
                 {/* Photo Upload Section */}
                 <div className="flex items-center gap-5 pb-4 border-b border-[var(--outline-variant)]/60">
                   <Avatar className="h-20 w-20 border-2 border-dashed border-[var(--outline-variant)]/60 flex items-center justify-center bg-white shadow-sm shrink-0">
@@ -1046,7 +1158,7 @@ export default function MembersPage() {
                 </div>
               </div>
 
-              <DialogFooter className="border-t border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-8 py-6">
+              <DialogFooter className="border-t border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] px-5 py-4 sm:px-8 sm:py-5">
                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
                   Cancel
                 </Button>
